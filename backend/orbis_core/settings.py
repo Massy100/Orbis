@@ -22,7 +22,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     'rest_framework',
-<<<<<<< HEAD
     'corsheaders',
     
     'tutors_evaluators',
@@ -31,9 +30,7 @@ INSTALLED_APPS = [
     'execution_results',
     'communications',
     'security',
-=======
     'database_orbis',
->>>>>>> b663f4a (feat(backend): A connection to the database was added.)
 ]
 
 MIDDLEWARE = [
