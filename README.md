@@ -15,7 +15,7 @@ docker-compose exec backend bash
 docker-compose exec frontend bash
 
 # Acceder a applicaciones:
-- Frontend Next.js: http://localhost:3000
-- Backend API: http://localhost:8000/api
-- Admin Django: http://localhost:8000/admin
-- Adminer (BD): http://localhost:8080
+- Frontend Next.js: http://localhost:3001
+- Backend API: http://localhost:8001/api
+- Admin Django: http://localhost:8001/admin
+- Adminer (BD): http://localhost:8081
