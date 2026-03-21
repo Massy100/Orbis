@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     'execution_results',
     'communications',
     'security',
-    'database_orbis',
 ]
 
 MIDDLEWARE = [
@@ -68,17 +67,6 @@ DATABASE_URL = os.getenv("NEON_DATABASE_URL")
 if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('POSTGRES_DB'),
-            'USER': os.environ.get('POSTGRES_USER'),
-            'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-            'HOST': os.environ.get('POSTGRES_HOST'),
-            'PORT': '5432',
-        }
     }
     
 DISABLE_SERVER_SIDE_CURSORS = True

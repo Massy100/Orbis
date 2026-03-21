@@ -1,8 +1,6 @@
 from django.db import models
-
-from execution_results.models_execution_results import Evaluation
-from tutors_evaluators.models_tutors_evaluators import Evaluator, Mentor, Studygroup
-
+from tutors_evaluators.models import Evaluator, Mentor, Studygroup
+from execution_results.models import Evaluation
 
 class Private(models.Model):
     id = models.IntegerField(primary_key=True)

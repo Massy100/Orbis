@@ -1,6 +1,5 @@
 from django.db import models
-
-from tutors_evaluators.models_tutors_evaluators import Student
+from tutors_evaluators.models import Student
 
 
 class Evaluation(models.Model):

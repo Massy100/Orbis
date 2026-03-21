@@ -1,6 +1,5 @@
 from django.db import models
-
-from request_assigment.models_request_assigment import Private, Terna
+from execution_results.models import Evaluation
 
 
 class Evaluationhistory(models.Model):
