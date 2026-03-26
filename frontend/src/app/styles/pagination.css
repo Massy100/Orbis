@@ -134,6 +134,7 @@
     .pagination-summary,
     .pagination-controls,
     .pagination-size {
+        align-items: center;
         justify-content: center;
         text-align: center;
     }
