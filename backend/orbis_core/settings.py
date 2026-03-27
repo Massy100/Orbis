@@ -1,5 +1,9 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+import dj_database_url
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -58,16 +62,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'orbis_core.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'orbis_db'),
-        'USER': os.environ.get('POSTGRES_USER', 'orbis_user'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'orbis_password'),
-        'HOST': os.environ.get('POSTGRES_HOST', 'db'),
-        'PORT': '5432',
+DATABASE_URL = os.getenv("NEON_DATABASE_URL")
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-}
+    
+DISABLE_SERVER_SIDE_CURSORS = True
 
 AUTH_PASSWORD_VALIDATORS = [
     {
