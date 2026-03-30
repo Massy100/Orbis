@@ -3,18 +3,31 @@
 import "./teachers-management.css"
 import { useState, useMemo, useEffect } from "react"
 import Pagination from "../components/pagination"
+import SidebarDropDown from "../components/sidebar-drop-down"
+import Modal from "../components/modal"
 
 
 
+
+type Course = "Informatica" | "Sistemas" | "Gestión Industrial"
 
 type Teacher = {
     id: number
     cat: string
+    credits: number
     name: string
-    career: string
+    careers: Course[]
     status: "Activo" | "Inactivo"
     evaluations: number
     aptitude: "Apto" | "No apto"
+}
+
+type TeacherDraft = {
+    name: string
+    cat: string
+    credits: number | ""
+    careers: Course[]
+    status: "Activo" | "Inactivo"
 }
 
 export default function Teachers() {
@@ -24,13 +37,20 @@ export default function Teachers() {
 
     const maxEvaluations = 15   // The max evaluations 
 
+    const [open, setOpen] = useState(false)
+    const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(null)
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null)
+    const [editModalOpen, setEditModalOpen] = useState(false)
+
     // Array to load the Teachers
-    const teachers: Teacher[] = [
+    const [teachers, setTeachers] = useState<Teacher[]>([
         {
             id: 1,
             cat: "T-001",
+            credits: 3,
             name: "Abelardo",
-            career: "Informatica",
+            careers: ["Informatica", "Sistemas"],
             status: "Activo",
             evaluations: 12,
             aptitude: "Apto",
@@ -38,8 +58,9 @@ export default function Teachers() {
         {
             id: 2,
             cat: "T-002",
+            credits: 4,
             name: "Jorge Escalante",
-            career: "Sistemas",
+            careers: ["Sistemas"],
             status: "Activo",
             evaluations: 15,
             aptitude: "Apto",
@@ -47,8 +68,9 @@ export default function Teachers() {
         {
             id: 3,
             cat: "T-003",
+            credits: 5,
             name: "Marlon Estrada",
-            career: "Informatica",
+            careers: ["Informatica"],
             status: "Inactivo",
             evaluations: 15,
             aptitude: "No apto",
@@ -56,8 +78,9 @@ export default function Teachers() {
         {
             id: 4,
             cat: "T-004",
+            credits: 3,
             name: "Karla Hernández",
-            career: "Informatica",
+            careers: ["Informatica"],
             status: "Activo",
             evaluations: 10,
             aptitude: "Apto",
@@ -65,8 +88,9 @@ export default function Teachers() {
         {
             id: 5,
             cat: "T-005",
+            credits: 2,
             name: "Luis Martínez",
-            career: "Informatica",
+            careers: ["Informatica"],
             status: "Activo",
             evaluations: 5,
             aptitude: "Apto",
@@ -74,8 +98,9 @@ export default function Teachers() {
         {
             id: 6,
             cat: "T-006",
+            credits: 4,
             name: "Sofía Ramírez",
-            career: "Informatica",
+            careers: ["Informatica"],
             status: "Activo",
             evaluations: 14,
             aptitude: "Apto",
@@ -83,8 +108,9 @@ export default function Teachers() {
         {
             id: 7,
             cat: "T-007",
+            credits: 3,
             name: "Daniel Castro",
-            career: "Informatica",
+            careers: ["Informatica"],
             status: "Activo",
             evaluations: 7,
             aptitude: "Apto",
@@ -92,8 +118,9 @@ export default function Teachers() {
         {
             id: 8,
             cat: "T-008",
+            credits: 2,
             name: "Andrea López",
-            career: "Informatica",
+            careers: ["Informatica"],
             status: "Activo",
             evaluations: 3,
             aptitude: "Apto",
@@ -101,8 +128,9 @@ export default function Teachers() {
         {
             id: 9,
             cat: "T-009",
+            credits: 4,
             name: "Carlos Méndez",
-            career: "Sistemas",
+            careers: ["Sistemas"],
             status: "Activo",
             evaluations: 11,
             aptitude: "Apto",
@@ -110,8 +138,9 @@ export default function Teachers() {
         {
             id: 10,
             cat: "T-010",
+            credits: 5,
             name: "Fernanda Ruiz",
-            career: "Gestión Industrial",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 9,
             aptitude: "Apto",
@@ -119,8 +148,9 @@ export default function Teachers() {
         {
             id: 11,
             cat: "T-011",
+            credits: 3,
             name: "Miguel Ángel Pineda",
-            career: "Contaduria",
+            careers: ["Sistemas"],
             status: "Inactivo",
             evaluations: 6,
             aptitude: "No apto",
@@ -128,8 +158,9 @@ export default function Teachers() {
         {
             id: 12,
             cat: "T-012",
+            credits: 4,
             name: "Paola Gómez",
-            career: "Gestión Industrial",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 13,
             aptitude: "Apto",
@@ -137,8 +168,9 @@ export default function Teachers() {
         {
             id: 13,
             cat: "T-013",
+            credits: 2,
             name: "Ricardo Flores",
-            career: "Psicologia",
+            careers: ["Sistemas"],
             status: "Activo",
             evaluations: 4,
             aptitude: "Apto",
@@ -146,8 +178,9 @@ export default function Teachers() {
         {
             id: 14,
             cat: "T-014",
+            credits: 6,
             name: "Valeria Navarro",
-            career: "Gestión Industrial",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 15,
             aptitude: "Apto",
@@ -155,8 +188,9 @@ export default function Teachers() {
         {
             id: 15,
             cat: "T-015",
+            credits: 3,
             name: "Óscar Reyes",
-            career: "Informatica",
+            careers: ["Informatica"],
             status: "Inactivo",
             evaluations: 2,
             aptitude: "No apto",
@@ -164,8 +198,9 @@ export default function Teachers() {
         {
             id: 16,
             cat: "T-016",
+            credits: 4,
             name: "Gabriela Santos",
-            career: "Medicina",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 12,
             aptitude: "Apto",
@@ -173,8 +208,9 @@ export default function Teachers() {
         {
             id: 17,
             cat: "T-017",
+            credits: 3,
             name: "José Armando Cruz",
-            career: "Enfermeria",
+            careers: ["Sistemas"],
             status: "Activo",
             evaluations: 8,
             aptitude: "Apto",
@@ -182,8 +218,9 @@ export default function Teachers() {
         {
             id: 18,
             cat: "T-018",
+            credits: 5,
             name: "Natalia Herrera",
-            career: "Gestión Industrial",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 10,
             aptitude: "Apto",
@@ -191,8 +228,9 @@ export default function Teachers() {
         {
             id: 19,
             cat: "T-019",
+            credits: 2,
             name: "Kevin Alvarado",
-            career: "Sistemas",
+            careers: ["Sistemas"],
             status: "Inactivo",
             evaluations: 1,
             aptitude: "No apto",
@@ -200,8 +238,9 @@ export default function Teachers() {
         {
             id: 20,
             cat: "T-020",
+            credits: 4,
             name: "Diana Martínez",
-            career: "Contaduria",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 7,
             aptitude: "Apto",
@@ -209,8 +248,9 @@ export default function Teachers() {
         {
             id: 21,
             cat: "T-021",
+            credits: 3,
             name: "Samuel Ortega",
-            career: "Administracion",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 14,
             aptitude: "Apto",
@@ -218,8 +258,9 @@ export default function Teachers() {
         {
             id: 22,
             cat: "T-022",
+            credits: 2,
             name: "Camila Fuentes",
-            career: "Derecho",
+            careers: ["Sistemas"],
             status: "Activo",
             evaluations: 5,
             aptitude: "Apto",
@@ -227,8 +268,9 @@ export default function Teachers() {
         {
             id: 23,
             cat: "T-023",
+            credits: 3,
             name: "Héctor Zelaya",
-            career: "Gestión Industrial",
+            careers: ["Gestión Industrial"],
             status: "Inactivo",
             evaluations: 3,
             aptitude: "No apto",
@@ -236,8 +278,9 @@ export default function Teachers() {
         {
             id: 24,
             cat: "T-024",
+            credits: 5,
             name: "María José Aguilar",
-            career: "Arquitectura",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 11,
             aptitude: "Apto",
@@ -245,8 +288,9 @@ export default function Teachers() {
         {
             id: 25,
             cat: "T-025",
+            credits: 4,
             name: "Alejandro Molina",
-            career: "Informatica",
+            careers: ["Informatica"],
             status: "Activo",
             evaluations: 9,
             aptitude: "Apto",
@@ -254,8 +298,9 @@ export default function Teachers() {
         {
             id: 26,
             cat: "T-026",
+            credits: 3,
             name: "Lucía Castillo",
-            career: "Gestión Industrial",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 13,
             aptitude: "Apto",
@@ -263,8 +308,9 @@ export default function Teachers() {
         {
             id: 27,
             cat: "T-027",
+            credits: 2,
             name: "Fernando Mejía",
-            career: "Enfermeria",
+            careers: ["Sistemas"],
             status: "Inactivo",
             evaluations: 4,
             aptitude: "No apto",
@@ -272,8 +318,9 @@ export default function Teachers() {
         {
             id: 28,
             cat: "T-028",
+            credits: 6,
             name: "Isabella Rosales",
-            career: "Odontologia",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 15,
             aptitude: "Apto",
@@ -281,8 +328,9 @@ export default function Teachers() {
         {
             id: 29,
             cat: "T-029",
+            credits: 3,
             name: "Roberto Espinoza",
-            career: "Sistemas",
+            careers: ["Sistemas"],
             status: "Activo",
             evaluations: 6,
             aptitude: "Apto",
@@ -290,13 +338,22 @@ export default function Teachers() {
         {
             id: 30,
             cat: "T-030",
+            credits: 4,
             name: "Elena Vásquez",
-            career: "Gestión Industrial",
+            careers: ["Gestión Industrial"],
             status: "Activo",
             evaluations: 12,
             aptitude: "Apto",
         },
-    ]
+    ])
+
+    const [draft, setDraft] = useState<TeacherDraft>({
+        name: "",
+        cat: "",
+        credits: "",
+        careers: [],
+        status: "Activo",
+    })
 
     // Helper to show the progress bar to evaluations in the Table (column: Evaluaciones TOtales)
     const getProgressWidth = (value: number): string => {
@@ -309,16 +366,16 @@ export default function Teachers() {
         return value === 15 ? "No apto" : "Apto"
     }
 
-    // Helpers to set the filters, default (Todas and Todos)
-    const [careerFilter, setCareerFilter] = useState("Todas")
+    // Helpers to set the filters, default (Todos and Todos)
+    const [careerFilter, setCareerFilter] = useState("Todos")
     const [statusFilter, setStatusFilter] = useState("Todos")
 
-    // When aplicate a filter diferent that Todas and Todos reload the array of teachers 
+    // When aplicate a filter diferent that Todos and Todos reload the array of teachers 
     // to reload the pages in the table to see the filters aplicated
     const filteredTeachers = useMemo(() => {
         return teachers.filter((teacher) => {
             const matchesCareer =
-                careerFilter === "Todas" || teacher.career === careerFilter
+                careerFilter === "Todos" || teacher.careers.includes(careerFilter as Course)
 
             const matchesStatus =
                 statusFilter === "Todos" || teacher.status === statusFilter
@@ -329,6 +386,8 @@ export default function Teachers() {
 
     const totalItems = filteredTeachers.length;
 
+    // Data segmentation for pagination
+    // Calculates which records to display based on the current page
     const paginatedTeachers = useMemo(() => {
         const start = (page - 1) * pageSize;
         const end = start + pageSize;
@@ -338,12 +397,124 @@ export default function Teachers() {
     const icon_delete = <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M17.004 20L17.003 8h-1-8-1v12H17.004zM13.003 10h2v8h-2V10zM9.003 10h2v8h-2V10zM9.003 4H15.003V6H9.003z"></path><path d="M5.003,20c0,1.103,0.897,2,2,2h10c1.103,0,2-0.897,2-2V8h2V6h-3h-1V4c0-1.103-0.897-2-2-2h-6c-1.103,0-2,0.897-2,2v2h-1h-3 v2h2V20z M9.003,4h6v2h-6V4z M8.003,8h8h1l0.001,12H7.003V8H8.003z"></path><path d="M9.003 10H11.003V18H9.003zM13.003 10H15.003V18H13.003z"></path></svg>
     const icon_edit = <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g><path fill="none" d="M0 0h24v24H0z"></path><path d="M15.728 9.686l-1.414-1.414L5 17.586V19h1.414l9.314-9.314zm1.414-1.414l1.414-1.414-1.414-1.414-1.414 1.414 1.414 1.414zM7.242 21H3v-4.243L16.435 3.322a1 1 0 0 1 1.414 0l2.829 2.829a1 1 0 0 1 0 1.414L7.243 21z"></path></g></svg>
 
+    // The courses that is available to add or remove in the edit sidebar, the max is 3 courses for teacher
+    const availableCourses: Course[] = [
+        "Informatica",
+        "Sistemas",
+        "Gestión Industrial",
+    ]
+
+    // Add or remove courses from the teachers
+    const toggleCareer = (course: Course) => {
+        setDraft((prev) => {
+            const exists = prev.careers.includes(course)
+            if (exists) {
+                return {
+                    ...prev,
+                    careers: prev.careers.filter((c) => c !== course),
+                }
+            }
+            if (prev.careers.length >= 3) return prev
+            return {
+                ...prev,
+                careers: [...prev.careers, course],
+            }
+        })
+    }
 
     // When change filters, reload to the first page
     // to avoid empty or out of range pages
     useEffect(() => {
         setPage(1)
     }, [careerFilter, statusFilter])
+
+    // Open the sidebar in edit mode
+    // Load the selected teacher's data into the draft
+    const handleEdit = (teacher: Teacher) => {
+        setSelectedTeacherId(teacher.id)
+        setDraft({
+            name: teacher.name,
+            cat: teacher.cat,
+            credits: teacher.credits,
+            careers: teacher.careers,
+            status: teacher.status,
+        })
+        setOpen(true)
+    }
+
+    // Clear the draft and close the sidebar
+    const closeDrawer = () => {
+        setOpen(false)
+        setSelectedTeacherId(null)
+        setDraft({
+            name: "",
+            cat: "",
+            credits: "",
+            careers: [],
+            status: "Activo",
+        })
+    }
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        if (selectedTeacherId === null) return
+        if (draft.credits === "" || draft.credits < 0 || draft.credits > 16) return
+        setEditModalOpen(true)
+    }
+
+    const closeEditModal = () => {
+        setEditModalOpen(false)
+    }
+
+    // Confirm the teacher edit
+    // Runs only after confirmation in the modal
+    const handleConfirmEdit = () => {
+        if (selectedTeacherId === null) return
+        if (draft.credits === "" || draft.credits < 0 || draft.credits > 16) return
+
+        setTeachers((prev) =>
+            prev.map((teacher) =>
+                teacher.id === selectedTeacherId
+                    ? {
+                        ...teacher,
+                        name: draft.name,
+                        cat: draft.cat,
+                        credits: Number(draft.credits),
+                        careers: draft.careers,
+                        status: draft.status,
+                    }
+                    : teacher
+            )
+        )
+
+        setEditModalOpen(false)
+        closeDrawer()
+
+        requestAnimationFrame(() => {
+            document.body.style.overflow = ''
+        })
+    }
+
+    // Opens a confirmation modal to delete a teacher
+    // Temporarily saves the selected teacher
+    const handleAskDelete = (teacher: Teacher) => {
+        setTeacherToDelete(teacher)
+        setDeleteModalOpen(true)
+    }
+
+    const closeDeleteModal = () => {
+        setDeleteModalOpen(false)
+        setTeacherToDelete(null)
+    }
+
+    // Permanently removes the teacher from the state
+    // Runs after confirming in the modal
+    const handleConfirmDelete = () => {
+        if (!teacherToDelete) return
+
+        setTeachers((prev) => prev.filter((t) => t.id !== teacherToDelete.id))
+        closeDeleteModal()
+    }
 
     return (
         <>
@@ -360,14 +531,14 @@ export default function Teachers() {
 
                 <div className="types-filters">
                     <div className="filter-box">
-                        <label htmlFor="career">CARRERA</label>     {/* The options to filter the career  */}
+                        <label htmlFor="career">CURSO</label>     {/* The options to filter the career  */}
                         <select
                             name="career"
                             id="career"
                             value={careerFilter}
                             onChange={(e) => setCareerFilter(e.target.value)}
                         >
-                            <option value="Todas">Todas las carreras</option>   
+                            <option value="Todos">Todos los cursos</option>
                             <option value="Informatica">Informática</option>
                             <option value="Sistemas">Sistemas</option>
                             <option value="Gestión Industrial">Gestión Industrial</option>
@@ -395,7 +566,7 @@ export default function Teachers() {
                             <tr>
                                 <th>CAT</th>
                                 <th>Nombre</th>
-                                <th>Carrera</th>
+                                <th>Curso</th>
                                 <th>Estado</th>
                                 <th>Evaluaciones Totales</th>
                                 <th>Apto para Evaluar</th>
@@ -417,7 +588,13 @@ export default function Teachers() {
                                         <td className="teacher-name">{c.name}</td>
 
                                         <td>
-                                            <p className="teacher-career">{c.career}</p>
+                                            <div className="teacher-careers-column">
+                                                {c.careers.map((career) => (
+                                                    <p key={career} className="teacher-career">
+                                                        {career}
+                                                    </p>
+                                                ))}
+                                            </div>
                                         </td>
 
                                         <td>
@@ -437,19 +614,16 @@ export default function Teachers() {
                                             </div>
                                         </td>
                                         <td>
-                                            {/* <p className={`teacher-aptitude ${c.aptitude === "Apto" ? "apto" : "not-apto"}`}>
-                                                {c.aptitude}
-                                            </p> */}
                                             <p className={`teacher-aptitude ${getAptitude(c.evaluations) === "Apto" ? "apto" : "not-apto"}`}>
                                                 {getAptitude(c.evaluations)}
                                             </p>
                                         </td>
                                         <td>
                                             <div className="teacher-actions">
-                                                <button>
+                                                <button type="button" onClick={() => handleEdit(c)}>
                                                     {icon_edit}
                                                 </button>
-                                                <button>
+                                                <button type="button" onClick={() => handleAskDelete(c)}>
                                                     {icon_delete}
                                                 </button>
                                             </div>
@@ -479,6 +653,211 @@ export default function Teachers() {
                     )}
                 </footer>
             </div>
+
+            <SidebarDropDown
+                open={open}
+                onClose={closeDrawer}
+                title="Editar docente"
+                width={420}
+            >
+                <form className="sidebar-drop-down-form" onSubmit={handleSubmit}>
+                    <div className="sidebar-drop-down-field">
+                        <label className="sidebar-drop-down-label">Nombre:</label>
+                        <div className="input-underline">
+                            <input
+                                type="text"
+                                className="input-underline-field"
+                                placeholder="Nombre del docente"
+                                value={draft.name}
+                                onChange={(e) =>
+                                    setDraft((prev) => ({ ...prev, name: e.target.value }))
+                                }
+                                required
+                            />
+                            <span className="input-underline-border"></span>
+                        </div>
+                    </div>
+
+                    <div className="sidebar-drop-down-field">
+                        <label className="sidebar-drop-down-label">Código:</label>
+                        <div className="input-underline">
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                className="input-underline-field"
+                                placeholder="Ej: 00001"
+                                value={draft.cat}
+                                onKeyDown={(e) => {
+                                    if (
+                                        ["e", "E", "+", "-", ".", ",", " "].includes(e.key)
+                                    ) {
+                                        e.preventDefault()
+                                    }
+                                }}
+                                onChange={(e) => {
+                                    const value = e.target.value
+                                    if (/^\d*$/.test(value)) {
+                                        setDraft((prev) => ({ ...prev, cat: value }))
+                                    }
+                                }}
+                            />
+                            <span className="input-underline-border"></span>
+                        </div>
+                    </div>
+
+                    <div className="sidebar-drop-down-field">
+                        <label className="sidebar-drop-down-label">Creditos:</label>
+                        <div className="input-underline">
+                            <input
+                                type="number"
+                                min={0}
+                                max={16}
+                                className="input-underline-field"
+                                placeholder="Ej: 3"
+                                value={draft.credits}
+                                onKeyDown={(e) => {
+                                    if (["e", "E", "+", "-"].includes(e.key)) {
+                                        e.preventDefault()
+                                    }
+                                }}
+                                onChange={(e) => {
+                                    const value = e.target.value
+                                    if (value === "") {
+                                        setDraft((prev) => ({ ...prev, credits: "" }))
+                                        return
+                                    }
+                                    const parsed = Number(value)
+                                    if (parsed <= 16) {
+                                        setDraft((prev) => ({ ...prev, credits: parsed }))
+                                    }
+                                }}
+                                required
+                            />
+                            <span className="input-underline-border"></span>
+                        </div>
+                    </div>
+
+                    <div className="sidebar-drop-down-field">
+                        <label className="sidebar-drop-down-label">Cursos:</label>
+                        <div className="input-underline courses-checkboxes">
+                            {availableCourses.map((course) => (
+                                <label key={course} className="course-option">
+                                    <input
+                                        type="checkbox"
+                                        checked={draft.careers.includes(course)}
+                                        onChange={() => toggleCareer(course)}
+                                    />
+                                    {course}
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="sidebar-drop-down-field">
+                        <label className="sidebar-drop-down-label">Estado:</label>
+                        <div className="input-underline">
+                            <select
+                                className="input-underline-field"
+                                value={draft.status}
+                                onChange={(e) =>
+                                    setDraft((prev) => ({
+                                        ...prev,
+                                        status: e.target.value as "Activo" | "Inactivo",
+                                    }))
+                                }
+                            >
+                                <option value="Activo">Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                            </select>
+                            <span className="input-underline-border"></span>
+                        </div>
+                    </div>
+
+                    <div className="sidebar-drop-down-actions">
+                        <button
+                            type="button"
+                            className="sidebar-drop-down-btn sidebar-drop-down-btn-ghost"
+                            onClick={closeDrawer}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            className="sidebar-drop-down-btn sidebar-drop-down-btn-primary"
+                        >
+                            Guardar
+                        </button>
+                    </div>
+                </form>
+            </SidebarDropDown>
+
+            <Modal
+                open={deleteModalOpen}
+                onClose={closeDeleteModal}
+                title="Eliminar docente"
+                width={500}
+            >
+                <div className="modal-content">
+                    <p className="modal-text">
+                        ¿Seguro que deseas eliminar al docente{" "}
+                        <span className="modal-highlight">{teacherToDelete?.name}</span>{" "}
+                        con código{" "}
+                        <span className="modal-highlight">{teacherToDelete?.cat}</span>?
+                    </p>
+
+                    <div className="modal-actions">
+                        <button
+                            type="button"
+                            className="modal-btn modal-btn-ghost"
+                            onClick={closeDeleteModal}
+                        >
+                            Cancelar
+                        </button>
+
+                        <button
+                            type="button"
+                            className="modal-btn modal-btn-danger"
+                            onClick={handleConfirmDelete}
+                        >
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                open={editModalOpen}
+                onClose={closeEditModal}
+                title="Guardar cambios"
+                width={500}
+            >
+                <div className="modal-content">
+                    <p className="modal-text">
+                        ¿Seguro que deseas guardar los cambios del docente{" "}
+                        <span className="modal-highlight">{draft.name}</span>{" "}
+                        con código{" "}
+                        <span className="modal-highlight">{draft.cat}</span>?
+                    </p>
+
+                    <div className="modal-actions">
+                        <button
+                            type="button"
+                            className="modal-btn modal-btn-ghost"
+                            onClick={closeEditModal}
+                        >
+                            Cancelar
+                        </button>
+
+                        <button
+                            type="button"
+                            className="modal-btn modal-btn-primary"
+                            onClick={handleConfirmEdit}
+                        >
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
         </>
     )
