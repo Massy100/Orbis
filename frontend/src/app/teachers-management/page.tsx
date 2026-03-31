@@ -5,11 +5,11 @@ import { useState, useMemo, useEffect } from "react"
 import Pagination from "../components/pagination"
 import SidebarDropDown from "../components/sidebar-drop-down"
 import Modal from "../components/modal"
+import ModalAddTeacher from "../components/modal-add-teacher"
+import UploadTeacherSchedule from "../components/upload-teacher-schedule"
 
 
 
-
-type Course = "Informatica" | "Sistemas" | "Gestión Industrial"
 
 type Teacher = {
     id: number
@@ -22,12 +22,21 @@ type Teacher = {
     aptitude: "Apto" | "No apto"
 }
 
+type AcademicArea = "Cálculo" | "Física" | "Estadística"
+type Course = "Informatica" | "Sistemas" | "Gestión Industrial"
+
+
 type TeacherDraft = {
     name: string
     cat: string
     credits: number | ""
     careers: Course[]
     status: "Activo" | "Inactivo"
+}
+
+type NewTeacherDraft = {
+    fullName: string
+    email: string
 }
 
 export default function Teachers() {
@@ -39,15 +48,20 @@ export default function Teachers() {
 
     const [open, setOpen] = useState(false)
     const [selectedTeacherId, setSelectedTeacherId] = useState<number | null>(null)
+
     const [deleteModalOpen, setDeleteModalOpen] = useState(false)
     const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null)
+
     const [editModalOpen, setEditModalOpen] = useState(false)
+
+    const [addModalOpen, setAddModalOpen] = useState(false)
+    const [scheduleFile, setScheduleFile] = useState<File | null>(null)
 
     // Array to load the Teachers
     const [teachers, setTeachers] = useState<Teacher[]>([
         {
             id: 1,
-            cat: "T-001",
+            cat: "05324",
             credits: 3,
             name: "Abelardo",
             careers: ["Informatica", "Sistemas"],
@@ -57,7 +71,7 @@ export default function Teachers() {
         },
         {
             id: 2,
-            cat: "T-002",
+            cat: "50843",
             credits: 4,
             name: "Jorge Escalante",
             careers: ["Sistemas"],
@@ -67,7 +81,7 @@ export default function Teachers() {
         },
         {
             id: 3,
-            cat: "T-003",
+            cat: "94231",
             credits: 5,
             name: "Marlon Estrada",
             careers: ["Informatica"],
@@ -77,7 +91,7 @@ export default function Teachers() {
         },
         {
             id: 4,
-            cat: "T-004",
+            cat: "96325",
             credits: 3,
             name: "Karla Hernández",
             careers: ["Informatica"],
@@ -87,7 +101,7 @@ export default function Teachers() {
         },
         {
             id: 5,
-            cat: "T-005",
+            cat: "84532",
             credits: 2,
             name: "Luis Martínez",
             careers: ["Informatica"],
@@ -95,258 +109,9 @@ export default function Teachers() {
             evaluations: 5,
             aptitude: "Apto",
         },
-        {
-            id: 6,
-            cat: "T-006",
-            credits: 4,
-            name: "Sofía Ramírez",
-            careers: ["Informatica"],
-            status: "Activo",
-            evaluations: 14,
-            aptitude: "Apto",
-        },
-        {
-            id: 7,
-            cat: "T-007",
-            credits: 3,
-            name: "Daniel Castro",
-            careers: ["Informatica"],
-            status: "Activo",
-            evaluations: 7,
-            aptitude: "Apto",
-        },
-        {
-            id: 8,
-            cat: "T-008",
-            credits: 2,
-            name: "Andrea López",
-            careers: ["Informatica"],
-            status: "Activo",
-            evaluations: 3,
-            aptitude: "Apto",
-        },
-        {
-            id: 9,
-            cat: "T-009",
-            credits: 4,
-            name: "Carlos Méndez",
-            careers: ["Sistemas"],
-            status: "Activo",
-            evaluations: 11,
-            aptitude: "Apto",
-        },
-        {
-            id: 10,
-            cat: "T-010",
-            credits: 5,
-            name: "Fernanda Ruiz",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 9,
-            aptitude: "Apto",
-        },
-        {
-            id: 11,
-            cat: "T-011",
-            credits: 3,
-            name: "Miguel Ángel Pineda",
-            careers: ["Sistemas"],
-            status: "Inactivo",
-            evaluations: 6,
-            aptitude: "No apto",
-        },
-        {
-            id: 12,
-            cat: "T-012",
-            credits: 4,
-            name: "Paola Gómez",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 13,
-            aptitude: "Apto",
-        },
-        {
-            id: 13,
-            cat: "T-013",
-            credits: 2,
-            name: "Ricardo Flores",
-            careers: ["Sistemas"],
-            status: "Activo",
-            evaluations: 4,
-            aptitude: "Apto",
-        },
-        {
-            id: 14,
-            cat: "T-014",
-            credits: 6,
-            name: "Valeria Navarro",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 15,
-            aptitude: "Apto",
-        },
-        {
-            id: 15,
-            cat: "T-015",
-            credits: 3,
-            name: "Óscar Reyes",
-            careers: ["Informatica"],
-            status: "Inactivo",
-            evaluations: 2,
-            aptitude: "No apto",
-        },
-        {
-            id: 16,
-            cat: "T-016",
-            credits: 4,
-            name: "Gabriela Santos",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 12,
-            aptitude: "Apto",
-        },
-        {
-            id: 17,
-            cat: "T-017",
-            credits: 3,
-            name: "José Armando Cruz",
-            careers: ["Sistemas"],
-            status: "Activo",
-            evaluations: 8,
-            aptitude: "Apto",
-        },
-        {
-            id: 18,
-            cat: "T-018",
-            credits: 5,
-            name: "Natalia Herrera",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 10,
-            aptitude: "Apto",
-        },
-        {
-            id: 19,
-            cat: "T-019",
-            credits: 2,
-            name: "Kevin Alvarado",
-            careers: ["Sistemas"],
-            status: "Inactivo",
-            evaluations: 1,
-            aptitude: "No apto",
-        },
-        {
-            id: 20,
-            cat: "T-020",
-            credits: 4,
-            name: "Diana Martínez",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 7,
-            aptitude: "Apto",
-        },
-        {
-            id: 21,
-            cat: "T-021",
-            credits: 3,
-            name: "Samuel Ortega",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 14,
-            aptitude: "Apto",
-        },
-        {
-            id: 22,
-            cat: "T-022",
-            credits: 2,
-            name: "Camila Fuentes",
-            careers: ["Sistemas"],
-            status: "Activo",
-            evaluations: 5,
-            aptitude: "Apto",
-        },
-        {
-            id: 23,
-            cat: "T-023",
-            credits: 3,
-            name: "Héctor Zelaya",
-            careers: ["Gestión Industrial"],
-            status: "Inactivo",
-            evaluations: 3,
-            aptitude: "No apto",
-        },
-        {
-            id: 24,
-            cat: "T-024",
-            credits: 5,
-            name: "María José Aguilar",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 11,
-            aptitude: "Apto",
-        },
-        {
-            id: 25,
-            cat: "T-025",
-            credits: 4,
-            name: "Alejandro Molina",
-            careers: ["Informatica"],
-            status: "Activo",
-            evaluations: 9,
-            aptitude: "Apto",
-        },
-        {
-            id: 26,
-            cat: "T-026",
-            credits: 3,
-            name: "Lucía Castillo",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 13,
-            aptitude: "Apto",
-        },
-        {
-            id: 27,
-            cat: "T-027",
-            credits: 2,
-            name: "Fernando Mejía",
-            careers: ["Sistemas"],
-            status: "Inactivo",
-            evaluations: 4,
-            aptitude: "No apto",
-        },
-        {
-            id: 28,
-            cat: "T-028",
-            credits: 6,
-            name: "Isabella Rosales",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 15,
-            aptitude: "Apto",
-        },
-        {
-            id: 29,
-            cat: "T-029",
-            credits: 3,
-            name: "Roberto Espinoza",
-            careers: ["Sistemas"],
-            status: "Activo",
-            evaluations: 6,
-            aptitude: "Apto",
-        },
-        {
-            id: 30,
-            cat: "T-030",
-            credits: 4,
-            name: "Elena Vásquez",
-            careers: ["Gestión Industrial"],
-            status: "Activo",
-            evaluations: 12,
-            aptitude: "Apto",
-        },
     ])
 
+    // Holds the temporary data while editing a teacher in the sidebar
     const [draft, setDraft] = useState<TeacherDraft>({
         name: "",
         cat: "",
@@ -455,6 +220,7 @@ export default function Teachers() {
         })
     }
 
+    // Validates the draft before opening the edit confirmation modal
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (selectedTeacherId === null) return
@@ -490,6 +256,7 @@ export default function Teachers() {
         setEditModalOpen(false)
         closeDrawer()
 
+        // Restores body scroll after closing both the modal and the sidebar
         requestAnimationFrame(() => {
             document.body.style.overflow = ''
         })
@@ -516,6 +283,73 @@ export default function Teachers() {
         closeDeleteModal()
     }
 
+    // Academic areas available to assign when creating a new teacher
+    const availableAcademicAreas: AcademicArea[] = [
+        "Cálculo",
+        "Física",
+        "Estadística",
+    ]
+
+    const initialNewTeacherDraft: NewTeacherDraft = {
+        fullName: "",
+        email: "",
+    }
+
+    const [newTeacherDraft, setNewTeacherDraft] = useState<NewTeacherDraft>(initialNewTeacherDraft)
+    const [selectedAcademicAreas, setSelectedAcademicAreas] = useState<AcademicArea[]>([])
+
+    // Resets all add-teacher form state and opens the modal
+    const openAddModal = () => {
+        setNewTeacherDraft(initialNewTeacherDraft)
+        setSelectedAcademicAreas([])
+        setScheduleFile(null)
+        setAddModalOpen(true)
+    }
+
+    // Resets all add-teacher form state and closes the modal
+    const closeAddModal = () => {
+        setAddModalOpen(false)
+        setNewTeacherDraft(initialNewTeacherDraft)
+        setSelectedAcademicAreas([])
+        setScheduleFile(null)
+    }
+
+    // Adds an academic area tag only if it hasn't been selected yet
+    const handleAddAcademicArea = (area: AcademicArea) => {
+        setSelectedAcademicAreas((prev) => {
+            if (prev.includes(area)) return prev
+            return [...prev, area]
+        })
+    }
+
+    // Removes an academic area tag from the selection
+    const handleRemoveAcademicArea = (area: AcademicArea) => {
+        setSelectedAcademicAreas((prev) => prev.filter((item) => item !== area))
+    }
+
+    // Validates the form, builds the new teacher object and adds it to the list
+    // CAT, id, credits, careers, aptitude automatically for now
+    const handleAddTeacher = (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (!newTeacherDraft.fullName.trim()) return
+        if (!newTeacherDraft.email.trim()) return
+
+        const newTeacher: Teacher = {
+            id: Date.now(),
+            cat: `52${String(teachers.length + 1).padStart(3, "0")}`,
+            credits: 0,
+            name: newTeacherDraft.fullName.trim(),
+            careers: ["Informatica"],
+            status: "Activo",
+            evaluations: 0,
+            aptitude: "Apto",
+        }
+
+        setTeachers((prev) => [newTeacher, ...prev])
+        closeAddModal()
+    }
+
     return (
         <>
             <div className="container-teachers">
@@ -529,35 +363,44 @@ export default function Teachers() {
                     </div>
                 </header>
 
-                <div className="types-filters">
-                    <div className="filter-box">
-                        <label htmlFor="career">CURSO</label>     {/* The options to filter the career  */}
-                        <select
-                            name="career"
-                            id="career"
-                            value={careerFilter}
-                            onChange={(e) => setCareerFilter(e.target.value)}
-                        >
-                            <option value="Todos">Todos los cursos</option>
-                            <option value="Informatica">Informática</option>
-                            <option value="Sistemas">Sistemas</option>
-                            <option value="Gestión Industrial">Gestión Industrial</option>
-                        </select>
+                <div className="types-filters-add-teacher">
+                    <div className="types-filters">
+                        <div className="filter-box">
+                            <label htmlFor="career">CURSO</label>     {/* The options to filter the career  */}
+                            <select
+                                name="career"
+                                id="career"
+                                value={careerFilter}
+                                onChange={(e) => setCareerFilter(e.target.value)}
+                            >
+                                <option value="Todos">Todos los cursos</option>
+                                <option value="Informatica">Informática</option>
+                                <option value="Sistemas">Sistemas</option>
+                                <option value="Gestión Industrial">Gestión Industrial</option>
+                            </select>
+                        </div>
+
+                        <div className="filter-box">
+                            <label htmlFor="estado">ESTADO</label>  {/* The options to filter the state  */}
+                            <select
+                                name="estado"
+                                id="estado"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="Todos">Cualquier estado</option>
+                                <option value="Activo">Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div className="filter-box">
-                        <label htmlFor="estado">ESTADO</label>  {/* The options to filter the state  */}
-                        <select
-                            name="estado"
-                            id="estado"
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                            <option value="Todos">Cualquier estado</option>
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
-                        </select>
+                    <div className="add-new-teacher">
+                        <button type="button" onClick={openAddModal}>
+                            Agregar Maestro
+                        </button>
                     </div>
+
                 </div>
 
                 <div className="table-teachers">
@@ -858,6 +701,114 @@ export default function Teachers() {
                     </div>
                 </div>
             </Modal>
+
+            <ModalAddTeacher
+                open={addModalOpen}
+                onClose={closeAddModal}
+                title="Crear Nuevo Docente"
+                subtitle="Ingresa los datos del docente y adjunta su cronograma de clases."
+            >
+                <form className="modal-add-teacher-form" onSubmit={handleAddTeacher}>
+                    <div className="modal-add-teacher-field">
+                        <label className="modal-add-teacher-label">Nombre completo</label>
+                        <input
+                            type="text"
+                            className="modal-add-teacher-input"
+                            value={newTeacherDraft.fullName}
+                            onChange={(e) =>
+                                setNewTeacherDraft((prev) => ({
+                                    ...prev,
+                                    fullName: e.target.value,
+                                }))
+                            }
+                            required
+                        />
+                    </div>
+
+                    <div className="modal-add-teacher-field">
+                        <label className="modal-add-teacher-label">Correo electrónico</label>
+                        <div className="modal-add-teacher-email-wrapper">
+                            <input
+                                type="text"
+                                className="modal-add-teacher-input"
+                                value={newTeacherDraft.email}
+                                onChange={(e) =>
+                                    setNewTeacherDraft((prev) => ({
+                                        ...prev,
+                                        email: e.target.value,
+                                    }))
+                                }
+                                required
+                            />
+                            <span className="modal-add-teacher-email-suffix">
+                                @correo.url.edu.gt
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="modal-add-teacher-field">
+                        <label className="modal-add-teacher-label">Área académica</label>
+                        <select
+                            className="modal-add-teacher-select"
+                            defaultValue=""
+                            onChange={(e) => {
+                                const value = e.target.value as AcademicArea | ""
+                                if (!value) return
+
+                                handleAddAcademicArea(value as AcademicArea)
+                                e.target.value = ""
+                            }}
+                        >
+                            <option value="">Seleccionar área</option>
+                            {availableAcademicAreas.map((area) => (
+                                <option key={area} value={area}>
+                                    {area}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {selectedAcademicAreas.length > 0 && (
+                        <div className="modal-add-teacher-tags">
+                            {selectedAcademicAreas.map((area) => (
+                                <button
+                                    key={area}
+                                    type="button"
+                                    className="modal-add-teacher-tag"
+                                    onClick={() => handleRemoveAcademicArea(area)}
+                                >
+                                    {area}
+                                    <span className="modal-add-teacher-tag-close">×</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="modal-add-teacher-field">
+                        <label className="modal-add-teacher-label">Subir Horario</label>
+                        <UploadTeacherSchedule
+                            file={scheduleFile}
+                            onFileChange={setScheduleFile}
+                        />
+                    </div>
+
+                    <div className="modal-add-teacher-actions">
+                        <button
+                            type="button"
+                            className="modal-add-teacher-btn modal-add-teacher-btn-ghost"
+                            onClick={closeAddModal}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            className="modal-add-teacher-btn modal-add-teacher-btn-primary"
+                        >
+                            Guardar docente
+                        </button>
+                    </div>
+                </form>
+            </ModalAddTeacher>
 
         </>
     )
