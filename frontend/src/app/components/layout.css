@@ -1,0 +1,59 @@
+/* Layout base */
+.dashboard-layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  background: #f5f6fa; /* gris suave */
+}
+
+/* Main content area */
+.dashboard-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  background: #f1f1f1;
+}
+
+/* Topbar */
+.dashboard-header {
+  height: 65px;
+  background: white;
+  border-bottom: 1px solid #e6e6e6;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 25px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* Sección activa */
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* User area */
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: #f0d9b5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Content container */
+.dashboard-content {
+  padding: 25px;
+  flex: 1;
+} 
