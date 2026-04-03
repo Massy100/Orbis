@@ -1,3 +1,16 @@
 from django.db import models
+from execution_results.models import Evaluation
 
-# Create your models here.
+
+class Evaluationhistory(models.Model):
+    id = models.IntegerField(primary_key=True)
+    evaluationid = models.ForeignKey(
+        'execution_results.Evaluation',
+        models.DO_NOTHING,
+        db_column='evaluationId'
+    )  # Field name made lowercase.
+    state = models.BooleanField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'EvaluationHistory'
