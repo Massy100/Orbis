@@ -22,6 +22,5 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Evaluaciones", href: "/evaluations", icon: ClipboardCheck },
   { name: "Documentos", href: "/documents", icon: FileText },
   { name: "Resultados e informes", href: "/reports", icon: BarChart },
-  { name: "Comunicaciones", href: "/communications", icon: MessageSquare },
   { name: "Ajustes", href: "/settings", icon: Settings },
 ];
