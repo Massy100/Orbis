@@ -1,18 +1,18 @@
-FROM node:20-alpine
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
+# Copiar package.json
 COPY package*.json ./
 
-# Install dependencies
+# Instalar dependencias
 RUN npm install
 
-# Copy all source code
+# Copiar el resto del código
 COPY . .
 
-# Expose port
+# Exponer puerto
 EXPOSE 3000
 
-# Start in development mode
+# Iniciar Next.js
 CMD ["npm", "run", "dev"]
