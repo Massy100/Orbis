@@ -1,0 +1,617 @@
+.container-teachers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    color: black;
+    background-color: #F6F6F8;
+    overflow: auto;
+}
+
+.teachers-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    background-color: white;
+    padding: 20px;
+    align-items: center;
+    border-bottom: solid 0.5px #b5b9c2b0;
+}
+
+.teachers-header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    margin-left: 30px;
+}
+
+.system-administrator {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+    border-left: solid 1px #E5E7EB;
+    height: 95%;
+    margin-right: 20px;
+}
+
+.system-administrator h2 {
+    color: #B5B9C2;
+    margin-left: 25px;
+    max-width: 110px;
+}
+
+.system-administrator .icon {
+    background-color: #FBDEC0;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    border-radius: 999px;
+}
+
+.system-administrator .icon svg {
+    height: 2.5rem;
+    width: 2.5em;
+    color: #222;
+}
+
+
+.types-filters-add-teacher {
+    width: 95%;
+    margin-top: 50px;
+    padding: 14px 16px;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    background-color: white;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.types-filters {
+    display: flex;
+    gap: 12px;
+}
+
+.add-new-teacher button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background-color: #2563eb;
+    color: white;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.filter-box {
+    position: relative;
+    min-width: 180px;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-box label {
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    background-color: white;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #A0A7B4;
+    z-index: 2;
+}
+
+.filter-box select {
+    width: 100%;
+    height: 50px;
+    padding: 0 12px;
+    border: 1px solid #E3E5E8;
+    border-radius: 10px;
+    background-color: white;
+    color: #4B5563;
+    font-size: 16px;
+    outline: none;
+    cursor: pointer;
+}
+
+
+.table-teachers {
+    width: 95%;
+    margin-top: 50px;
+    margin-bottom: 15px;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    background-color: white;
+    max-height: 780px;
+    overflow: auto;
+    display: block;
+}
+
+
+
+.table-teachers::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.table-teachers::-webkit-scrollbar-track {
+    background: #F0F5F9;
+    border-radius: 999px;
+    margin: 6px;
+}
+
+.table-teachers::-webkit-scrollbar-thumb {
+    background: #BFCFE8;
+    border-radius: 999px;
+    border: 2px solid #F0F5F9;
+    background-clip: padding-box;
+}
+
+.table-teachers::-webkit-scrollbar-thumb:hover {
+    background: #2563EB;
+    border-color: #EEF4FF;
+}
+
+.table-teachers::-webkit-scrollbar-thumb:active {
+    background: #1D4ED8;
+    border-color: #EEF4FF;
+}
+
+.table-teachers::-webkit-scrollbar-corner {
+    background: #F0F5F9;
+    border-radius: 999px;
+}
+
+.table-teachers::-webkit-scrollbar-button {
+    display: none;
+}
+
+
+
+.table-teachers thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: white;
+    color: #9FA6AE;
+}
+
+.table-teachers table {
+    width: 100%;
+}
+
+.table-teachers th,
+.table-teachers td {
+    color: #9FA6AE;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #E0E8F8;
+}
+
+.table-teachers td {
+    font-weight: 600;
+}
+
+.table-teachers th {
+    height: 80px;
+}
+
+.table-teachers tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-teachers .teacher-name {
+    color: #222;
+    font-weight: 600;
+}
+
+.table-teachers .teacher-careers-column {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 170px;
+}
+
+.table-teachers .teacher-career {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 8px 12px;
+    color: #222;
+    font-weight: 500;
+    background-color: #F0F5F9;
+    border-radius: 999px;
+    line-height: 1.2;
+}
+
+.teacher-no-areas {
+    font-size: 13px;
+    color: #b0b7c3;
+    font-style: italic;
+    font-weight: 400;
+}
+
+.table-teachers .teacher-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.table-teachers .teacher-status.active {
+    background-color: #DDF8E8;
+    color: #1A9B5F;
+}
+
+.table-teachers .teacher-status.inactive {
+    background-color: #FFF3D6;
+    color: #C58A11;
+}
+
+.table-teachers .evaluations-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 160px;
+}
+
+.evaluations-cell .evaluations-number {
+    font-weight: 600;
+}
+
+.evaluations-cell .progress-bar {
+    width: 130px;
+    height: 8px;
+    background-color: #EDF1F5;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-bar .progress-fill {
+    height: 100%;
+    background-color: #2563EB;
+    border-radius: 999px;
+}
+
+.table-teachers .teacher-aptitude {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.teacher-aptitude.apto {
+    background-color: #EEF4FF;
+    color: #3F6FBE;
+}
+
+.teacher-aptitude.no-apto {
+    background-color: #F1F3F6;
+    color: #97A1AD;
+}
+
+.table-teachers .teacher-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
+
+.teacher-actions button {
+    cursor: pointer;
+}
+
+.teacher-actions button svg {
+    height: 2.2rem !important;
+    width: 1.7rem !important;
+}
+
+.teachers-pagination-footer {
+    width: 100%;
+    padding: 10px 30px;
+    margin-top: auto;
+    border-top: 1px solid #E0E8F8;
+    background-color: white;
+}
+
+.table-teachers .no-data {
+    padding: 16;
+    text-align: center;
+}
+
+.courses-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.course-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    border: 1px solid #dcdfe4;
+    border-radius: 10px;
+    background: #fff;
+    font-size: 15px;
+    color: #2b2b2b;
+    cursor: pointer;
+}
+
+.course-option:hover {
+    border-color: #2563eb;
+    background: #f8fbff;
+}
+
+.course-option input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: #2563eb;
+}
+
+@media (max-width: 1024px) {
+    .teachers-header {
+        padding: 18px 20px;
+    }
+
+    .teachers-header h1 {
+        font-size: 22px;
+        margin-left: 12px;
+    }
+
+    .system-administrator {
+        gap: 10px;
+        margin-right: 10px;
+    }
+
+    .system-administrator h2 {
+        margin-left: 16px;
+        font-size: 14px;
+        max-width: 90px;
+    }
+
+    .filter-box {
+        flex: 1 1 calc(50% - 10px);
+        min-width: 220px;
+    }
+
+    .table-teachers {
+        margin-top: 32px;
+    }
+
+    .table-teachers table {
+        min-width: 1050px;
+    }
+
+    .table-teachers th,
+    .table-teachers td {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+
+    .teacher-actions button svg {
+        height: 2rem !important;
+        width: 1.5rem !important;
+    }
+
+    .teachers-pagination-footer {
+        padding: 10px 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .teachers-header {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 16px;
+    }
+
+    .teachers-header h1 {
+        margin-left: 0;
+        font-size: 22px;
+    }
+
+    .system-administrator {
+        width: auto;
+        margin-right: 0;
+        padding-top: 0;
+        border-top: none;
+        border-left: solid 1px #E5E7EB;
+        height: auto;
+    }
+
+    .system-administrator h2 {
+        margin-left: 16px;
+        max-width: 110px;
+    }
+
+    .types-filters-add-teacher {
+        flex-direction: column;
+        align-items: center;
+        margin-top: 24px;
+    }
+
+    .types-filters {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .add-new-teacher button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .filter-box {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+
+    .table-teachers {
+        width: 95%;
+        margin-top: 24px;
+        margin-bottom: 12px;
+    }
+
+    .table-teachers table {
+        min-width: 980px;
+    }
+
+    .table-teachers th,
+    .table-teachers td {
+        padding: 12px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .table-teachers th {
+        height: 64px;
+    }
+
+    .table-teachers .teacher-career {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    .table-teachers .teacher-status {
+        padding: 7px 12px;
+        font-size: 13px;
+    }
+
+    .table-teachers .teacher-aptitude {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    .evaluations-cell .progress-bar {
+        width: 100px;
+    }
+
+    .table-teachers .teacher-actions {
+        gap: 12px;
+    }
+
+    .teacher-actions button svg {
+        height: 1.8rem !important;
+        width: 1.4rem !important;
+    }
+
+    .teachers-pagination-footer {
+        padding: 10px 14px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .types-filters-add-teacher {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .types-filters {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .add-new-teacher button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .teachers-header {
+        padding: 14px 12px;
+    }
+
+    .teachers-header h1 {
+        font-size: 20px;
+    }
+
+    .system-administrator {
+        gap: 10px;
+    }
+
+    .system-administrator h2 {
+        font-size: 13px;
+    }
+
+    .system-administrator .icon svg {
+        height: 2rem;
+        width: 2rem;
+    }
+
+    .types-filters-add-teacher {
+        margin-top: 20px;
+        padding: 12px;
+    }
+
+    .filter-box label {
+        font-size: 10px;
+    }
+
+    .filter-box select {
+        height: 46px;
+        font-size: 14px;
+    }
+
+    .add-new-teacher {
+        display: flex;
+        width: fit-content;
+        justify-content: flex-end;
+    }
+
+    .add-new-teacher button {
+        padding: 7px;
+        font-size: 15px;
+    }
+
+    .add-new-teacher button svg {
+        height: 20px;
+        width: 20px;
+    }
+
+    .table-teachers {
+        width: 95%;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+
+    .table-teachers table {
+        min-width: 920px;
+    }
+
+    .table-teachers th,
+    .table-teachers td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .table-teachers .teacher-career,
+    .table-teachers .teacher-status,
+    .table-teachers .teacher-aptitude {
+        font-size: 12px;
+    }
+
+    .evaluations-cell {
+        min-width: 140px;
+    }
+
+    .evaluations-cell .progress-bar {
+        width: 80px;
+    }
+
+    .teachers-pagination-footer {
+        padding: 10px 8px;
+    }
+}
