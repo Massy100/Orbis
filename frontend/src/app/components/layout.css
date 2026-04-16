@@ -1,12 +1,10 @@
-/* Layout base */
 .dashboard-layout {
   display: flex;
   height: 100vh;
   width: 100%;
-  background: #f5f6fa; /* gris suave */
+  background: #f5f6fa; 
 }
 
-/* Main content area */
 .dashboard-main {
   display: flex;
   flex-direction: column;
@@ -14,7 +12,6 @@
   background: #f1f1f1;
 }
 
-/* Topbar */
 .dashboard-header {
   height: 65px;
   background: white;
@@ -28,13 +25,11 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
-/* Sección activa */
 .section-title {
   font-size: 20px;
   font-weight: 600;
 }
 
-/* User area */
 .header-user {
   display: flex;
   align-items: center;
@@ -52,8 +47,48 @@
   justify-content: center;
 }
 
-/* Content container */
 .dashboard-content {
   padding: 25px;
   flex: 1;
 } 
+
+/* ------------- Responsive  -------------*/
+
+@media (max-width: 1024px) {
+  .dashboard-layout {
+    height: auto;
+    min-height: 100vh;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .dashboard-header {
+    padding: 0 15px;
+    height: 58px;
+  }
+
+  .section-title {
+    font-size: 18px;
+  }
+
+  .header-user span {
+    display: none;
+  }
+
+  .dashboard-content {
+    padding: 15px;
+  }
+}
+
+
+@media (max-width: 480px) {
+  .section-title {
+    font-size: 16px;
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+  }
+}

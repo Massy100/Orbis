@@ -9,7 +9,6 @@
   border: rgba(0,0,0,0.2) solid 2px;
 }
 
-/* LOGO */
 .logoContainer {
   display: flex;
   align-items: center;
@@ -29,7 +28,6 @@
   font-size: 18px;
 }
 
-/* NAV */
 .nav {
   display: flex;
   flex-direction: column;
@@ -57,14 +55,12 @@
   color: #2563eb;
 }
 
-/* ACTIVO (igual al azul de la imagen) */
 .navItem.active {
   background-color: #dbeafe;
   color: #2563eb;
   font-weight: 500;
 }
 
-/* FOOTER */
 .footer {
   padding: 10px 12px;
   border-radius: 8px;
@@ -89,4 +85,27 @@
 .logout:hover svg,
 .logout:hover span {
   color: rgb(255, 0, 0);
+}
+
+/* ------------- Responsive  -------------*/
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 70px;
+    padding: 12px;
+  }
+
+  .logoText,
+  .navItem span,
+  .logout span {
+    display: none;
+  }
+
+  .navItem {
+    justify-content: center;
+  }
+
+  .logout {
+    justify-content: center;
+  }
 }
