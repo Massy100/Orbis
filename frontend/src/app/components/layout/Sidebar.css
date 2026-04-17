@@ -6,7 +6,7 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 16px;
-  border: rgba(0,0,0,0.2) solid 2px;
+  border: #E2E8F0 solid 2px;
 }
 
 .logoContainer {
