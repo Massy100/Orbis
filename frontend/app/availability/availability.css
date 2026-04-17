@@ -178,6 +178,7 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
+  background-color: #FFFFFF;
 }
 
 /* --------------- Vista Semana  ---------------*/
@@ -193,6 +194,7 @@
   flex-shrink: 0;
   border-right: 1px solid #e5e7eb;
   background: white;
+  min-height: 100%;
 }
 
 .hour-cell {
