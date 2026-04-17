@@ -7,6 +7,8 @@
 }
 
 .dashboard-main {
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -22,8 +24,8 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: 0 25px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  padding: 25px 25px;
+  border-bottom: #E2E8F0 solid 3px;
 }
 
 .section-title {
@@ -50,6 +52,9 @@
 
 .dashboard-content {
   padding: 25px;
+  background-color: #F6F6F8;
+  overflow-y: auto;
+  height: 100%;
   flex: 1;
 } 
 
@@ -57,7 +62,7 @@
 
 @media (max-width: 1024px) {
   .dashboard-layout {
-    height: auto;
+    height: 100vh;
     min-height: 100vh;
   }
 }
