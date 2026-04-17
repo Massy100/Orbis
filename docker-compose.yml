@@ -7,7 +7,7 @@ services:
     container_name: orbis_db
     restart: always
     environment:
-      POSTGRES_DB: orbis_db
+      POSTGRES_DB: new_new_orbis_db 
       POSTGRES_USER: orbis_user
       POSTGRES_PASSWORD: orbis_password
     volumes:
@@ -15,7 +15,7 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U orbis_user -d orbis_db"]
+      test: ["CMD-SHELL", "pg_isready -U orbis_user -d new_new_orbis_db"]  
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,12 +27,9 @@ services:
     build: ./backend
     container_name: orbis_backend
     restart: always
-    env_file:
-      - ./backend/.env
     command: >
       sh -c "
         python manage.py migrate &&
-        python create-superuser.py &&
         python manage.py runserver 0.0.0.0:8000
       "
     volumes:
@@ -41,6 +38,12 @@ services:
       - "8001:8000"
     environment:
       DJANGO_SETTINGS_MODULE: orbis_core.settings
+      DB_NAME: new_new_orbis_db
+      DB_USER: orbis_user
+      DB_PASSWORD: orbis_password
+      DB_HOST: db
+      DB_PORT: 5432
+      DEBUG: "True"
     depends_on:
       db:
         condition: service_healthy
@@ -51,15 +54,18 @@ services:
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile  
     container_name: orbis_frontend
     restart: always
     ports:
       - "3001:3000"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://backend:8000/api  
+      NEXT_PUBLIC_API_URL: http://backend:8000/api
+      WATCHPACK_POLLING: true 
+      CHOKIDAR_USEPOLLING: true
     volumes:
-      - ./frontend:/app  
+      - ./frontend:/app
       - /app/node_modules
       - /app/.next
     depends_on:
