@@ -4,7 +4,7 @@ import { useState } from 'react';
 import DashboardLayout from '../components/layout';
 import { 
   Trash2, AlertTriangle, Lock, Search, 
-  ShieldCheck, Eye, EyeOff, Shield, UserCheck, CheckCircle
+  ShieldCheck, Eye, EyeOff, UserCheck, CheckCircle
 } from 'lucide-react';
 
 // ================= INTERFACES =================
