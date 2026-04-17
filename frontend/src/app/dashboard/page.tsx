@@ -59,7 +59,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function DashboardPage() {
   const totalEvaluaciones = 1284;
-  const crecimiento = '+12%';
   const correosPendientes = 18;
 
   return (
@@ -83,9 +82,7 @@ export default function DashboardPage() {
                   {totalEvaluaciones.toLocaleString('es-GT')}
                 </p>
               </div>
-              <span className="text-2xl font-extrabold text-green-500 mt-1">
-                {crecimiento}
-              </span>
+              
             </div>
           </div>
 

@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import DashboardLayout from '../components/layout';
 import { 
-  Pencil, Trash2, AlertTriangle, Lock, Search, 
-  ShieldCheck, Eye, EyeOff, Shield 
+  Trash2, AlertTriangle, Lock, Search, 
+  ShieldCheck, Eye, EyeOff, Shield, UserCheck, CheckCircle
 } from 'lucide-react';
 
 // ================= INTERFACES =================
@@ -18,8 +18,9 @@ interface User {
 
 export default function SettingsPage() {
   // ================= ESTADOS DE USUARIOS =================
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [userToDisable, setUserToDisable] = useState<User | null>(null);
+  const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
+  const [isEnableModalOpen, setIsEnableModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // ================= ESTADOS DE CONTRASEÑA =================
@@ -31,10 +32,10 @@ export default function SettingsPage() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Variable lista para recibir el dato del backend
-  const diasDesdeUltimoCambio = 42; 
+  // Estado para la notificación de éxito
+  const [isPasswordUpdated, setIsPasswordUpdated] = useState(false);
 
-  // Lógica para mostrar error si no coinciden (solo si ya escribió algo en confirmación)
+  // Lógica para mostrar error si no coinciden
   const passwordsMatch = newPassword === confirmPassword;
   const showMismatchError = confirmPassword.length > 0 && !passwordsMatch;
 
@@ -51,30 +52,68 @@ export default function SettingsPage() {
     user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ================= FUNCIONES DEL MODAL =================
+  // ================= FUNCIONES DEL MODAL DE DESHABILITAR =================
   const openDisableModal = (user: User) => {
-    setUserToDisable(user);
-    setIsModalOpen(true);
+    setSelectedUser(user);
+    setIsDisableModalOpen(true);
   };
 
   const closeDisableModal = () => {
-    setUserToDisable(null);
-    setIsModalOpen(false);
+    setSelectedUser(null);
+    setIsDisableModalOpen(false);
   };
 
   const confirmDisable = () => {
-    if (userToDisable) {
+    if (selectedUser) {
       setUsers(users.map(u => 
-        u.id === userToDisable.id ? { ...u, status: 'Inactivo' } : u
+        u.id === selectedUser.id ? { ...u, status: 'Inactivo' } : u
       ));
     }
     closeDisableModal();
   };
 
+  // ================= FUNCIONES DEL MODAL DE HABILITAR =================
+  const openEnableModal = (user: User) => {
+    setSelectedUser(user);
+    setIsEnableModalOpen(true);
+  };
+
+  const closeEnableModal = () => {
+    setSelectedUser(null);
+    setIsEnableModalOpen(false);
+  };
+
+  const confirmEnable = () => {
+    if (selectedUser) {
+      setUsers(users.map(u => 
+        u.id === selectedUser.id ? { ...u, status: 'Activo' } : u
+      ));
+    }
+    closeEnableModal();
+  };
+
+  // ================= FUNCIÓN ACTUALIZAR CONTRASEÑA =================
+  const handleUpdatePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Aquí iría la llamada real al Backend.
+    // Simulamos el éxito:
+    setIsPasswordUpdated(true);
+    
+    // Limpiamos los campos
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    
+    // Ocultamos el mensaje de éxito después de 4 segundos
+    setTimeout(() => {
+      setIsPasswordUpdated(false);
+    }, 4000);
+  };
+
   return (
     <DashboardLayout>
       <div className="flex flex-col h-full relative">
-        
 
         {/* CONTENEDOR PRINCIPAL (GRID 2 COLUMNAS) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -93,7 +132,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-5" onSubmit={handleUpdatePassword}>
               {/* Contraseña Actual */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña actual</label>
@@ -157,13 +196,21 @@ export default function SettingsPage() {
                     {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-                {/* Mensaje de Error */}
+                {/* Mensaje de Error de Coincidencia */}
                 {showMismatchError && (
                   <p className="text-xs text-red-500 mt-1.5 font-medium flex items-center gap-1">
                     <AlertTriangle size={12} /> Las contraseñas no coinciden
                   </p>
                 )}
               </div>
+
+              {/* Notificación de Éxito Estética */}
+              {isPasswordUpdated && (
+                <div className="flex items-center justify-center gap-2 py-2 px-4 bg-green-50 border border-green-200 text-green-700 rounded-lg shadow-sm transition-all duration-300">
+                  <CheckCircle size={18} className="text-green-600" />
+                  <span className="text-sm font-bold">¡Contraseña actualizada!</span>
+                </div>
+              )}
 
               {/* Botón de Actualizar */}
               <div className="pt-2">
@@ -176,15 +223,6 @@ export default function SettingsPage() {
                   Actualizar contraseña
                 </button>
               </div>
-
-              {/* Spoiler / Info Antivirus (Backend Ready) */}
-              <div className="mt-4 flex items-center justify-center gap-2 py-2 px-3 bg-green-50 border border-green-100 rounded-lg">
-                <Shield size={16} className="text-green-600" />
-                <span className="text-xs font-semibold text-green-700">
-                  Último cambio hace {diasDesdeUltimoCambio} días
-                </span>
-              </div>
-
             </form>
           </div>
 
@@ -233,17 +271,27 @@ export default function SettingsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-end gap-2">
-                          <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Editar">
-                            <Pencil size={18} />
+                          
+                          {/* Botón Habilitar */}
+                          <button 
+                            onClick={() => openEnableModal(user)}
+                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 disabled:cursor-not-allowed" 
+                            title={user.status === 'Activo' ? 'El usuario ya está activo' : 'Habilitar usuario'}
+                            disabled={user.status === 'Activo'}
+                          >
+                            <UserCheck size={18} />
                           </button>
+
+                          {/* Botón Deshabilitar */}
                           <button 
                             onClick={() => openDisableModal(user)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" 
-                            title={user.status === 'Inactivo' ? 'Usuario Inactivo' : 'Deshabilitar'}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 disabled:cursor-not-allowed" 
+                            title={user.status === 'Inactivo' ? 'El usuario ya está inactivo' : 'Deshabilitar usuario'}
                             disabled={user.status === 'Inactivo'}
                           >
-                            <Trash2 size={18} className={user.status === 'Inactivo' ? 'opacity-40' : ''} />
+                            <Trash2 size={18} />
                           </button>
+
                         </div>
                       </td>
                     </tr>
@@ -262,8 +310,8 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* ================= MODAL DE CONFIRMACIÓN ================= */}
-        {isModalOpen && (
+        {/* ================= MODAL DE CONFIRMACIÓN (DESHABILITAR) ================= */}
+        {isDisableModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center transform scale-100 transition-transform">
               
@@ -273,7 +321,7 @@ export default function SettingsPage() {
               
               <h3 className="text-2xl font-extrabold text-gray-900 mb-3">¿Deshabilitar usuario?</h3>
               <p className="text-gray-500 mb-8 px-2 leading-relaxed">
-                ¿Esta seguro que deseas deshabilitar al usuario <strong>{userToDisable?.name}</strong> del sistema? Esta acción impedirá el acceso inmediato a la plataforma.
+                ¿Esta seguro que deseas deshabilitar al usuario <strong>{selectedUser?.name}</strong> del sistema? Esta acción impedirá el acceso inmediato a la plataforma.
               </p>
               
               <div className="flex gap-4 justify-center w-full">
@@ -288,6 +336,38 @@ export default function SettingsPage() {
                   className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-md shadow-red-200"
                 >
                   Deshabilitar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= MODAL DE CONFIRMACIÓN (HABILITAR) ================= */}
+        {isEnableModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center transform scale-100 transition-transform">
+              
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6 border-4 border-green-50">
+                <CheckCircle size={28} className="text-green-600" />
+              </div>
+              
+              <h3 className="text-2xl font-extrabold text-gray-900 mb-3">¿Habilitar usuario?</h3>
+              <p className="text-gray-500 mb-8 px-2 leading-relaxed">
+                ¿Esta seguro que deseas habilitar al usuario <strong>{selectedUser?.name}</strong>? Esto restaurará su acceso inmediato a la plataforma.
+              </p>
+              
+              <div className="flex gap-4 justify-center w-full">
+                <button 
+                  onClick={closeEnableModal}
+                  className="flex-1 px-4 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmEnable}
+                  className="flex-1 px-4 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition-colors shadow-md shadow-green-200"
+                >
+                  Habilitar
                 </button>
               </div>
             </div>
