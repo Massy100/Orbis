@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import DashboardLayout from '../components/layout';
+import "./availability.css"
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -102,144 +103,184 @@ export default function AvailabilityPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-full">
+      <div className="container">
 
-        {/* TEACHER SELECTION SLOTS */}
-        <div className="mb-6 w-full">
-          <label className="flex items-center gap-2 text-sm font-bold text-gray-500 mb-3 uppercase tracking-wider">
-            <UserIcon size={16} className="text-blue-600" />
+        <div className="teacher-section">
+          <label className="teacher-label">
+            <UserIcon size={16} />
             Selección de docentes simultáneos
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <select value={slot1} onChange={(e) => setSlot1(e.target.value)} className="bg-white text-gray-900 text-sm font-medium rounded-lg p-3 outline-none shadow-sm cursor-pointer" style={{ border: `2px solid ${configDocentes['1'].theme.border}` }}>
+
+          <div className="teacher-grid">
+            <select
+              value={slot1}
+              onChange={(e) => setSlot1(e.target.value)}
+              className="select"
+              style={{ border: `2px solid ${configDocentes['1'].theme.border}` }}
+            >
               <option value="">-- Docente 1 --</option>
-              {teachersList.map(t => <option key={t.id} value={t.id} disabled={t.id === slot2 || t.id === slot3}>{t.name}</option>)}
+              {teachersList.map(t => (
+                <option key={t.id} value={t.id} disabled={t.id === slot2 || t.id === slot3}>
+                  {t.name}
+                </option>
+              ))}
             </select>
-            <select value={slot2} onChange={(e) => setSlot2(e.target.value)} className="bg-white text-gray-900 text-sm font-medium rounded-lg p-3 outline-none shadow-sm cursor-pointer" style={{ border: `2px solid ${configDocentes['2'].theme.border}` }}>
+
+            <select
+              value={slot2}
+              onChange={(e) => setSlot2(e.target.value)}
+              className="select"
+              style={{ border: `2px solid ${configDocentes['2'].theme.border}` }}
+            >
               <option value="">-- Docente 2 --</option>
-              {teachersList.map(t => <option key={t.id} value={t.id} disabled={t.id === slot1 || t.id === slot3}>{t.name}</option>)}
+              {teachersList.map(t => (
+                <option key={t.id} value={t.id} disabled={t.id === slot1 || t.id === slot3}>
+                  {t.name}
+                </option>
+              ))}
             </select>
-            <select value={slot3} onChange={(e) => setSlot3(e.target.value)} className="bg-white text-gray-900 text-sm font-medium rounded-lg p-3 outline-none shadow-sm cursor-pointer" style={{ border: `2px solid ${configDocentes['3'].theme.border}` }}>
+
+            <select
+              value={slot3}
+              onChange={(e) => setSlot3(e.target.value)}
+              className="select"
+              style={{ border: `2px solid ${configDocentes['3'].theme.border}` }}
+            >
               <option value="">-- Docente 3 --</option>
-              {teachersList.map(t => <option key={t.id} value={t.id} disabled={t.id === slot1 || t.id === slot2}>{t.name}</option>)}
+              {teachersList.map(t => (
+                <option key={t.id} value={t.id} disabled={t.id === slot1 || t.id === slot2}>
+                  {t.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
-        {/* CALENDAR NAVIGATION */}
-        <div className="flex justify-end items-center mb-3 gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-lg font-bold text-gray-700 capitalize">
+        <div className="navbar">
+          <div className="nav-left">
+            <span className="month-text">
               {nombresMeses[currentDate.getMonth()]} {currentDate.getFullYear()}
             </span>
-            <div className="flex bg-white border border-gray-200 rounded-lg shadow-sm">
-              <button onClick={irAtras} className="p-2 hover:bg-gray-50 border-r border-gray-200 text-gray-600 transition-colors"><ChevronLeft size={18} /></button>
-              <button onClick={irAdelante} className="p-2 hover:bg-gray-50 text-gray-600 transition-colors"><ChevronRight size={18} /></button>
+
+            <div className="nav-buttons">
+              <button onClick={irAtras} className="nav-btn border">
+                <ChevronLeft size={18} />
+              </button>
+              <button onClick={irAdelante} className="nav-btn">
+                <ChevronRight size={18} />
+              </button>
             </div>
           </div>
-          
-          <div className="flex bg-white border border-gray-200 rounded-lg shadow-sm">
-            <button onClick={() => setVistaCalendario('month')} className={`px-4 py-2 text-xs font-semibold transition-all ${vistaCalendario === 'month' ? 'bg-gray-100 text-blue-600 rounded-l-lg' : 'text-gray-500 hover:text-gray-700'}`}>Mes</button>
-            <button onClick={() => setVistaCalendario('week')} className={`px-4 py-2 text-xs font-semibold border-l border-gray-200 transition-all ${vistaCalendario === 'week' ? 'bg-gray-100 text-blue-600 rounded-r-lg' : 'text-gray-500 hover:text-gray-700'}`}>Semana</button>
+
+          <div className="view-toggle">
+            <button
+              onClick={() => setVistaCalendario('month')}
+              className={`toggle-btn ${vistaCalendario === 'month' ? 'toggle-active' : 'toggle-inactive'}`}
+            >
+              Mes
+            </button>
+            <button
+              onClick={() => setVistaCalendario('week')}
+              className={`toggle-btn ${vistaCalendario === 'week' ? 'toggle-active' : 'toggle-inactive'}`}
+            >
+              Semana
+            </button>
           </div>
         </div>
 
-        {/* CALENDAR GRID */}
-        <div className="flex-1 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col mb-4 min-h-[500px]">
+        <div className="calendar">
           {vistaCalendario === 'week' ? (
-            <div className="flex overflow-x-auto min-w-[900px] flex-1">
-              {/* Hour column */}
-              <div className="w-16 flex-shrink-0 border-r border-gray-200 bg-white">
-                <div className="h-10 border-b border-gray-200"></div> 
+            <div className="week-container">
+
+              {/* HOUR COLUMN */}
+              <div className="hour-column">
+                <div className="hour-header-spacer" />
                 {horasDelDia.map(hora => (
-                  <div key={hora} className="h-12 flex items-start justify-center pt-1 border-b border-gray-100">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{hora}</span>
+                  <div key={hora} className="hour-cell">
+                    {hora}
                   </div>
                 ))}
               </div>
-              
-              {/* Day columns */}
-              <div className="flex-1 grid grid-cols-7">
+
+              {/* DAYS */}
+              <div className="day-grid">
                 {diasDeLaSemana.map((diaObj, index) => {
                   const esHoy = diaObj.toDateString() === new Date().toDateString();
-                  
+
                   return (
-                    <div key={index} className={`border-r border-gray-200 relative ${esHoy ? 'bg-blue-50/20' : ''}`}>
-                      {/* Day header */}
-                      <div className={`h-10 border-b border-gray-200 flex flex-col items-center justify-center text-sm gap-0.5 ${esHoy ? 'text-blue-600 font-bold bg-blue-50/50' : 'text-gray-600 bg-gray-50/50'}`}>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{nombresDiasCortos[diaObj.getDay()]}</span>
-                        <span className="text-lg font-bold text-gray-700">{diaObj.getDate()}</span>
+                    <div key={index} className="day-column">
+
+                      {/* HEADER */}
+                      <div className={`day-header ${esHoy ? 'today' : 'normal'}`}>
+                        <span>{nombresDiasCortos[diaObj.getDay()]}</span>
+                        <span className="day-number">{diaObj.getDate()}</span>
                       </div>
-                      
-                      <div className="relative h-full">
-                        {/* Hour grid lines */}
+
+                      <div className="day-body">
+
+                        {/* GRID */}
                         {horasDelDia.map((_, i) => (
-                          <div key={i} className="h-12 border-b border-gray-100"></div>
+                          <div key={i} className="grid-line" />
                         ))}
 
-                        {/* CASCADE EVENTS */}
+                        {/* EVENTS */}
                         {eventosSimulados
-                          .filter(e => e.diaSemana === diaObj.getDay() && ([slot1, slot2, slot3].includes(e.docenteId)))
+                          .filter(e =>
+                            e.diaSemana === diaObj.getDay() &&
+                            [slot1, slot2, slot3].includes(e.docenteId)
+                          )
                           .map((evento, idx, arr) => {
+
                             const config = configDocentes[evento.docenteId as keyof typeof configDocentes];
 
-                            // Unique key per event instance
                             const eventKey = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
 
-                            const overlappingEvents = arr.filter(o => 
-                              (evento.inicio >= o.inicio && evento.inicio < o.fin) || 
+                            const overlappingEvents = arr.filter(o =>
+                              (evento.inicio >= o.inicio && evento.inicio < o.fin) ||
                               (evento.fin > o.inicio && evento.fin <= o.fin) ||
                               (evento.inicio <= o.inicio && evento.fin >= o.fin)
                             );
-                            
+
                             overlappingEvents.sort((a, b) => a.inicio - b.inicio);
                             const overlapIndex = overlappingEvents.indexOf(evento);
 
-                            const leftOffset = 2 + (overlapIndex * 5); 
-                            const topOffsetPx = overlapIndex * 6; 
+                            const leftOffset = 2 + (overlapIndex * 5);
+                            const topOffsetPx = overlapIndex * 6;
                             const width = 94 - (overlapIndex * 4);
 
-                            // Is this event active (hovered or clicked)?
                             const isLifted = hoveredEvent === eventKey || activeEvent === eventKey;
 
                             return (
-                              <div 
+                              <div
                                 key={idx}
-                                className="absolute rounded-md p-1.5 text-[10px] flex flex-col border-l-4 overflow-hidden cursor-pointer"
-                                style={{ 
-                                  top: `calc(${(evento.inicio - 8) * 3}rem + ${topOffsetPx}px)`, 
+                                className={`event ${isLifted ? 'lifted' : 'normal'}`}
+                                style={{
+                                  top: `calc(${(evento.inicio - 8) * 3}rem + ${topOffsetPx}px)`,
                                   height: `${(evento.fin - evento.inicio) * 3}rem`,
-                                  // Lifted: expand to full width, full opacity, on top
                                   width: isLifted ? '92%' : `${width}%`,
                                   left: isLifted ? '2%' : `${leftOffset}%`,
-                                  zIndex: isLifted ? 100 : 10 + overlapIndex, 
-                                  // Normal state: slightly translucent so cascaded cards show through
-                                  opacity: isLifted ? 1 : 0.70,
+                                  zIndex: isLifted ? 100 : 10 + overlapIndex,
                                   backgroundColor: config.theme.bg,
                                   borderLeftColor: config.theme.border,
                                   color: config.theme.text,
-                                  // Lifted state: prominent colored shadow + outline
                                   boxShadow: isLifted
                                     ? `0 8px 24px -4px ${config.theme.border}66, 0 2px 8px -2px ${config.theme.border}44`
-                                    : '0 1px 3px rgba(0,0,0,0.07)',
-                                  outline: isLifted ? `2px solid ${config.theme.border}` : 'none',
-                                  outlineOffset: '1px',
-                                  transform: isLifted ? 'scale(1.015)' : 'scale(1)',
-                                  transition: 'all 0.15s ease',
+                                    : undefined,
+                                  outline: isLifted ? `2px solid ${config.theme.border}` : undefined
                                 }}
                                 onMouseEnter={() => setHoveredEvent(eventKey)}
                                 onMouseLeave={() => setHoveredEvent(null)}
-                                // Click toggles "pinned" state; clicking again unpins
                                 onClick={() => setActiveEvent(activeEvent === eventKey ? null : eventKey)}
                               >
-                                <div className="font-extrabold uppercase leading-tight">Disponible</div>
-                                <div className="font-semibold flex items-center gap-1 opacity-80 mt-0.5 leading-tight">
+                                <div className="event-title">Disponible</div>
+
+                                <div className="event-time">
                                   <Clock size={10} />
                                   {formatTime(evento.inicio)} - {formatTime(evento.fin)}
                                 </div>
-                                {/* Show teacher name only when event is lifted */}
+
                                 {isLifted && (
-                                  <div className="font-bold mt-1 leading-tight truncate" style={{ opacity: 0.9 }}>
+                                  <div className="event-teacher">
                                     {config.nombre}
                                   </div>
                                 )}
@@ -253,38 +294,50 @@ export default function AvailabilityPage() {
               </div>
             </div>
           ) : (
-            /* --- MONTH VIEW --- */
-            <div className="min-w-[900px] flex-1 flex flex-col">
-              <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50/50">
+            <>
+              {/* MONTH HEADER */}
+              <div className="month-header">
                 {nombresDiasCortos.map(dia => (
-                  <div key={dia} className="py-2.5 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider border-r border-gray-100 last:border-0">{dia}</div>
+                  <div key={dia} className="month-day-name">
+                    {dia}
+                  </div>
                 ))}
               </div>
-              
-              <div className="grid grid-cols-7 flex-1 auto-rows-fr">
+
+              {/* MONTH GRID */}
+              <div className="month-grid">
                 {diasDelMes.map((diaObj, i) => {
                   const esEsteMes = diaObj.getMonth() === currentDate.getMonth();
                   const esHoy = diaObj.toDateString() === new Date().toDateString();
 
                   return (
-                    <div key={i} className={`border-b border-r border-gray-100 p-1 relative hover:bg-gray-50 transition-colors flex flex-col justify-start ${!esEsteMes ? 'bg-gray-50 opacity-60' : ''} ${esHoy ? 'bg-blue-50/20' : ''}`}>
-                      <span className={`text-sm p-1 font-bold flex justify-end ${esHoy ? 'text-blue-600 font-bold' : 'text-gray-500'}`}>
-                        <div className={esHoy ? 'bg-blue-100 w-7 h-7 flex items-center justify-center rounded-full shadow-sm' : ''}>
-                          {diaObj.getDate()}
-                        </div>
+                    <div
+                      key={i}
+                      className={`month-cell ${esHoy ? 'today' : ''}`}
+                      style={{
+                        opacity: esEsteMes ? 1 : 0.6,
+                        background: !esEsteMes ? '#f9fafb' : undefined
+                      }}
+                    >
+                      <span className="month-number">
+                        {diaObj.getDate()}
                       </span>
-                      
-                      <div className="mt-1 space-y-1">
+
+                      <div>
                         {esEsteMes && eventosSimulados
-                          .filter(e => e.diaSemana === diaObj.getDay() && ([slot1, slot2, slot3].includes(e.docenteId)))
+                          .filter(e =>
+                            e.diaSemana === diaObj.getDay() &&
+                            [slot1, slot2, slot3].includes(e.docenteId)
+                          )
                           .sort((a, b) => a.inicio - b.inicio)
-                          .slice(0, 3) 
+                          .slice(0, 3)
                           .map((ev, idx) => {
                             const config = configDocentes[ev.docenteId as keyof typeof configDocentes];
+
                             return (
-                              <div 
-                                key={idx} 
-                                className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm truncate cursor-pointer shadow-sm border-l-2"
+                              <div
+                                key={idx}
+                                className="month-event"
                                 style={{
                                   backgroundColor: config.theme.bg,
                                   borderLeftColor: config.theme.border,
@@ -300,15 +353,12 @@ export default function AvailabilityPage() {
                   );
                 })}
               </div>
-            </div>
+            </>
           )}
         </div>
 
-        {/* EXPORT BUTTON */}
-        <div className="flex justify-end pb-2">
-          <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm transition-all hover:scale-[1.01] uppercase tracking-wide">
-            Crear Excel
-          </button>
+        <div className="export">
+          <button>Crear Excel</button>
         </div>
 
       </div>
