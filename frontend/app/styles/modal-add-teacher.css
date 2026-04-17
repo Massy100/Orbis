@@ -1,0 +1,277 @@
+.modal-add-teacher-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 24, 40, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 9999;
+}
+
+.modal-add-teacher-card {
+    max-height: 100%;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.25),
+        0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transform: translateY(8px);
+    animation: modalAddTeacherIn 0.18s ease forwards;
+    overflow: auto;
+}
+
+.modal-add-teacher-card::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.modal-add-teacher-card::-webkit-scrollbar-track {
+    background: #f0f5ff;
+    border-radius: 999px;
+    margin: 8px;
+}
+
+.modal-add-teacher-card::-webkit-scrollbar-thumb {
+    background: #c7d7f5;
+    border-radius: 999px;
+    border: 1px solid #f0f5ff;
+    background-clip: padding-box;
+}
+
+.modal-add-teacher-card::-webkit-scrollbar-thumb:hover {
+    background: #3f7ee2;
+}
+
+.modal-add-teacher-card::-webkit-scrollbar-thumb:active {
+    background: #2f6fd6;
+}
+
+.modal-add-teacher-card::-webkit-scrollbar-corner {
+    background: #f0f5ff;
+}
+
+.modal-add-teacher-card::-webkit-scrollbar-button {
+    display: none;
+}
+
+@keyframes modalAddTeacherIn {
+    to {
+        transform: translateY(0);
+    }
+}
+
+.modal-add-teacher-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e8eefc;
+}
+
+.modal-add-teacher-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 12px;
+}
+
+.modal-add-teacher-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1b1a21;
+}
+
+.modal-add-teacher-subtitle {
+    font-size: 14px;
+    color: #4b5563;
+    margin-top: 4px;
+}
+
+.modal-add-teacher-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: #1b1a21;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 0;
+}
+
+.modal-add-teacher-close:hover svg {
+    color: #d63535 !important;
+}
+
+.modal-add-teacher-body {
+    padding: 16px;
+}
+
+.modal-add-teacher-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.modal-add-teacher-btn {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 120ms ease;
+}
+
+.modal-add-teacher-btn:active {
+    transform: scale(0.98);
+}
+
+.modal-add-teacher-btn-ghost {
+    background: #f8fafc;
+    color: #344054;
+    border-color: #d7e0ec;
+}
+
+.modal-add-teacher-btn-ghost:hover {
+    background: #e9eef3;
+    color: #1f2937;
+}
+
+.modal-add-teacher-btn-primary {
+    background: #3f7ee2;
+    color: #fff;
+    border-color: #3f7ee2;
+    box-shadow: 0 2px 6px rgba(63, 126, 226, 0.18);
+}
+
+.modal-add-teacher-btn-primary:hover {
+    background: #2f6fd6;
+    border-color: #2f6fd6;
+}
+
+.modal-add-teacher-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.modal-add-teacher-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modal-add-teacher-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.modal-add-teacher-input,
+.modal-add-teacher-select {
+    width: 100%;
+    height: 42px;
+    border: 1px solid #d8dee8;
+    border-radius: 8px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: #111827;
+    outline: none;
+    background: #fff;
+}
+
+.modal-add-teacher-input:focus,
+.modal-add-teacher-select:focus {
+    border-color: #2563eb;
+}
+
+.modal-add-teacher-email-wrapper {
+    position: relative;
+}
+
+.modal-add-teacher-email-wrapper .modal-add-teacher-input {
+    padding-right: 120px;
+}
+
+.modal-add-teacher-email-suffix {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #9ca3af;
+    pointer-events: none;
+}
+
+.modal-add-teacher-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: -4px;
+}
+
+.modal-add-teacher-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+}
+
+.modal-add-teacher-tag-close {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.modal-add-teacher-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-add-teacher-course-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+}
+
+.modal-add-teacher-course-option input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #2563eb;
+    cursor: pointer;
+}
+
+.modal-add-teacher-email-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 12px;
+    color: #6b7280;
+    padding: 6px 10px;
+    background: #f0f5ff;
+    border-left: 3px solid #3f7ee2;
+    border-radius: 0 6px 6px 0;
+}
+
+.modal-add-teacher-email-hint strong {
+    color: #2563eb;
+    font-weight: 600;
+}
