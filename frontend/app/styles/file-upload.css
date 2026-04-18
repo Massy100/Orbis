@@ -1,0 +1,242 @@
+.upload-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    /* padding: 24px; */
+    padding: 24px 0;
+    box-sizing: border-box;
+}
+
+.upload-card {
+    width: 100%;
+    /* max-width: 760px; */
+    min-height: 360px;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    box-sizing: border-box;
+    transition: 0.2s ease;
+}
+
+.upload-card.dragging {
+    border-color: #2563eb;
+    background-color: #f8fbff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.upload-icon-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-color: #eef4ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    color: #2563eb;
+}
+
+.upload-icon-circle svg {
+    width: 40px;
+    height: 40px;
+}
+
+.upload-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.upload-text {
+    margin: 12px 0 22px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #6b7280;
+}
+
+.upload-button {
+    border: none;
+    background-color: #2563eb;
+    color: #ffffff;
+    padding: 12px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.upload-button:hover {
+    background-color: #1d4ed8;
+}
+
+.upload-button:active {
+    transform: translateY(1px);
+}
+
+.upload-button-icon svg {
+    width: 17px;
+    height: 17px;
+}
+
+.upload-input {
+    display: none;
+}
+
+.upload-divider {
+    width: 260px;
+    max-width: 100%;
+    height: 1px;
+    background-color: #e5e7eb;
+    margin: 28px 0 12px;
+}
+
+.upload-format {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: #9ca3af;
+    font-weight: 700;
+    text-align: center;
+}
+
+.selected-file-card {
+    width: 100%;
+    max-width: 520px;
+    margin-top: 22px;
+    padding: 14px 16px;
+    border: 1px solid #dbeafe;
+    background-color: linear-gradient(180deg, #f8fbff 0%, #f3f8ff 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    box-sizing: border-box;
+}
+
+.selected-file-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.selected-file-icon {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    border-radius: 10px;
+    background-color: #e0edff;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.selected-file-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.selected-file-info {
+    min-width: 0;
+}
+
+.selected-file-name {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+}
+
+.selected-file-meta {
+    display: inline-block;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.selected-file-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.file-action-button {
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.file-action-button.secondary {
+    background-color: #eef4ff;
+    color: #2563eb;
+    border-color: #dbeafe;
+}
+
+.file-action-button.secondary:hover {
+    background-color: #e0edff;
+    color: #1d4ed8;
+    border-color: #bfd3ff;
+}
+
+.file-action-button.save {
+    background-color: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+.file-action-button.save:hover {
+    background-color: #1d4ed8;
+    color: #ffffff;
+    border-color: #1d4ed8;
+}
+
+.file-action-button.danger {
+    background-color: #f0f5f9;
+    color: #6b7280;
+    border-color: #e5e7eb;
+}
+
+.file-action-button.danger:hover {
+    background-color: #e5e7eb;
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+@media (max-width: 640px) {
+    .selected-file-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .selected-file-name {
+        max-width: 100%;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .selected-file-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
