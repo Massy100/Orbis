@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS, NavItem } from "../config/navigation"
 import { LogOut, GraduationCap } from "lucide-react";
+import { SignOutButton } from "@clerk/nextjs";
 import "../styles/Sidebar.css";
 
 export default function Sidebar() {
@@ -41,10 +42,13 @@ export default function Sidebar() {
 
       {/* FOOTER */}
       <div className="footer">
-        <div className="logout">
-          <LogOut size={15} />
-          <span>Finalizar la sesión</span>
-        </div>
+        {/* 2. Envolvemos la sección de logout con SignOutButton */}
+        <SignOutButton redirectUrl="/">
+          <div className="logout" style={{ cursor: 'pointer' }}>
+            <LogOut size={15} />
+            <span>Finalizar la sesión</span>
+          </div>
+        </SignOutButton>
       </div>
     </aside>
   );

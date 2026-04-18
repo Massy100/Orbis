@@ -1,7 +1,7 @@
 "use client";
 
-import Sidebar from "./layout/sidebar";
-import "./layout.css";
+import Sidebar from "./sidebar";
+import "../styles/layout.css";
 import { User } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "../config/navigation";
@@ -18,7 +18,7 @@ export default function DashboardLayout({
     NAV_ITEMS.find(item => pathname.startsWith(item.href));
 
   return (
-    <div className="dashboard-layout">
+    <div className="dashboard-layout text-gray-900">
 
       {/* Sidebar */}
       <Sidebar />
