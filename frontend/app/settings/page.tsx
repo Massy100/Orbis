@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import DashboardLayout from '../components/layout';
+import "./setting.css"
 import { 
   Trash2, AlertTriangle, Lock, Search, 
   ShieldCheck, Eye, EyeOff, UserCheck, CheckCircle
@@ -113,263 +114,267 @@ export default function SettingsPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-full relative">
+      <div className="settings-container">
 
-        {/* CONTENEDOR PRINCIPAL (GRID 2 COLUMNAS) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* ================= TARJETA IZQUIERDA: CREDENCIALES ================= */}
-          <div className="lg:col-span-4 bg-white rounded-xl shadow-sm border border-gray-200 border-l-4 border-l-blue-600 p-6">
-            
-            {/* Título y Subtítulo */}
-            <div className="flex items-start gap-3 mb-6">
-              <div className="p-2 bg-blue-50 rounded-lg text-blue-600 shrink-0">
+        <div className="settings-grid">
+
+          {/* LEFT */}
+          <div className="card card-left">
+
+            <div className="card-header">
+              <div className="icon-box">
                 <ShieldCheck size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-800">Credenciales de seguridad</h3>
-                <p className="text-xs font-medium text-gray-500 mt-0.5">Actualice la contraseña de su cuenta</p>
+                <h3 className="card-title">Credenciales de seguridad</h3>
+                <p className="card-subtitle">
+                  Actualice la contraseña de su cuenta
+                </p>
               </div>
             </div>
 
-            <form className="space-y-5" onSubmit={handleUpdatePassword}>
-              {/* Contraseña Actual */}
+            <form className="form" onSubmit={handleUpdatePassword}>
+
+              {/* PASSWORD ACTUAL */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña actual</label>
-                <div className="relative">
-                  <input 
-                    type={showCurrent ? "text" : "password"} 
-                    placeholder="••••••••"
+                <label className="label">Contraseña actual</label>
+                <div className="input-wrapper">
+                  <input
+                    type={showCurrent ? "text" : "password"}
+                    className="input"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full pl-3 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   />
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
+                    className="input-btn"
                     onClick={() => setShowCurrent(!showCurrent)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-              
-              {/* Nueva Contraseña */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nueva contraseña</label>
-                <div className="relative">
-                  <input 
-                    type={showNew ? "text" : "password"} 
-                    placeholder="••••••••"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full pl-3 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={() => setShowNew(!showNew)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showCurrent ? <EyeOff size={18}/> : <Eye size={18}/>}
                   </button>
                 </div>
               </div>
 
-              {/* Confirmar Contraseña */}
+              {/* NUEVA PASSWORD */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Confirmar contraseña</label>
-                <div className="relative">
-                  <input 
-                    type={showConfirm ? "text" : "password"} 
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={`w-full pl-3 pr-10 py-2.5 bg-gray-50 border rounded-lg text-sm outline-none transition-all ${
-                      showMismatchError ? 'border-red-300 focus:ring-2 focus:ring-red-200' : 'border-gray-200 focus:ring-2 focus:ring-blue-500'
-                    }`}
+                <label className="label">Nueva contraseña</label>
+                <div className="input-wrapper">
+                  <input
+                    type={showNew ? "text" : "password"}
+                    className="input"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
                   />
-                  <button 
-                    type="button" 
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  <button
+                    type="button"
+                    className="input-btn"
+                    onClick={() => setShowNew(!showNew)}
                   >
-                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showNew ? <EyeOff size={18}/> : <Eye size={18}/>}
                   </button>
                 </div>
-                {/* Mensaje de Error de Coincidencia */}
+              </div>
+
+              {/* CONFIRM PASSWORD */}
+              <div>
+                <label className="label">Confirmar contraseña</label>
+                <div className="input-wrapper">
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    className={`input ${showMismatchError ? 'input-error' : ''}`}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="input-btn"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                  >
+                    {showConfirm ? <EyeOff size={18}/> : <Eye size={18}/>}
+                  </button>
+                </div>
+
                 {showMismatchError && (
-                  <p className="text-xs text-red-500 mt-1.5 font-medium flex items-center gap-1">
-                    <AlertTriangle size={12} /> Las contraseñas no coinciden
+                  <p className="error-text">
+                    <AlertTriangle size={12}/> Las contraseñas no coinciden
                   </p>
                 )}
               </div>
 
-              {/* Notificación de Éxito Estética */}
+              {/* SUCCESS */}
               {isPasswordUpdated && (
-                <div className="flex items-center justify-center gap-2 py-2 px-4 bg-green-50 border border-green-200 text-green-700 rounded-lg shadow-sm transition-all duration-300">
-                  <CheckCircle size={18} className="text-green-600" />
-                  <span className="text-sm font-bold">¡Contraseña actualizada!</span>
+                <div className="success-box">
+                  <CheckCircle size={18}/>
+                  <span className="success-text">
+                    ¡Contraseña actualizada!
+                  </span>
                 </div>
               )}
 
-              {/* Botón de Actualizar */}
-              <div className="pt-2">
-                <button 
-                  type="submit"
-                  disabled={showMismatchError || !newPassword || !confirmPassword || !currentPassword}
-                  className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all shadow-sm"
-                >
-                  <Lock size={18} />
-                  Actualizar contraseña
-                </button>
-              </div>
+              {/* BUTTON */}
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={
+                  showMismatchError ||
+                  !currentPassword ||
+                  !newPassword ||
+                  !confirmPassword
+                }
+              >
+                <Lock size={18}/> Actualizar contraseña
+              </button>
+
             </form>
           </div>
 
-          {/* ================= TARJETA DERECHA: USUARIOS ================= */}
-          <div className="lg:col-span-8 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col h-full">
-            
-            <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h3 className="text-lg font-bold text-gray-800">Usuarios</h3>
-              
-              <div className="relative w-full sm:w-72">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search size={16} className="text-gray-400" />
-                </div>
-                <input 
-                  type="text" 
-                  placeholder="Buscar usuario..." 
+          {/* RIGHT */}
+          <div className="card card-right">
+
+            <div className="users-header">
+              <h3 className="card-title">Usuarios</h3>
+
+              <div className="search-wrapper">
+                <Search size={16} className="search-icon"/>
+                <input
+                  className="search-input"
+                  placeholder="Buscar usuario..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 />
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-600">
-                <thead className="bg-gray-50/50 border-b border-gray-200 text-gray-500 uppercase text-xs font-bold tracking-wider">
+            <div className="table-wrapper">
+              <table className="table">
+                <thead>
                   <tr>
-                    <th className="px-6 py-4">Usuario</th>
-                    <th className="px-6 py-4">Rol</th>
-                    <th className="px-6 py-4 text-right">Acciones</th>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th style={{ textAlign: 'right' }}>Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className={`hover:bg-gray-50 transition-colors ${user.status === 'Inactivo' ? 'opacity-60 bg-gray-50/50' : ''}`}>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-gray-900">{user.name}</span>
-                          <span className="text-xs text-gray-500 mt-0.5">{user.email}</span>
-                        </div>
+
+                <tbody>
+                  {filteredUsers.map(user => (
+                    <tr
+                      key={user.id}
+                      className={`table-row ${user.status === 'Inactivo' ? 'inactive' : ''}`}
+                    >
+                      <td>
+                        <strong>{user.name}</strong><br/>
+                        <small>{user.email}</small>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-gray-700 bg-gray-100 px-3 py-1 rounded-md text-xs">
-                          {user.role}
-                        </span>
+
+                      <td>
+                        <span className="role">{user.role}</span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-end gap-2">
-                          
-                          {/* Botón Habilitar */}
-                          <button 
+
+                      <td>
+                        <div className="actions">
+
+                          {/* ENABLE */}
+                          <button
+                            className="icon-btn green"
                             onClick={() => openEnableModal(user)}
-                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 disabled:cursor-not-allowed" 
-                            title={user.status === 'Activo' ? 'El usuario ya está activo' : 'Habilitar usuario'}
                             disabled={user.status === 'Activo'}
+                            title={
+                              user.status === 'Activo'
+                                ? 'Ya está activo'
+                                : 'Habilitar usuario'
+                            }
                           >
-                            <UserCheck size={18} />
+                            <UserCheck size={18}/>
                           </button>
 
-                          {/* Botón Deshabilitar */}
-                          <button 
+                          {/* DISABLE */}
+                          <button
+                            className="icon-btn red"
                             onClick={() => openDisableModal(user)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 disabled:cursor-not-allowed" 
-                            title={user.status === 'Inactivo' ? 'El usuario ya está inactivo' : 'Deshabilitar usuario'}
                             disabled={user.status === 'Inactivo'}
+                            title={
+                              user.status === 'Inactivo'
+                                ? 'Ya está inactivo'
+                                : 'Deshabilitar usuario'
+                            }
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={18}/>
                           </button>
 
                         </div>
                       </td>
                     </tr>
                   ))}
-                  
+
                   {filteredUsers.length === 0 && (
                     <tr>
-                      <td colSpan={3} className="px-6 py-12 text-center text-gray-500 font-medium">
-                        No se encontraron usuarios que coincidan con la búsqueda.
+                      <td colSpan={3} style={{ textAlign: 'center', padding: '40px' }}>
+                        No se encontraron usuarios.
                       </td>
                     </tr>
                   )}
+
                 </tbody>
               </table>
             </div>
+
           </div>
         </div>
 
-        {/* ================= MODAL DE CONFIRMACIÓN (DESHABILITAR) ================= */}
+        {/* MODAL DISABLE */}
         {isDisableModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center transform scale-100 transition-transform">
-              
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-orange-100 mb-6 border-4 border-orange-50">
-                <AlertTriangle size={28} className="text-orange-500" />
+          <div className="modal">
+            <div className="modal-box">
+
+              <div className="modal-icon orange">
+                <AlertTriangle size={28}/>
               </div>
-              
-              <h3 className="text-2xl font-extrabold text-gray-900 mb-3">¿Deshabilitar usuario?</h3>
-              <p className="text-gray-500 mb-8 px-2 leading-relaxed">
-                ¿Esta seguro que deseas deshabilitar al usuario <strong>{selectedUser?.name}</strong> del sistema? Esta acción impedirá el acceso inmediato a la plataforma.
+
+              <h3 className="modal-title">¿Deshabilitar usuario?</h3>
+
+              <p className="modal-text">
+                ¿Seguro que deseas deshabilitar a <strong>{selectedUser?.name}</strong>?
               </p>
-              
-              <div className="flex gap-4 justify-center w-full">
-                <button 
-                  onClick={closeDisableModal}
-                  className="flex-1 px-4 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors"
-                >
+
+              <div className="modal-actions">
+                <button className="btn-outline" onClick={closeDisableModal}>
                   Cancelar
                 </button>
-                <button 
-                  onClick={confirmDisable}
-                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl text-sm font-bold hover:bg-red-700 transition-colors shadow-md shadow-red-200"
-                >
+
+                <button className="btn-danger" onClick={confirmDisable}>
                   Deshabilitar
                 </button>
               </div>
+
             </div>
           </div>
         )}
 
-        {/* ================= MODAL DE CONFIRMACIÓN (HABILITAR) ================= */}
+        {/* MODAL ENABLE */}
         {isEnableModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 text-center transform scale-100 transition-transform">
-              
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6 border-4 border-green-50">
-                <CheckCircle size={28} className="text-green-600" />
+          <div className="modal">
+            <div className="modal-box">
+
+              <div className="modal-icon green">
+                <CheckCircle size={28}/>
               </div>
-              
-              <h3 className="text-2xl font-extrabold text-gray-900 mb-3">¿Habilitar usuario?</h3>
-              <p className="text-gray-500 mb-8 px-2 leading-relaxed">
-                ¿Esta seguro que deseas habilitar al usuario <strong>{selectedUser?.name}</strong>? Esto restaurará su acceso inmediato a la plataforma.
+
+              <h3 className="modal-title">¿Habilitar usuario?</h3>
+
+              <p className="modal-text">
+                ¿Seguro que deseas habilitar a <strong>{selectedUser?.name}</strong>?
               </p>
-              
-              <div className="flex gap-4 justify-center w-full">
-                <button 
-                  onClick={closeEnableModal}
-                  className="flex-1 px-4 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors"
-                >
+
+              <div className="modal-actions">
+                <button className="btn-outline" onClick={closeEnableModal}>
                   Cancelar
                 </button>
-                <button 
-                  onClick={confirmEnable}
-                  className="flex-1 px-4 py-3 bg-green-600 text-white rounded-xl text-sm font-bold hover:bg-green-700 transition-colors shadow-md shadow-green-200"
-                >
+
+                <button className="btn-success" onClick={confirmEnable}>
                   Habilitar
                 </button>
               </div>
+
             </div>
           </div>
         )}
