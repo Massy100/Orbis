@@ -42,8 +42,7 @@ export default function Sidebar() {
 
       {/* FOOTER */}
       <div className="footer">
-        {/* 2. Envolvemos la sección de logout con SignOutButton */}
-        <SignOutButton redirectUrl="/">
+        <SignOutButton redirectUrl="/sign-in">
           <div className="logout" style={{ cursor: 'pointer' }}>
             <LogOut size={15} />
             <span>Finalizar la sesión</span>
