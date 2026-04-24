@@ -1,5 +1,12 @@
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.db.models import Count
+from .serializers import SystemUserSerializer
+from django.contrib.auth.models import User
+
 from .models import (
     Career, Faculty, Course, CourseTeacher,
     Speciality, SpecialityTeacher,
@@ -15,6 +22,7 @@ from .serializers import (
     TeacherSerializer, TeachersPeriodSerializer, SpecialityTeacherSerializer,
     StudentSerializer, StudygroupSerializer, StudygroupTeacherSerializer,
     EvaluationSerializer, EvaluationTeacherSerializer, ResultSerializer,
+    SystemUserSerializer
 )
 
 # CRUD for simple tables
@@ -90,6 +98,21 @@ class TeacherViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'cat']
     ordering_fields = ['name', 'evaluationcount']
 
+    ## para soft delete (toggle isactive)
+    @action(detail=True, methods=['patch'], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        teacher = self.get_object()
+        teacher.isactive = not teacher.isactive
+        teacher.save()
+
+        estado_texto = 'Activo' if teacher.isactive else 'Inactivo'
+        
+        return Response({
+            'message': f'Estado actualizado correctamente',
+            'isactive': teacher.isactive,
+            'status_text': estado_texto
+        })
+
 
 class TeachersPeriodViewSet(viewsets.ModelViewSet):
     queryset = TeachersPeriod.objects.select_related('teacher', 'schedule').all()
@@ -152,3 +175,51 @@ class ResultViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['state', 'evaluationid']
     search_fields = ['state', 'observation']
+
+
+
+class DashboardStatsView(APIView):
+    def get(self, request):
+        total_teachers = Teacher.objects.count()
+        active_teachers = Teacher.objects.filter(isactive=True).count()
+        total_students = Student.objects.count()
+        total_courses = Course.objects.count()
+        total_evaluations = Evaluation.objects.count()
+
+        roles_distribution = list(Teacher.objects.values('rol__name').annotate(total=Count('id')))
+
+        return Response({
+            'overview': {
+                'total_teachers': total_teachers,
+                'active_teachers': active_teachers,
+                'total_students': total_students,
+                'total_courses': total_courses,
+                'total_evaluations': total_evaluations,
+            },
+            'charts': {
+                'roles_distribution': roles_distribution
+            }
+        })
+    
+class SystemUserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = SystemUserSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['first_name', 'last_name', 'email']
+
+    # --- LÓGICA DE CONFIGURACIONES (Soft Delete real) ---
+    @action(detail=True, methods=['patch'], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        user = self.get_object()
+        
+        # Invertimos el estado (Soft Delete)
+        user.is_active = not user.is_active
+        user.save()
+        
+        estado_texto = 'Activo' if user.is_active else 'Inactivo'
+        
+        return Response({
+            'message': 'Estado actualizado',
+            'is_active': user.is_active,
+            'status_text': estado_texto
+        })

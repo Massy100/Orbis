@@ -64,11 +64,31 @@ export default function SettingsPage() {
     setIsDisableModalOpen(false);
   };
 
-  const confirmDisable = () => {
+  const toggleStatusInDB = async (userId: number) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/teachers/${userId}/toggle-active/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (!response.ok) throw new Error('Error al actualizar');
+      const data = await response.json();
+      return data.status_text; // Retorna 'Activo' o 'Inactivo'
+    } catch (error) {
+      console.error("Error:", error);
+      return null;
+    }
+  };
+
+
+  const confirmDisable = async () => {
     if (selectedUser) {
-      setUsers(users.map(u => 
-        u.id === selectedUser.id ? { ...u, status: 'Inactivo' } : u
-      ));
+      const newStatus = await toggleStatusInDB(selectedUser.id);
+      if (newStatus) {
+        setUsers(users.map(u => 
+          u.id === selectedUser.id ? { ...u, status: newStatus as 'Activo' | 'Inactivo' } : u
+        ));
+      }
     }
     closeDisableModal();
   };
@@ -84,11 +104,14 @@ export default function SettingsPage() {
     setIsEnableModalOpen(false);
   };
 
-  const confirmEnable = () => {
+  const confirmEnable = async () => {
     if (selectedUser) {
-      setUsers(users.map(u => 
-        u.id === selectedUser.id ? { ...u, status: 'Activo' } : u
-      ));
+      const newStatus = await toggleStatusInDB(selectedUser.id);
+      if (newStatus) {
+        setUsers(users.map(u => 
+          u.id === selectedUser.id ? { ...u, status: newStatus as 'Activo' | 'Inactivo' } : u
+        ));
+      }
     }
     closeEnableModal();
   };
