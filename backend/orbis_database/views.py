@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
@@ -5,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count
 from .serializers import SystemUserSerializer
-from django.contrib.auth.models import User
+
 
 from .models import (
     Career, Faculty, Course, CourseTeacher,
@@ -223,3 +224,15 @@ class SystemUserViewSet(viewsets.ModelViewSet):
             'is_active': user.is_active,
             'status_text': estado_texto
         })
+    
+class DashboardMetricsView(APIView):
+    def get(self, request):
+        # Calculamos los datos reales para el panel
+        data = {
+            "total_teachers": Teacher.objects.count(),
+            "active_teachers": Teacher.objects.filter(isactive=True).count(),
+            "total_students": Student.objects.count(),
+            "total_courses": Course.objects.count(),
+            "pending_evaluations": Evaluation.objects.count(), # Puedes filtrar por fecha si quieres
+        }
+        return Response(data)

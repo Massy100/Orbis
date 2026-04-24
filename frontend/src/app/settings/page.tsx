@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import Toast from '../components/toast';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout';
 import "./setting.css"
 import { 
   Trash2, AlertTriangle, Lock, Search, 
   ShieldCheck, Eye, EyeOff, UserCheck, CheckCircle
 } from 'lucide-react';
+import { getSystemUsers, toggleUserStatus } from '../services/userService';
 
-// ================= INTERFACES =================
 interface User {
   id: number;
   name: string;
@@ -18,87 +19,88 @@ interface User {
 }
 
 export default function SettingsPage() {
-  // ================= ESTADOS DE USUARIOS =================
   const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
   const [isEnableModalOpen, setIsEnableModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
 
-  // ================= ESTADOS DE CONTRASEÑA =================
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  // Estado para la notificación de éxito
   const [isPasswordUpdated, setIsPasswordUpdated] = useState(false);
 
-  // Lógica para mostrar error si no coinciden
   const passwordsMatch = newPassword === confirmPassword;
   const showMismatchError = confirmPassword.length > 0 && !passwordsMatch;
 
-  // ================= DATOS DE EJEMPLO (MOCKS) =================
-  const [users, setUsers] = useState<User[]>([
-    { id: 1, name: 'Carlos Mendoza', email: 'cmendoza@url.edu.gt', role: 'Administrador', status: 'Activo' },
-    { id: 2, name: 'Ana López', email: 'alopez@url.edu.gt', role: 'Coordinador', status: 'Activo' },
-    { id: 3, name: 'Luis Pérez', email: 'lperez@url.edu.gt', role: 'Docente', status: 'Inactivo' },
-    { id: 4, name: 'Roberto Juárez', email: 'rjuarez@url.edu.gt', role: 'Docente', status: 'Activo' },
-  ]);
+  const [toast, setToast] = useState({ 
+    show: false, 
+    message: '', 
+    type: 'success' as 'success' | 'error' | 'info' 
+  });
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ show: true, message, type });
+    // Se cierra automáticamente después de 4 segundos
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 4000);
+  };
+
+
+
+  // ================= CARGA INICIAL DE USUARIOS =================
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const dbUsers = await getSystemUsers();
+      const formattedUsers = dbUsers.map((u: any) => ({
+        id: u.id,
+        name: `${u.first_name} ${u.last_name}`.trim() || u.username,
+        email: u.email,
+        role: u.rol || 'Usuario',
+        status: u.is_active ? 'Activo' : 'Inactivo'
+      }));
+      setUsers(formattedUsers);
+    };
+    fetchUsers();
+  }, []);
 
   const filteredUsers = users.filter(user => 
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ================= FUNCIONES DEL MODAL DE DESHABILITAR =================
+  // ================= MODAL DESHABILITAR =================
   const openDisableModal = (user: User) => {
     setSelectedUser(user);
     setIsDisableModalOpen(true);
   };
-
   const closeDisableModal = () => {
     setSelectedUser(null);
     setIsDisableModalOpen(false);
   };
 
-  const toggleStatusInDB = async (userId: number) => {
-    try {
-      const response = await fetch(`http://localhost:8000/api/teachers/${userId}/toggle-active/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      if (!response.ok) throw new Error('Error al actualizar');
-      const data = await response.json();
-      return data.status_text; // Retorna 'Activo' o 'Inactivo'
-    } catch (error) {
-      console.error("Error:", error);
-      return null;
-    }
-  };
-
-
   const confirmDisable = async () => {
     if (selectedUser) {
-      const newStatus = await toggleStatusInDB(selectedUser.id);
-      if (newStatus) {
+      const response = await toggleUserStatus(selectedUser.id);
+      if (response && response.status_text) {
         setUsers(users.map(u => 
-          u.id === selectedUser.id ? { ...u, status: newStatus as 'Activo' | 'Inactivo' } : u
+          u.id === selectedUser.id ? { ...u, status: 'Inactivo' } : u
         ));
+        showNotification(`Usuario ${selectedUser.name} deshabilitado con éxito`, "success");
+      } else {
+        showNotification("Error al intentar deshabilitar el usuario", "error");
       }
     }
     closeDisableModal();
   };
 
-  // ================= FUNCIONES DEL MODAL DE HABILITAR =================
+  // ================= MODAL HABILITAR =================
   const openEnableModal = (user: User) => {
     setSelectedUser(user);
     setIsEnableModalOpen(true);
   };
-
   const closeEnableModal = () => {
     setSelectedUser(null);
     setIsEnableModalOpen(false);
@@ -106,33 +108,26 @@ export default function SettingsPage() {
 
   const confirmEnable = async () => {
     if (selectedUser) {
-      const newStatus = await toggleStatusInDB(selectedUser.id);
-      if (newStatus) {
+      const response = await toggleUserStatus(selectedUser.id);
+      if (response && response.status_text) {
         setUsers(users.map(u => 
-          u.id === selectedUser.id ? { ...u, status: newStatus as 'Activo' | 'Inactivo' } : u
+          u.id === selectedUser.id ? { ...u, status: 'Activo' } : u
         ));
+        showNotification(`Usuario ${selectedUser.name} habilitado con éxito`, "success");
+      } else {
+        showNotification("Error al intentar habilitar el usuario", "error");
       }
     }
     closeEnableModal();
-  };
+  };;
 
-  // ================= FUNCIÓN ACTUALIZAR CONTRASEÑA =================
   const handleUpdatePassword = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Aquí iría la llamada real al Backend.
-    // Simulamos el éxito:
     setIsPasswordUpdated(true);
-    
-    // Limpiamos los campos
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-    
-    // Ocultamos el mensaje de éxito después de 4 segundos
-    setTimeout(() => {
-      setIsPasswordUpdated(false);
-    }, 4000);
+    setTimeout(() => setIsPasswordUpdated(false), 4000);
   };
 
   return (
@@ -403,6 +398,12 @@ export default function SettingsPage() {
         )}
 
       </div>
+      <Toast
+        show={toast.show}
+        message={toast.message} 
+        type={toast.type}
+        onClose={() => setToast(prev => ({ ...prev, show: false }))}
+      />
     </DashboardLayout>
   );
 }
