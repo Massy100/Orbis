@@ -33,4 +33,6 @@ router.register(r'results',             views.ResultViewSet,           basename=
 
 urlpatterns = [
     path('api/', include(router.urls)),
+    # Route for pensum upload
+    path('api/pensum/upload/', views.PensumUploadView.as_view(), name='pensum-upload'),
 ]
