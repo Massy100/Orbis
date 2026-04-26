@@ -11,10 +11,9 @@ import {
 import "@/src/app/styles/AvailabilityPicker.css";
 
 interface AvailabilityPickerProps {
-  // Ahora devuelve un array de nombres para ser compatible con ambas vistas
   onSave: (teacherNames: string[]) => void;
   onCancel: () => void;
-  maxSelections?: number; // 1 para Especial, 3 para Comprensiva
+  maxSelections?: number;
 }
 
 export default function AvailabilityPicker({ 
@@ -23,7 +22,6 @@ export default function AvailabilityPicker({
   maxSelections = 1 
 }: AvailabilityPickerProps) {
   
-  // Estado inicial: un array con '1' repetido según el número de selecciones requeridas
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>(
     Array(maxSelections).fill('1')
   );
@@ -145,7 +143,7 @@ export default function AvailabilityPicker({
 
             <button className="btn-confirm-main" onClick={handleConfirm}>
               <CheckCircle size={18} /> 
-              {maxSelections > 1 ? 'Asignar Terna' : 'Asignar Catedrático'}
+              {maxSelections > 1 ? 'Asignar' : 'Asignar Catedrático'}
             </button>
           </div>
         </div>
@@ -254,7 +252,7 @@ export default function AvailabilityPicker({
  * onSave={(names) => setForm({ ...form, tutor: names[0] })} 
  * />
   @example
- * // CASO 2: Evaluación Comprensiva (Terna)
+ * // CASO 2: Evaluación Comprensiva
  * <AvailabilityPicker 
  * maxSelections={3} 
  * onCancel={() => setShowAvailability(false)}
