@@ -34,6 +34,30 @@
   gap: 6px;
 }
 
+.navGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.submenu {
+  display: flex;
+  flex-direction: column;
+  margin-left: 20px;
+}
+
+.child {
+  font-size: 0.9rem;
+}
+
+.chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.chevron.rotated {
+  transform: rotate(180deg);
+}
+
 .navItem {
   display: flex;
   align-items: center;
