@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.contrib.auth.models import User
 from .models import (
     Career, Faculty, Course, CourseTeacher,
     Speciality, SpecialityTeacher,
@@ -129,3 +130,17 @@ class ResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = Result
         fields = '__all__'
+
+class SystemUserSerializer(serializers.ModelSerializer):
+    rol = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_active', 'rol']
+
+    def get_rol(self, obj):
+        if obj.is_superuser:
+            return "Administrador"
+        elif obj.is_staff:
+            return "Coordinador"
+        return "Usuario"
