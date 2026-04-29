@@ -9,56 +9,37 @@ import ModalAddTeacher from "../components/modal-add-teacher"
 import UploadTeacherSchedule from "../components/upload-teacher-schedule"
 import AutocompleteInput from "../components/autocomplete-input"
 import DashboardLayout from "../components/layout"
+import Toast from "../components/toast"
 
 
 
 type Teacher = {
     id: number
     carne: string
-    credits: number
     name: string
-    careers: Course[]
-    academicAreas: AcademicArea[]
+    teacherSpecialities: Speciality[]
+    courses: Course[]
     status: "Activo" | "Inactivo"
     evaluations: number
 }
 
-type AcademicArea =
-    | "Cálculo I"
-    | "Cálculo II"
-    | "Cálculo III"
-    | "Física I"
-    | "Física II"
-    | "Estadística I"
-    | "Estadística II"
-    | "Álgebra Lineal"
-    | "Matemática Discreta"
-    | "Ecuaciones Diferenciales"
-    | "Programación I"
-    | "Programación II"
-    | "Estructura de Datos"
-    | "Base de Datos I"
-    | "Base de Datos II"
-    | "Redes de Computadoras"
-    | "Sistemas Operativos"
-    | "Ingeniería de Software"
-    | "Arquitectura de Computadoras"
-    | "Circuitos Eléctricos"
-    | "Termodinámica"
-    | "Resistencia de Materiales"
-    | "Investigación de Operaciones"
-    | "Compiladores"
-    | "Inteligencia Artificial"
-type Course = "Informatica" | "Sistemas" | "Gestión Industrial"
+type Course = {
+    id: number
+    name: string
+}
+
+// type Speciality = "Informatica" | "Sistemas" | "Gestión Industrial"
+type Speciality = {
+    id: number
+    name: string
+}
 
 
 type TeacherDraft = {
     name: string
     carne: string
-    credits: number | ""
-    careers: Course[]
-    academicAreas: AcademicArea[]
-    status: "Activo" | "Inactivo"
+    teacherSpecialities: Speciality[]
+    courses: Course[]
 }
 
 type NewTeacherDraft = {
@@ -84,70 +65,121 @@ export default function Teachers() {
     const [addModalOpen, setAddModalOpen] = useState(false)
     const [scheduleFile, setScheduleFile] = useState<File | null>(null)
 
-    const [newTeacherCareers, setNewTeacherCareers] = useState<Course[]>([])
+    const [newTeacherCareers, setNewTeacherCareers] = useState<Speciality[]>([])
 
     // Array to load the Teachers
-    const [teachers, setTeachers] = useState<Teacher[]>([
-        {
-            id: 1,
-            carne: "05324",
-            credits: 3,
-            name: "Abelardo",
-            careers: ["Informatica", "Sistemas"],
-            academicAreas: ["Cálculo I", "Física I"],
-            status: "Activo",
-            evaluations: 12,
-        },
-        {
-            id: 2,
-            carne: "50843",
-            credits: 4,
-            name: "Jorge Escalante",
-            careers: ["Sistemas"],
-            academicAreas: ["Base de Datos I", "Programación II"],
-            status: "Activo",
-            evaluations: 15,
-        },
-        {
-            id: 3,
-            carne: "94231",
-            credits: 5,
-            name: "Marlon Estrada",
-            careers: ["Informatica"],
-            academicAreas: ["Estadística I", "Estadística II", "Matemática Discreta"],
-            status: "Inactivo",
-            evaluations: 15,
-        },
-        {
-            id: 4,
-            carne: "96325",
-            credits: 3,
-            name: "Karla Hernández",
-            careers: ["Informatica"],
-            academicAreas: ["Álgebra Lineal", "Ecuaciones Diferenciales"],
-            status: "Activo",
-            evaluations: 10,
-        },
-        {
-            id: 5,
-            carne: "84532",
-            credits: 2,
-            name: "Luis Martínez",
-            careers: ["Informatica"],
-            academicAreas: ["Programación I"],
-            status: "Activo",
-            evaluations: 5,
-        },
-    ])
+    const [teachers, setTeachers] = useState<Teacher[]>([])
+
+    // Academic areas available to assign when creating a new teacher
+    const [availableCourses, setAvailableCourses] = useState<Course[]>([])
+    const [selectedCourse, setSelectedCourses] = useState<Course[]>([])
+
+    const [isSavingTeacher, setIsSavingTeacher] = useState(false)
+    const [isEditingTeacher, setIsEditingTeacher] = useState(false)
+    const [isDeletingTeacher, setIsDeletingTeacher] = useState(false)
+
+    const [toast, setToast] = useState({
+        show: false,
+        message: "",
+        type: "info" as "success" | "error" | "info",
+    })
+
+    const showToast = (
+        message: string,
+        type: "success" | "error" | "info" = "info"
+    ) => {
+        setToast({ show: true, message, type })
+
+        setTimeout(() => {
+            setToast(prev => ({ ...prev, show: false }))
+        }, 3000)
+    }
+
+    const mapTeacher = (teacher: any): Teacher => ({
+        id: teacher.id,
+        carne: teacher.cat,
+        name: teacher.name,
+        teacherSpecialities: teacher.specialities ?? [],
+        courses: teacher.courses ?? [],
+        status: teacher.isactive ? "Activo" : "Inactivo",
+        evaluations: teacher.evaluationcount ?? 0,
+    })
+
+    const loadTeachers = async () => {
+        try {
+            const res = await fetch("http://localhost:8001/api/teachers/")
+
+            if (!res.ok) {
+                throw new Error("Error cargando docentes")
+            }
+
+            const data = await res.json()
+            setTeachers(data.map(mapTeacher))
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    useEffect(() => {
+        loadTeachers()
+    }, [])
+
+    useEffect(() => {
+        const loadCourses = async () => {
+            try {
+                const res = await fetch("http://localhost:8001/api/courses/?ordering=name")
+
+                if (!res.ok) {
+                    throw new Error("Error cargando cursos")
+                }
+
+                const data = await res.json()
+
+                const courses: Course[] = data.map((course: any) => ({
+                    id: course.id,
+                    name: course.name,
+                }))
+
+                setAvailableCourses(courses)
+            } catch (error) {
+                console.error(error)
+            }
+        }
+
+        loadCourses()
+    }, [])
+
+    useEffect(() => {
+        const loadSpecialities = async () => {
+            try {
+                const res = await fetch("http://localhost:8001/api/specialities/?ordering=name")
+
+                if (!res.ok) {
+                    throw new Error("Error cargando especialidades")
+                }
+
+                const data = await res.json()
+
+                const specialities: Speciality[] = data.map((item: any) => ({
+                    id: item.id,
+                    name: item.name,
+                }))
+
+                setAvailableSpecialities(specialities)
+            } catch (error) {
+                console.error(error)
+            }
+        }
+
+        loadSpecialities()
+    }, [])
 
     // Holds the temporary data while editing a teacher in the sidebar
     const [draft, setDraft] = useState<TeacherDraft>({
         name: "",
         carne: "",
-        credits: "",
-        careers: [],
-        academicAreas: [],
-        status: "Activo",
+        teacherSpecialities: [],
+        courses: [],
     })
 
     // Helper to show the progress bar to evaluations in the Table (column: Evaluaciones TOtales)
@@ -158,7 +190,7 @@ export default function Teachers() {
 
     // Helper to show if the Teacher is Apto or No Apto about the evaluations that he/she have
     const getAptitude = (value: number): string => {
-        return value === 15 ? "No apto" : "Apto"
+        return value >= 15 ? "No apto" : "Apto"
     }
 
     // Helpers to set the filters, default (Todos and Todos)
@@ -170,10 +202,14 @@ export default function Teachers() {
     const filteredTeachers = useMemo(() => {
         return teachers.filter((teacher) => {
             const matchesCareer =
-                careerFilter === "Todos" || teacher.careers.includes(careerFilter as Course)
+                careerFilter === "Todos" ||
+                teacher.teacherSpecialities.some(
+                    (speciality) => speciality.name === careerFilter
+                )
 
             const matchesDisponibilidad =
-                statusFilter === "Todos" || getAptitude(teacher.evaluations) === statusFilter
+                statusFilter === "Todos" ||
+                getAptitude(teacher.evaluations) === statusFilter
 
             return matchesCareer && matchesDisponibilidad
         })
@@ -192,36 +228,37 @@ export default function Teachers() {
     const icon_delete = <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M17.004 20L17.003 8h-1-8-1v12H17.004zM13.003 10h2v8h-2V10zM9.003 10h2v8h-2V10zM9.003 4H15.003V6H9.003z"></path><path d="M5.003,20c0,1.103,0.897,2,2,2h10c1.103,0,2-0.897,2-2V8h2V6h-3h-1V4c0-1.103-0.897-2-2-2h-6c-1.103,0-2,0.897-2,2v2h-1h-3 v2h2V20z M9.003,4h6v2h-6V4z M8.003,8h8h1l0.001,12H7.003V8H8.003z"></path><path d="M9.003 10H11.003V18H9.003zM13.003 10H15.003V18H13.003z"></path></svg>
     const icon_edit = <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g><path fill="none" d="M0 0h24v24H0z"></path><path d="M15.728 9.686l-1.414-1.414L5 17.586V19h1.414l9.314-9.314zm1.414-1.414l1.414-1.414-1.414-1.414-1.414 1.414 1.414 1.414zM7.242 21H3v-4.243L16.435 3.322a1 1 0 0 1 1.414 0l2.829 2.829a1 1 0 0 1 0 1.414L7.243 21z"></path></g></svg>
 
-    // The courses that is available to add or remove in the edit sidebar, the max is 3 courses for teacher
-    const availableCourses: Course[] = [
-        "Informatica",
-        "Sistemas",
-        "Gestión Industrial",
-    ]
+    // The specialities that is available to add or remove in the edit sidebar, the max is 3 specialities for teacher
+    const [availableSpecialities, setAvailableSpecialities] = useState<Speciality[]>([])
 
-    // Add or remove courses from the teachers
-    const toggleCareer = (course: Course) => {
+    // Add or remove specialities from the teachers
+    const toggleCareer = (speciality: Speciality) => {
         setDraft((prev) => {
-            const exists = prev.careers.includes(course)
+            const exists = prev.teacherSpecialities.some(item => item.id === speciality.id)
+
             if (exists) {
                 return {
                     ...prev,
-                    careers: prev.careers.filter((c) => c !== course),
+                    teacherSpecialities: prev.teacherSpecialities.filter(
+                        item => item.id !== speciality.id
+                    ),
                 }
             }
-            if (prev.careers.length >= 3) return prev
+
+            if (prev.teacherSpecialities.length >= 3) return prev
+
             return {
                 ...prev,
-                careers: [...prev.careers, course],
+                teacherSpecialities: [...prev.teacherSpecialities, speciality],
             }
         })
     }
 
-    const toggleNewTeacherCareer = (course: Course) => {
+    const toggleNewTeacherSpeciality = (speciality: Speciality) => {
         setNewTeacherCareers((prev) =>
-            prev.includes(course)
-                ? prev.filter((c) => c !== course)
-                : [...prev, course]
+            prev.some((item) => item.id === speciality.id)
+                ? prev.filter((item) => item.id !== speciality.id)
+                : [...prev, speciality]
         )
     }
 
@@ -238,12 +275,10 @@ export default function Teachers() {
         setDraft({
             name: teacher.name,
             carne: teacher.carne,
-            credits: teacher.credits,
-            careers: teacher.careers,
-            academicAreas: teacher.academicAreas,
-            status: teacher.status,
+            teacherSpecialities: teacher.teacherSpecialities,
+            courses: teacher.courses,
         })
-        setSelectedAcademicAreas(teacher.academicAreas)
+        setSelectedCourses(teacher.courses)
         setOpen(true)
     }
 
@@ -251,15 +286,13 @@ export default function Teachers() {
     const closeDrawer = () => {
         setOpen(false)
         setSelectedTeacherId(null)
-        setSelectedAcademicAreas([])
+        setSelectedCourses([])
         setScheduleFile(null)
         setDraft({
             name: "",
             carne: "",
-            credits: "",
-            careers: [],
-            academicAreas: [],
-            status: "Activo",
+            teacherSpecialities: [],
+            courses: [],
         })
     }
 
@@ -267,7 +300,6 @@ export default function Teachers() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         if (selectedTeacherId === null) return
-        if (draft.credits === "" || draft.credits < 0 || draft.credits > 16) return
         setEditModalOpen(true)
     }
 
@@ -277,45 +309,58 @@ export default function Teachers() {
 
     // Confirm the teacher edit
     // Runs only after confirmation in the modal
-    const handleConfirmEdit = () => {
+    const handleConfirmEdit = async () => {
         if (selectedTeacherId === null) return
-        if (draft.credits === "" || draft.credits < 0 || draft.credits > 16) return
 
-        const editTeacherPayload = {
-            id: selectedTeacherId,
-            name: draft.name,
-            carne: draft.carne,
-            careers: draft.careers,
-            academicAreas: selectedAcademicAreas,
-            status: draft.status,
-            scheduleFile: scheduleFile ?? null,
-        }
+        setIsEditingTeacher(true)
 
-        console.log("Payload edición:", editTeacherPayload)
+        try {
+            const teacherRes = await fetch(`http://localhost:8001/api/teachers/${selectedTeacherId}/`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: draft.name,
+                    cat: draft.carne,
+                }),
+            })
 
-        setTeachers((prev) =>
-            prev.map((teacher) =>
-                teacher.id === selectedTeacherId
-                    ? {
-                        ...teacher,
-                        name: draft.name,
-                        carne: draft.carne,
-                        credits: Number(draft.credits),
-                        careers: draft.careers,
-                        academicAreas: selectedAcademicAreas,
-                        status: draft.status,
-                    }
-                    : teacher
+            if (!teacherRes.ok) {
+                showToast("No se pudo actualizar el docente.", "error")
+                return
+            }
+
+            const relationsRes = await fetch(
+                `http://localhost:8001/api/teachers/${selectedTeacherId}/update_relations/`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        courses: selectedCourse.map(course => course.id),
+                        specialities: draft.teacherSpecialities.map(speciality => speciality.id),
+                    }),
+                }
             )
-        )
 
-        setEditModalOpen(false)
-        closeDrawer()
+            if (!relationsRes.ok) {
+                showToast("No se pudieron actualizar los cursos o especialidades.", "error")
+                return
+            }
 
-        // Restores body scroll after closing both the modal and the sidebar
-        requestAnimationFrame(() => {
-            document.body.style.overflow = ''
-        })
+            await loadTeachers()
+
+            setEditModalOpen(false)
+            closeDrawer()
+            showToast("Docente actualizado correctamente.", "success")
+        } catch (error) {
+            console.error("Error editando docente:", error)
+            showToast("Error conectando con el servidor.", "error")
+        } finally {
+            setIsEditingTeacher(false)
+        }
     }
 
     // Opens a confirmation modal to delete a teacher
@@ -332,41 +377,37 @@ export default function Teachers() {
 
     // Permanently removes the teacher from the state
     // Runs after confirming in the modal
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (!teacherToDelete) return
 
-        setTeachers((prev) => prev.filter((t) => t.id !== teacherToDelete.id))
-        closeDeleteModal()
-    }
+        setIsDeletingTeacher(true)
 
-    // Academic areas available to assign when creating a new teacher
-    const availableAcademicAreas: AcademicArea[] = [
-        "Cálculo I",
-        "Cálculo II",
-        "Cálculo III",
-        "Física I",
-        "Física II",
-        "Estadística I",
-        "Estadística II",
-        "Álgebra Lineal",
-        "Matemática Discreta",
-        "Ecuaciones Diferenciales",
-        "Programación I",
-        "Programación II",
-        "Estructura de Datos",
-        "Base de Datos I",
-        "Base de Datos II",
-        "Redes de Computadoras",
-        "Sistemas Operativos",
-        "Ingeniería de Software",
-        "Arquitectura de Computadoras",
-        "Circuitos Eléctricos",
-        "Termodinámica",
-        "Resistencia de Materiales",
-        "Investigación de Operaciones",
-        "Compiladores",
-        "Inteligencia Artificial",
-    ]
+        try {
+            const res = await fetch(`http://localhost:8001/api/teachers/${teacherToDelete.id}/`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    isactive: false,
+                }),
+            })
+
+            if (!res.ok) {
+                showToast("No se pudo eliminar el docente.", "error")
+                return
+            }
+
+            await loadTeachers()
+            closeDeleteModal()
+            showToast("Docente eliminado correctamente.", "success")
+        } catch (error) {
+            console.error("Error conectando con backend:", error)
+            showToast("Error conectando con el servidor.", "error")
+        } finally {
+            setIsDeletingTeacher(false)
+        }
+    }
 
     const initialNewTeacherDraft: NewTeacherDraft = {
         carne: "",
@@ -374,12 +415,11 @@ export default function Teachers() {
     }
 
     const [newTeacherDraft, setNewTeacherDraft] = useState<NewTeacherDraft>(initialNewTeacherDraft)
-    const [selectedAcademicAreas, setSelectedAcademicAreas] = useState<AcademicArea[]>([])
 
     // Resets all add-teacher form state and opens the modal
     const openAddModal = () => {
         setNewTeacherDraft(initialNewTeacherDraft)
-        setSelectedAcademicAreas([])
+        setSelectedCourses([])
         setScheduleFile(null)
         setAddModalOpen(true)
         setNewTeacherCareers([])
@@ -389,76 +429,80 @@ export default function Teachers() {
     const closeAddModal = () => {
         setAddModalOpen(false)
         setNewTeacherDraft(initialNewTeacherDraft)
-        setSelectedAcademicAreas([])
+        setSelectedCourses([])
         setScheduleFile(null)
         setNewTeacherCareers([])
     }
 
     // Adds an academic area tag only if it hasn't been selected yet
-    const handleAddAcademicArea = (area: AcademicArea) => {
-        setSelectedAcademicAreas((prev) => {
-            if (prev.includes(area)) return prev
-            return [...prev, area]
+    const handleAddCourse = (course: Course) => {
+        setSelectedCourses((prev) => {
+            if (prev.some(item => item.id === course.id)) return prev
+            return [...prev, course]
         })
     }
 
     // Removes an academic area tag from the selection
-    const handleRemoveAcademicArea = (area: AcademicArea) => {
-        setSelectedAcademicAreas((prev) => prev.filter((item) => item !== area))
+    const handleRemoveCourse = (course: Course) => {
+        setSelectedCourses((prev) => prev.filter((item) => item.id !== course.id))
     }
 
     // Validates the form, builds the new teacher object and adds it to the list
-    // carne, id, credits, careers, aptitude automatically for now
-    const handleAddTeacher = (e: React.FormEvent) => {
+    const handleAddTeacher = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        if (!newTeacherDraft.fullName.trim()) return
-        if (!newTeacherDraft.carne.trim()) return
+        if (isSavingTeacher) return
 
-        const newTeacherPayload = {
-            carne: newTeacherDraft.carne.trim(),
-            fullName: newTeacherDraft.fullName.trim(),
-            careers: newTeacherCareers,
-            academicAreas: selectedAcademicAreas,
-            scheduleFile: scheduleFile ?? null,
-            // The backend assign: id, credits, evaluations, status, aptitude
+        if (!newTeacherDraft.fullName.trim() || !newTeacherDraft.carne.trim()) {
+            showToast("Faltan campos por completar", "error")
+            return
         }
 
-        console.log("Payload aggregar:", newTeacherPayload)
+        setIsSavingTeacher(true)
 
-        const newTeacher: Teacher = {
-            id: Date.now(),             // TEMPORARY: Replace this with the actual ID
-            carne: newTeacherDraft.carne.trim(),
-            credits: 0,
-            name: newTeacherDraft.fullName.trim(),
-            careers: newTeacherCareers,
-            academicAreas: selectedAcademicAreas,
-            status: "Activo",
-            evaluations: 0,
+        try {
+            const res = await fetch("http://localhost:8001/api/teachers/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: newTeacherDraft.fullName.trim(),
+                    cat: newTeacherDraft.carne.trim(),
+                    isactive: true,
+                    evaluationcount: 0,
+                    rol: 1,
+                    career: 1,
+                    faculty: 1,
+                    courses: selectedCourse.map(c => c.id),
+                    specialities: newTeacherCareers.map(s => s.id)
+                }),
+            })
+
+            if (!res.ok) {
+                showToast("No se ha podido crear el docente.", "error")
+                return
+            }
+
+            await loadTeachers()
+
+            closeAddModal()
+            showToast("Docente creado correctamente.", "success")
+        } catch (error) {
+            console.error("Error conectando con backend:", error)
+            showToast("Error conectando con el servidor.", "error")
+        } finally {
+            setIsSavingTeacher(false)
         }
-
-        setTeachers((prev) => [newTeacher, ...prev])
-        closeAddModal()
     }
 
     return (
         <>
             <DashboardLayout>
                 <div className="container-teachers">
-                    {/* <header className="teachers-header">
-                        <h1>Maestros</h1>
-                        <div className="system-administrator">
-                            <h2>Administrador del sistema</h2>
-                            <div className="icon">
-                                <svg stroke="currentColor" fill="none" strokeWidth="0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            </div>
-                        </div>
-                    </header> */}
 
                     <div className="types-filters-add-teacher">
                         <div className="types-filters">
                             <div className="filter-box">
-                                <label htmlFor="career">ESPECIALIDADES</label>     {/* The options to filter the career  */}
+                                <label htmlFor="career">ESPECIALIDADES</label>
                                 <select
                                     name="career"
                                     id="career"
@@ -466,14 +510,16 @@ export default function Teachers() {
                                     onChange={(e) => setCareerFilter(e.target.value)}
                                 >
                                     <option value="Todos">Todas las especialidades</option>
-                                    <option value="Informatica">Informática</option>
-                                    <option value="Sistemas">Sistemas</option>
-                                    <option value="Gestión Industrial">Gestión Industrial</option>
+                                    {availableSpecialities.map((speciality) => (
+                                        <option key={speciality.id} value={speciality.name}>
+                                            {speciality.name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
 
                             <div className="filter-box">
-                                <label htmlFor="disponibilidad ">DISPONIBILIDAD </label>  {/* The options to filter the state  */}
+                                <label htmlFor="disponibilidad ">DISPONIBILIDAD </label>
                                 <select
                                     name="disponibilidad "
                                     id="disponibilidad "
@@ -502,8 +548,8 @@ export default function Teachers() {
                                 <tr>
                                     <th>Carnet</th>
                                     <th>Nombre</th>
-                                    <th>Especialidades</th>
                                     <th>Cursos impartidos</th>
+                                    <th>Especialidades</th>
                                     <th>Evaluaciones Totales</th>
                                     <th>Apto para Evaluar</th>
                                     <th>Acciones</th>
@@ -513,7 +559,7 @@ export default function Teachers() {
                                 {filteredTeachers.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} className="no-data">
-                                            No hay resultados para la búsqueda
+                                            No se encontraron resultados disponibles
                                         </td>
                                     </tr>
                                 ) : (
@@ -525,10 +571,10 @@ export default function Teachers() {
 
                                             <td>
                                                 <div className="teacher-careers-column">
-                                                    {c.careers.length > 0
-                                                        ? c.careers.map((career) => (
-                                                            <p key={career} className="teacher-career">
-                                                                {career}
+                                                    {c.courses.length > 0
+                                                        ? c.courses.map((course) => (
+                                                            <p key={course.id} className="teacher-career">
+                                                                {course.name}
                                                             </p>
                                                         ))
                                                         : <p className="teacher-no-areas">Sin asignar</p>
@@ -538,10 +584,10 @@ export default function Teachers() {
 
                                             <td>
                                                 <div className="teacher-careers-column">
-                                                    {c.academicAreas.length > 0
-                                                        ? c.academicAreas.map((area) => (
-                                                            <p key={area} className="teacher-career">
-                                                                {area}
+                                                    {c.teacherSpecialities.length > 0
+                                                        ? c.teacherSpecialities.map((speciality) => (
+                                                            <p key={speciality.id} className="teacher-career">
+                                                                {speciality.name}
                                                             </p>
                                                         ))
                                                         : <p className="teacher-no-areas">Sin asignar</p>
@@ -656,24 +702,27 @@ export default function Teachers() {
                     <div className="sidebar-drop-down-field">
                         <label className="sidebar-drop-down-label">Curso impartido</label>
                         <AutocompleteInput
-                            options={availableAcademicAreas}
-                            selected={selectedAcademicAreas}
-                            placeholder="Buscar área..."
-                            onSelect={(area) => handleAddAcademicArea(area as AcademicArea)}
+                            options={availableCourses.map(course => course.name)}
+                            selected={selectedCourse.map(course => course.name)}
+                            placeholder="Buscar curso..."
+                            onSelect={(courseName) => {
+                                const course = availableCourses.find(c => c.name === courseName)
+                                if (course) handleAddCourse(course)
+                            }}
                             variant="sidebar"
                         />
                     </div>
 
-                    {selectedAcademicAreas.length > 0 && (
+                    {selectedCourse.length > 0 && (
                         <div className="sidebar-drop-down-tags">
-                            {selectedAcademicAreas.map((area) => (
+                            {selectedCourse.map((course) => (
                                 <button
-                                    key={area}
+                                    key={course.id}
                                     type="button"
                                     className="sidebar-drop-down-tag"
-                                    onClick={() => handleRemoveAcademicArea(area)}
+                                    onClick={() => handleRemoveCourse(course)}
                                 >
-                                    {area}
+                                    {course.name}
                                     <span className="sidebar-drop-down-tag-close">×</span>
                                 </button>
                             ))}
@@ -681,16 +730,16 @@ export default function Teachers() {
                     )}
 
                     <div className="sidebar-drop-down-field">
-                        <label className="sidebar-drop-down-label">Cursos:</label>
+                        <label className="sidebar-drop-down-label">Especialidades:</label>
                         <div className="input-underline courses-checkboxes">
-                            {availableCourses.map((course) => (
-                                <label key={course} className="course-option">
+                            {availableSpecialities.map((speciality) => (
+                                <label key={speciality.id} className="modal-add-teacher-course-option">
                                     <input
                                         type="checkbox"
-                                        checked={draft.careers.includes(course)}
-                                        onChange={() => toggleCareer(course)}
+                                        checked={draft.teacherSpecialities.some(item => item.id === speciality.id)}
+                                        onChange={() => toggleCareer(speciality)}
                                     />
-                                    {course}
+                                    {speciality.name}
                                 </label>
                             ))}
                         </div>
@@ -749,8 +798,16 @@ export default function Teachers() {
                             type="button"
                             className="modal-btn modal-btn-danger"
                             onClick={handleConfirmDelete}
+                            disabled={isDeletingTeacher}
                         >
-                            Eliminar
+                            {isDeletingTeacher ? (
+                                <>
+                                    <span className="btn-spinner" />
+                                    Eliminando...
+                                </>
+                            ) : (
+                                "Eliminar"
+                            )}
                         </button>
                     </div>
                 </div>
@@ -783,8 +840,16 @@ export default function Teachers() {
                             type="button"
                             className="modal-btn modal-btn-primary"
                             onClick={handleConfirmEdit}
+                            disabled={isEditingTeacher}
                         >
-                            Guardar
+                            {isEditingTeacher ? (
+                                <>
+                                    <span className="btn-spinner" />
+                                    Guardando...
+                                </>
+                            ) : (
+                                "Guardar"
+                            )}
                         </button>
                     </div>
                 </div>
@@ -844,24 +909,27 @@ export default function Teachers() {
                     <div className="modal-add-teacher-field">
                         <label className="modal-add-teacher-label">Curso impartido</label>
                         <AutocompleteInput
-                            options={availableAcademicAreas}
-                            selected={selectedAcademicAreas}
-                            placeholder="Buscar área..."
-                            onSelect={(area) => handleAddAcademicArea(area as AcademicArea)}
+                            options={availableCourses.map(course => course.name)}
+                            selected={selectedCourse.map(course => course.name)}
+                            placeholder="Buscar curso..."
+                            onSelect={(courseName) => {
+                                const course = availableCourses.find(c => c.name === courseName)
+                                if (course) handleAddCourse(course)
+                            }}
                             variant="modal"
                         />
                     </div>
 
-                    {selectedAcademicAreas.length > 0 && (
+                    {selectedCourse.length > 0 && (
                         <div className="modal-add-teacher-tags">
-                            {selectedAcademicAreas.map((area) => (
+                            {selectedCourse.map((course) => (
                                 <button
-                                    key={area}
+                                    key={course.id}
                                     type="button"
                                     className="modal-add-teacher-tag"
-                                    onClick={() => handleRemoveAcademicArea(area)}
+                                    onClick={() => handleRemoveCourse(course)}
                                 >
-                                    {area}
+                                    {course.name}
                                     <span className="modal-add-teacher-tag-close">×</span>
                                 </button>
                             ))}
@@ -869,16 +937,16 @@ export default function Teachers() {
                     )}
 
                     <div className="modal-add-teacher-field">
-                        <label className="modal-add-teacher-label">Especialidades</label>
+                        <label className="modal-add-teacher-label">Especialidades: </label>
                         <div className="modal-add-teacher-checkboxes">
-                            {availableCourses.map((course) => (
-                                <label key={course} className="modal-add-teacher-course-option">
+                            {availableSpecialities.map((speciality) => (
+                                <label key={speciality.id} className="modal-add-teacher-course-option">
                                     <input
                                         type="checkbox"
-                                        checked={newTeacherCareers.includes(course)}
-                                        onChange={() => toggleNewTeacherCareer(course)}
+                                        checked={newTeacherCareers.some(item => item.id === speciality.id)}
+                                        onChange={() => toggleNewTeacherSpeciality(speciality)}
                                     />
-                                    {course}
+                                    {speciality.name}
                                 </label>
                             ))}
                         </div>
@@ -903,12 +971,27 @@ export default function Teachers() {
                         <button
                             type="submit"
                             className="modal-add-teacher-btn modal-add-teacher-btn-primary"
+                            disabled={isSavingTeacher}
                         >
-                            Guardar docente
+                            {isSavingTeacher ? (
+                                <>
+                                    <span className="btn-spinner" />
+                                    Guardando...
+                                </>
+                            ) : (
+                                "Guardar docente"
+                            )}
                         </button>
                     </div>
                 </form>
             </ModalAddTeacher>
+
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast(prev => ({ ...prev, show: false }))}
+            />
         </>
     )
 
