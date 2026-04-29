@@ -1,3 +1,8 @@
+from rest_framework import viewsets, filters, status
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from parsers.pensum_parser import parse_pensum
 from django.contrib.auth.models import User
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
@@ -178,6 +183,43 @@ class ResultViewSet(viewsets.ModelViewSet):
     filterset_fields = ['state', 'evaluationid']
     search_fields = ['state', 'observation']
 
+# Espetial route for pensum upload
+
+class PensumUploadView(APIView):
+    def post(self, request):
+        file = request.FILES.get("file")
+        upload_type = request.data.get("type", "")
+ 
+        if not file:
+            return Response(
+                {"error": "No file was provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        allowed_types = ("especial", "comprensiva")
+        if upload_type not in allowed_types:
+            return Response(
+                {"error": f"'type' must be one of {allowed_types}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        try:
+            stats = parse_pensum(file)
+        except Exception as exc:
+            return Response(
+                {"error": f"Failed to parse the pensum file: {str(exc)}"},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+ 
+        return Response(
+            {
+                "message": "Pensum uploaded successfully.",
+                "type": upload_type,
+                "stats": stats,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+ 
 
 
 class DashboardStatsView(APIView):

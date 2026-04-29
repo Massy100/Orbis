@@ -37,6 +37,8 @@ router.register(r'system-users',       views.SystemUserViewSet,       basename='
 
 urlpatterns = [
     path('api/', include(router.urls)),
+    # Route for pensum upload
+    path('api/pensum/upload/', views.PensumUploadView.as_view(), name='pensum-upload'),
     path('api/dashboard-stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('api/dashboard-metrics/', views.DashboardMetricsView.as_view(), name='dashboard-metrics'),
 ]
