@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
+from . import views 
+from .views import SystemUserSerializer
 
 router = DefaultRouter()
 
@@ -31,6 +32,11 @@ router.register(r'evaluations',         views.EvaluationViewSet,       basename=
 router.register(r'evaluation-teachers', views.EvaluationTeacherViewSet,basename='evaluation-teacher')
 router.register(r'results',             views.ResultViewSet,           basename='result')
 
+# Route for System Users
+router.register(r'system-users',       views.SystemUserViewSet,       basename='system-user')
+
 urlpatterns = [
     path('api/', include(router.urls)),
+    path('api/dashboard-stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
+    path('api/dashboard-metrics/', views.DashboardMetricsView.as_view(), name='dashboard-metrics'),
 ]

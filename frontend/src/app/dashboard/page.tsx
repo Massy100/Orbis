@@ -1,7 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout';
-import { Mail, TrendingUp } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -9,11 +10,11 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts';
+import { getDashboardMetrics } from '../services/dashboardService';
 
-// ================= DATOS DE EJEMPLO (MOCKS) =================
-const evaluacionesPorMes = [
+// =================
+const evaluacionesPorMesMock = [
   { mes: 'ENE', especial: 120, comprensiva: 180 },
   { mes: 'FEB', especial: 210, comprensiva: 160 },
   { mes: 'MAR', especial: 320, comprensiva: 110 },
@@ -22,25 +23,23 @@ const evaluacionesPorMes = [
   { mes: 'JUN', especial: 290, comprensiva: 210 },
 ];
 
-const pendientesPorAccion = [
+const pendientesPorAccionMock = [
   { label: 'ENVIAR CORREO', value: 18, max: 18, color: '#2563EB' },
   { label: 'REGISTRAR RESULTADO', value: 12, max: 18, color: '#2563EB' },
   { label: 'SUBIR DOCUMENTO', value: 8, max: 18, color: '#2563EB' },
   { label: 'ASIGNAR EVALUADOR', value: 4, max: 18, color: '#93C5FD' },
 ];
 
-const docentesTop = [
+const docentesTopMock = [
   { initials: 'ER', name: 'Dr. Elena Rodríguez', dept: 'CIENCIAS SOCIALES', total: 48 },
   { initials: 'JM', name: 'MSc. Juan Carlos Mora', dept: 'INGENIERÍA', total: 42 },
   { initials: 'MS', name: 'Dra. Marta Sánchez', dept: 'ECONOMÍA', total: 35 },
   { initials: 'LM', name: 'Lic. Luis Montero', dept: 'ARTES', total: 29 },
 ];
 
-// Colores para los avatares
 const avatarColors = ['#DBEAFE', '#EDE9FE', '#FCE7F3', '#D1FAE5'];
 const avatarTextColors = ['#2563EB', '#7C3AED', '#DB2777', '#059669'];
 
-// Tooltip personalizado para la gráfica
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -58,20 +57,45 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function DashboardPage() {
-  const totalEvaluaciones = 1284;
-  const correosPendientes = 18;
+  const [metrics, setMetrics] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      const data = await getDashboardMetrics();
+      if (data) {
+        setMetrics(data);
+      }
+      setIsLoading(false);
+    };
+    fetchMetrics();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full text-gray-500 font-semibold">
+          Cargando métricas del sistema...
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Lógica de prioridad
+  const chartData = metrics?.monthly_chart?.length > 0 ? metrics.monthly_chart : evaluacionesPorMesMock;
+  const topTeachersData = metrics?.top_teachers?.length > 0 ? metrics.top_teachers : docentesTopMock;
+  // Pendientes mantendrá el mock temporalmente hasta que se decida la lógica exacta de acciones en backend
+  const pendientesData = pendientesPorAccionMock; 
+
+  const displayTotalEvaluations = metrics?.total_evaluations || 1284; // Mock fallback
+  const displayPendingEmails = metrics?.pending_emails || 18; // Mock fallback
 
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-6">
 
-        {/* TÍTULO */}
-
-
         {/* ===== FILA 1: DOS TARJETAS SUPERIORES ===== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-
-          {/* Tarjeta: Total de Evaluaciones */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-start justify-between">
               <div>
@@ -79,14 +103,12 @@ export default function DashboardPage() {
                   Total de Evaluaciones
                 </p>
                 <p className="text-5xl font-extrabold text-gray-900 mt-2 leading-none">
-                  {totalEvaluaciones.toLocaleString('es-GT')}
+                  {displayTotalEvaluations.toLocaleString('es-GT')}
                 </p>
               </div>
-              
             </div>
           </div>
 
-          {/* Tarjeta: Correos Pendientes */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-start justify-between">
               <div>
@@ -94,7 +116,7 @@ export default function DashboardPage() {
                   Correos Pendientes
                 </p>
                 <p className="text-5xl font-extrabold text-gray-900 mt-2 leading-none">
-                  {correosPendientes}
+                  {displayPendingEmails}
                 </p>
               </div>
               <Mail size={36} className="text-gray-300 mt-1" strokeWidth={1.5} />
@@ -122,7 +144,7 @@ export default function DashboardPage() {
 
           <ResponsiveContainer width="100%" height={260}>
             <BarChart
-              data={evaluacionesPorMes}
+              data={chartData}
               barCategoryGap="35%"
               barGap={4}
             >
@@ -142,14 +164,12 @@ export default function DashboardPage() {
 
         {/* ===== FILA 3: DOS TARJETAS INFERIORES ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* Tarjeta: Pendientes por tipo de acción */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h2 className="text-base font-bold text-gray-800 mb-5">
               Pendientes por tipo de acción
             </h2>
             <div className="flex flex-col gap-4">
-              {pendientesPorAccion.map((item) => (
+              {pendientesData.map((item) => (
                 <div key={item.label}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
@@ -171,15 +191,13 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Tarjeta: Docentes con más evaluaciones */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h2 className="text-base font-bold text-gray-800 mb-5">
               Docentes con más evaluaciones
             </h2>
             <div className="flex flex-col gap-4">
-              {docentesTop.map((docente, index) => (
+              {topTeachersData.map((docente: any, index: number) => (
                 <div key={docente.name} className="flex items-center gap-3">
-                  {/* Avatar */}
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-extrabold shrink-0"
                     style={{
@@ -189,14 +207,10 @@ export default function DashboardPage() {
                   >
                     {docente.initials}
                   </div>
-
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 truncate">{docente.name}</p>
                     <p className="text-xs text-gray-400 font-semibold">{docente.dept}</p>
                   </div>
-
-                  {/* Total */}
                   <div className="text-right shrink-0">
                     <p className="text-base font-extrabold text-blue-600">{docente.total}</p>
                     <p className="text-xs text-gray-400 font-semibold">TOTAL</p>
@@ -205,7 +219,6 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
-
         </div>
       </div>
     </DashboardLayout>
