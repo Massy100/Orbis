@@ -4,11 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from parsers.pensum_parser import parse_pensum
 from django.contrib.auth.models import User
-from rest_framework import viewsets, filters
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from django.db.models import Count, Q
 from django.db.models.functions import ExtractMonth
 from .serializers import SystemUserSerializer
