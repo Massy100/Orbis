@@ -1,41 +1,11 @@
+// frontend/src/app/dashboard/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/layout';
-import { Mail } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { getDashboardMetrics } from '../services/dashboardService';
-
-// =================
-const evaluacionesPorMesMock = [
-  { mes: 'ENE', especial: 120, comprensiva: 180 },
-  { mes: 'FEB', especial: 210, comprensiva: 160 },
-  { mes: 'MAR', especial: 320, comprensiva: 110 },
-  { mes: 'ABR', especial: 250, comprensiva: 200 },
-  { mes: 'MAY', especial: 380, comprensiva: 150 },
-  { mes: 'JUN', especial: 290, comprensiva: 210 },
-];
-
-const pendientesPorAccionMock = [
-  { label: 'ENVIAR CORREO', value: 18, max: 18, color: '#2563EB' },
-  { label: 'REGISTRAR RESULTADO', value: 12, max: 18, color: '#2563EB' },
-  { label: 'SUBIR DOCUMENTO', value: 8, max: 18, color: '#2563EB' },
-  { label: 'ASIGNAR EVALUADOR', value: 4, max: 18, color: '#93C5FD' },
-];
-
-const docentesTopMock = [
-  { initials: 'ER', name: 'Dr. Elena Rodríguez', dept: 'CIENCIAS SOCIALES', total: 48 },
-  { initials: 'JM', name: 'MSc. Juan Carlos Mora', dept: 'INGENIERÍA', total: 42 },
-  { initials: 'MS', name: 'Dra. Marta Sánchez', dept: 'ECONOMÍA', total: 35 },
-  { initials: 'LM', name: 'Lic. Luis Montero', dept: 'ARTES', total: 29 },
-];
+import { BookOpen, Award, X } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { fetchDashboardData } from '../services/dashboardService.js'; // Importamos el .js
 
 const avatarColors = ['#DBEAFE', '#EDE9FE', '#FCE7F3', '#D1FAE5'];
 const avatarTextColors = ['#2563EB', '#7C3AED', '#DB2777', '#059669'];
@@ -59,16 +29,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function DashboardPage() {
   const [metrics, setMetrics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Estado para el Switch de Docentes Top
+  const [topViewMode, setTopViewMode] = useState<'comprensivas' | 'especiales'>('comprensivas');
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      const data = await getDashboardMetrics();
-      if (data) {
-        setMetrics(data);
+    const loadDashboard = async () => {
+      const result = await fetchDashboardData();
+      if (result.success) {
+        setMetrics(result.data);
       }
       setIsLoading(false);
     };
-    fetchMetrics();
+    loadDashboard();
   }, []);
 
   if (isLoading) {
@@ -81,31 +56,35 @@ export default function DashboardPage() {
     );
   }
 
-  // Lógica de prioridad
-  const chartData = metrics?.monthly_chart?.length > 0 ? metrics.monthly_chart : evaluacionesPorMesMock;
-  const topTeachersData = metrics?.top_teachers?.length > 0 ? metrics.top_teachers : docentesTopMock;
-  // Pendientes mantendrá el mock temporalmente hasta que se decida la lógica exacta de acciones en backend
-  const pendientesData = pendientesPorAccionMock; 
+  if (!metrics) {
+    return (
+      <DashboardLayout>
+        <div className="text-red-500 text-center">Error al conectar con la base de datos Neon.</div>
+      </DashboardLayout>
+    );
+  }
 
-  const displayTotalEvaluations = metrics?.total_evaluations || 1284; // Mock fallback
-  const displayPendingEmails = metrics?.pending_emails || 18; // Mock fallback
+  const currentTopTeachers = topViewMode === 'comprensivas' 
+    ? metrics.top_teachers.comprensivas 
+    : metrics.top_teachers.especiales;
 
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-6">
 
-        {/* ===== FILA 1: DOS TARJETAS SUPERIORES ===== */}
+        {/* ===== FILA 1: TARJETAS SUPERIORES ===== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Total de Evaluaciones
+                  Total Evaluaciones Comprensivas
                 </p>
                 <p className="text-5xl font-extrabold text-gray-900 mt-2 leading-none">
-                  {displayTotalEvaluations.toLocaleString('es-GT')}
+                  {metrics.cards_totals.comprensivas.toLocaleString('es-GT')}
                 </p>
               </div>
+              <BookOpen size={36} className="text-blue-500 mt-1" strokeWidth={1.5} />
             </div>
           </div>
 
@@ -113,13 +92,13 @@ export default function DashboardPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Correos Pendientes
+                  Total Evaluaciones Especiales
                 </p>
                 <p className="text-5xl font-extrabold text-gray-900 mt-2 leading-none">
-                  {displayPendingEmails}
+                  {metrics.cards_totals.especiales.toLocaleString('es-GT')}
                 </p>
               </div>
-              <Mail size={36} className="text-gray-300 mt-1" strokeWidth={1.5} />
+              <Award size={36} className="text-purple-500 mt-1" strokeWidth={1.5} />
             </div>
           </div>
         </div>
@@ -143,17 +122,8 @@ export default function DashboardPage() {
           </div>
 
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart
-              data={chartData}
-              barCategoryGap="35%"
-              barGap={4}
-            >
-              <XAxis
-                dataKey="mes"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 11, fill: '#9CA3AF', fontWeight: 600 }}
-              />
+            <BarChart data={metrics.monthly_chart} barCategoryGap="35%" barGap={4}>
+              <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF', fontWeight: 600 }} />
               <YAxis hide />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: '#F9FAFB' }} />
               <Bar dataKey="especial" name="Especial" fill="#2563EB" radius={[4, 4, 0, 0]} />
@@ -164,24 +134,26 @@ export default function DashboardPage() {
 
         {/* ===== FILA 3: DOS TARJETAS INFERIORES ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* CONFIRMACIONES */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h2 className="text-base font-bold text-gray-800 mb-5">
-              Pendientes por tipo de acción
+              Confirmaciones de Docentes
             </h2>
             <div className="flex flex-col gap-4">
-              {pendientesData.map((item) => (
+              {metrics.confirmations.map((item: any) => (
                 <div key={item.label}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                       {item.label}
                     </span>
-                    <span className="text-xs font-bold text-gray-700">{item.value}</span>
+                    <span className="text-xs font-bold text-gray-700">{item.value} / {item.max === 0 ? 1 : item.max}</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
                     <div
                       className="h-2 rounded-full transition-all"
                       style={{
-                        width: `${(item.value / item.max) * 100}%`,
+                        width: `${item.max === 0 ? 0 : (item.value / item.max) * 100}%`,
                         backgroundColor: item.color,
                       }}
                     />
@@ -191,32 +163,52 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* DOCENTES TOP CON SWITCH */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <h2 className="text-base font-bold text-gray-800 mb-5">
-              Docentes con más evaluaciones
-            </h2>
-            <div className="flex flex-col gap-4">
-              {topTeachersData.map((docente: any, index: number) => (
-                <div key={docente.name} className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-extrabold shrink-0"
-                    style={{
-                      backgroundColor: avatarColors[index],
-                      color: avatarTextColors[index],
-                    }}
-                  >
-                    {docente.initials}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-bold text-gray-800">
+                Docentes Top (Histórico)
+              </h2>
+              {/* SWITCH / TOGGLE */}
+              <div className="flex bg-gray-100 p-1 rounded-lg">
+                <button 
+                  onClick={() => setTopViewMode('comprensivas')}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${topViewMode === 'comprensivas' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  COMPRENSIVAS
+                </button>
+                <button 
+                  onClick={() => setTopViewMode('especiales')}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${topViewMode === 'especiales' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  ESPECIALES
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 min-h-[200px]">
+              {currentTopTeachers.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center mt-10">No hay datos suficientes</p>
+              ) : (
+                currentTopTeachers.map((docente: any, index: number) => (
+                  <div key={index} className="flex items-center gap-3 animate-fadeIn">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-extrabold shrink-0"
+                         style={{ backgroundColor: avatarColors[index % 4], color: avatarTextColors[index % 4] }}>
+                      {docente.initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900 truncate">{docente.name}</p>
+                      <p className="text-xs text-gray-400 font-semibold">{docente.dept}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`text-base font-extrabold ${topViewMode === 'comprensivas' ? 'text-blue-600' : 'text-purple-600'}`}>
+                        {docente.total}
+                      </p>
+                      <p className="text-xs text-gray-400 font-semibold">TOTAL</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-gray-900 truncate">{docente.name}</p>
-                    <p className="text-xs text-gray-400 font-semibold">{docente.dept}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-base font-extrabold text-blue-600">{docente.total}</p>
-                    <p className="text-xs text-gray-400 font-semibold">TOTAL</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
