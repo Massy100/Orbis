@@ -9,6 +9,8 @@ from django.db.models import Count, Q
 from django.db.models.functions import ExtractMonth
 from .serializers import SystemUserSerializer
 
+from rest_framework import status
+from django.db import transaction
 
 from .models import (
     Career, Faculty, Course, CourseTeacher,
@@ -94,12 +96,21 @@ class CourseTeacherViewSet(viewsets.ModelViewSet):
 # CRUD for Teacher
 
 class TeacherViewSet(viewsets.ModelViewSet):
-    queryset = Teacher.objects.select_related('rol', 'career', 'faculty').all()
     serializer_class = TeacherSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['isactive', 'career', 'faculty', 'rol']
     search_fields = ['name', 'cat']
     ordering_fields = ['name', 'evaluationcount']
+
+    def get_queryset(self):
+        queryset = Teacher.objects.select_related('rol', 'career', 'faculty')
+
+        show_inactive = self.request.query_params.get("show_inactive")
+
+        if show_inactive == "true":
+            return queryset
+
+        return queryset.filter(isactive=True)
 
     ## para soft delete (toggle isactive)
     @action(detail=True, methods=['patch'], url_path='toggle-active')
@@ -116,6 +127,56 @@ class TeacherViewSet(viewsets.ModelViewSet):
             'status_text': estado_texto
         })
 
+    @action(detail=True, methods=['post'])
+    @transaction.atomic
+    def update_relations(self, request, pk=None):
+        teacher = self.get_object()
+
+        course_ids = request.data.get('courses', [])
+        speciality_ids = request.data.get('specialities', [])
+
+        CourseTeacher.objects.filter(teacher=teacher).delete()
+        SpecialityTeacher.objects.filter(teacher=teacher).delete()
+
+        for course_id in course_ids:
+            CourseTeacher.objects.create(
+                teacher=teacher,
+                course_id=course_id
+            )
+
+        for speciality_id in speciality_ids:
+            SpecialityTeacher.objects.create(
+                teacher=teacher,
+                area_id=speciality_id
+            )
+
+        return Response(
+            {"message": "Relaciones actualizadas"},
+            status=status.HTTP_200_OK
+        )
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        course_ids = request.data.get('courses', [])
+        speciality_ids = request.data.get('specialities', [])
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        teacher = serializer.save()
+
+        for course_id in course_ids:
+            CourseTeacher.objects.create(
+                teacher=teacher,
+                course_id=course_id
+            )
+
+        for speciality_id in speciality_ids:
+            SpecialityTeacher.objects.create(
+                teacher=teacher,
+                area_id=speciality_id
+            )
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class TeachersPeriodViewSet(viewsets.ModelViewSet):
     queryset = TeachersPeriod.objects.select_related('teacher', 'schedule').all()
