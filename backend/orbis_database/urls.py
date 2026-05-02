@@ -39,6 +39,13 @@ urlpatterns = [
     path('api/', include(router.urls)),
     # Route for pensum upload
     path('api/pensum/upload/', views.PensumUploadView.as_view(), name='pensum-upload'),
+
+    # Route for teacher schedule upload
+    path( 'api/teacher-schedules/upload/', views.TeacherScheduleUploadView.as_view(), name='teacher-schedule-upload' ),
+
+    # Route to get the schedule of a teacher by their code (try in Posman, Bruno, etc)
+    path( 'api/teacher-schedules/<str:teacher_code>/', views.TeacherScheduleDetailView.as_view(), name='teacher-schedule-detail' ),
+
     path('api/dashboard-stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('api/dashboard-metrics/', views.DashboardMetricsView.as_view(), name='dashboard-metrics'),
 ]
