@@ -780,44 +780,46 @@ export default function GroupsPage() {
                                                 >
                                                     <label>{tutor.label}:</label>
 
-                                                    <input
-                                                        type="text"
-                                                        value={comprensive[tutor.idx]}
-                                                        readOnly
-                                                        className="input-readonly"
-                                                    />
+                                                    <div >
+                                                        <input
+                                                            type="text"
+                                                            value={comprensive[tutor.idx]}
+                                                            readOnly
+                                                            className="input-readonly"
+                                                        />
 
-                                                    <button
-                                                        className={`icon-btn tutor-status-btn ${
-                                                            isApproved
-                                                                ? "approved"
-                                                                : "pending"
-                                                        }`}
-                                                        data-title={
-                                                            isApproved
-                                                                ? "De acuerdo"
-                                                                : "Pendiente"
-                                                        }
-                                                        onClick={() =>
-                                                            setTutorApprovals({
-                                                                ...tutorApprovals,
-                                                                [tutor.key]:
-                                                                    !isApproved
-                                                            })
-                                                        }
-                                                    >
-                                                        {isApproved ? (
-                                                            <UserCheck
-                                                                size={18}
-                                                                color="green"
-                                                            />
-                                                        ) : (
-                                                            <X
-                                                                size={18}
-                                                                color="red"
-                                                            />
-                                                        )}
-                                                    </button>
+                                                        <button
+                                                            className={`icon-btn tutor-status-btn ${
+                                                                isApproved
+                                                                    ? "approved"
+                                                                    : "pending"
+                                                            }`}
+                                                            data-title={
+                                                                isApproved
+                                                                    ? "De acuerdo"
+                                                                    : "Pendiente"
+                                                            }
+                                                            onClick={() =>
+                                                                setTutorApprovals({
+                                                                    ...tutorApprovals,
+                                                                    [tutor.key]:
+                                                                        !isApproved
+                                                                })
+                                                            }
+                                                        >
+                                                            {isApproved ? (
+                                                                <UserCheck
+                                                                    size={18}
+                                                                    color="green"
+                                                                />
+                                                            ) : (
+                                                                <X
+                                                                    size={18}
+                                                                    color="red"
+                                                                />
+                                                            )}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
