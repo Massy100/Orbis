@@ -10,6 +10,7 @@ import UploadTeacherSchedule from "../components/upload-teacher-schedule"
 import AutocompleteInput from "../components/autocomplete-input"
 import DashboardLayout from "../components/layout"
 import Toast from "../components/toast"
+import GLOBAL_API_URL from "../services/global-api-url"
 
 
 
@@ -46,6 +47,8 @@ type NewTeacherDraft = {
     carne: string
     fullName: string
 }
+
+const API_BASE = GLOBAL_API_URL;
 
 export default function Teachers() {
 
@@ -107,7 +110,7 @@ export default function Teachers() {
 
     const loadTeachers = async () => {
         try {
-            const res = await fetch("http://localhost:8001/api/teachers/")
+            const res = await fetch(`${API_BASE}teachers/`)
 
             if (!res.ok) {
                 throw new Error("Error cargando docentes")
@@ -127,7 +130,7 @@ export default function Teachers() {
     useEffect(() => {
         const loadCourses = async () => {
             try {
-                const res = await fetch("http://localhost:8001/api/courses/?ordering=name")
+                const res = await fetch(`${API_BASE}courses/?ordering=name`)
 
                 if (!res.ok) {
                     throw new Error("Error cargando cursos")
@@ -152,7 +155,7 @@ export default function Teachers() {
     useEffect(() => {
         const loadSpecialities = async () => {
             try {
-                const res = await fetch("http://localhost:8001/api/specialities/?ordering=name")
+                const res = await fetch(`${API_BASE}specialities/?ordering=name`)
 
                 if (!res.ok) {
                     throw new Error("Error cargando especialidades")
@@ -272,6 +275,7 @@ export default function Teachers() {
     // Load the selected teacher's data into the draft
     const handleEdit = (teacher: Teacher) => {
         setSelectedTeacherId(teacher.id)
+        setScheduleFile(null)
         setDraft({
             name: teacher.name,
             carne: teacher.carne,
@@ -315,7 +319,7 @@ export default function Teachers() {
         setIsEditingTeacher(true)
 
         try {
-            const teacherRes = await fetch(`http://localhost:8001/api/teachers/${selectedTeacherId}/`, {
+            const teacherRes = await fetch(`${API_BASE}teachers/${selectedTeacherId}/`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -332,7 +336,7 @@ export default function Teachers() {
             }
 
             const relationsRes = await fetch(
-                `http://localhost:8001/api/teachers/${selectedTeacherId}/update_relations/`,
+                `${API_BASE}teachers/${selectedTeacherId}/update_relations/`,
                 {
                     method: "POST",
                     headers: {
@@ -348,6 +352,17 @@ export default function Teachers() {
             if (!relationsRes.ok) {
                 showToast("No se pudieron actualizar los cursos o especialidades.", "error")
                 return
+            }
+
+            if (scheduleFile) {
+                const scheduleUploaded = await uploadTeacherSchedule(draft.carne, {
+                    replace: true,
+                    teacherId: selectedTeacherId,
+                })
+
+                if (!scheduleUploaded) {
+                    return
+                }
             }
 
             await loadTeachers()
@@ -383,7 +398,7 @@ export default function Teachers() {
         setIsDeletingTeacher(true)
 
         try {
-            const res = await fetch(`http://localhost:8001/api/teachers/${teacherToDelete.id}/`, {
+            const res = await fetch(`${API_BASE}teachers/${teacherToDelete.id}/`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -447,13 +462,58 @@ export default function Teachers() {
         setSelectedCourses((prev) => prev.filter((item) => item.id !== course.id))
     }
 
+    const uploadTeacherSchedule = async (
+        teacherCode: string,
+        options?: {
+            replace?: boolean
+            teacherId?: number
+        }
+    ) => {
+        if (!scheduleFile) return true
+
+        const formData = new FormData()
+        formData.append("file", scheduleFile)
+        formData.append("teacher_code", teacherCode)
+        formData.append("replace", options?.replace ? "true" : "false")
+
+        if (options?.teacherId) {
+            formData.append("teacher_id", String(options.teacherId))
+        }
+
+        const res = await fetch(`${API_BASE}teacher-schedules/upload/`, {
+            method: "POST",
+            body: formData,
+        })
+
+        const data = await res.json()
+
+        if (!res.ok) {
+            showToast(
+                data.error || "El docente fue guardado, pero no se pudo cargar el horario.",
+                "error"
+            )
+            return false
+        }
+
+        showToast(
+            options?.replace
+                ? `Horario actualizado correctamente. Los registros fueron actualizados`
+                : `Horario cargado correctamente. Los registros fueron creados`,
+            "success"
+        )
+
+        return true
+    }
+
     // Validates the form, builds the new teacher object and adds it to the list
     const handleAddTeacher = async (e: React.FormEvent) => {
         e.preventDefault()
 
         if (isSavingTeacher) return
 
-        if (!newTeacherDraft.fullName.trim() || !newTeacherDraft.carne.trim()) {
+        const teacherCode = newTeacherDraft.carne.trim()
+
+        if (!newTeacherDraft.fullName.trim() || !teacherCode) {
             showToast("Faltan campos por completar", "error")
             return
         }
@@ -461,25 +521,36 @@ export default function Teachers() {
         setIsSavingTeacher(true)
 
         try {
-            const res = await fetch("http://localhost:8001/api/teachers/", {
+            const res = await fetch(`${API_BASE}teachers/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: newTeacherDraft.fullName.trim(),
-                    cat: newTeacherDraft.carne.trim(),
+                    cat: teacherCode,
                     isactive: true,
                     evaluationcount: 0,
                     rol: 1,
                     career: 1,
                     faculty: 1,
                     courses: selectedCourse.map(c => c.id),
-                    specialities: newTeacherCareers.map(s => s.id)
+                    specialities: newTeacherCareers.map(s => s.id),
                 }),
             })
 
+            const data = await res.json()
+
             if (!res.ok) {
+                console.error(data)
                 showToast("No se ha podido crear el docente.", "error")
                 return
+            }
+
+            if (scheduleFile) {
+                const scheduleUploaded = await uploadTeacherSchedule(teacherCode)
+
+                if (!scheduleUploaded) {
+                    return
+                }
             }
 
             await loadTeachers()
