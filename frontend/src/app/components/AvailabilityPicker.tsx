@@ -228,32 +228,38 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                             key={idx}
                             className={`event-card ${isLifted ? 'lifted' : ''}`}
                             style={{
-                              top:             `${(evento.inicio - 7) * 3}rem`,
-                              height:          `${(evento.fin - evento.inicio) * 3}rem`,
+                              top: `calc((${evento.inicio} - 8) * var(--cell-height, 3rem))`,
+                              height: `calc((${evento.fin} - ${evento.inicio}) * var(--cell-height, 3rem))`,
                               backgroundColor: config.theme.bg,
-                              borderLeft:      `4px solid ${config.theme.border}`,
-                              color:           config.theme.text,
-                              zIndex:          isLifted ? 10 : 1,
+                              borderLeft: `4px solid ${config.theme.border}`,
+                              color: config.theme.text,
+                              zIndex: isLifted ? 10 : 1
                             }}
                             onMouseEnter={() => setHoveredEvent(eventKey)}
                             onMouseLeave={() => setHoveredEvent(null)}
-                            onClick={() => setActiveEvent(activeEvent === eventKey ? null : eventKey)}
+                            onClick={() =>
+                              setActiveEvent(activeEvent === eventKey ? null : eventKey)
+                            }
                           >
                             <span className="event-label">
                               {config.nombre.split(' ').pop()}
                             </span>
+
                             <span className="event-time-text">
                               {formatTime(evento.inicio)} - {formatTime(evento.fin)}
                             </span>
+
                             {isLifted && (
-                              <span className="event-teacher-full">{config.nombre}</span>
+                              <span className="event-teacher-full">
+                                {config.nombre}
+                              </span>
                             )}
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                );
+                  );
               })}
             </div>
           </div>
