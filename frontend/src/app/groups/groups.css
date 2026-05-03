@@ -245,6 +245,9 @@
 }
 
 .modal-id-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     font-size: 15px;
     font-weight: 600;
     color: #64748b;
@@ -288,6 +291,39 @@
 .btn-availability:hover {
     border-color: #cbd5e1;
     background: #f8fafc;
+}
+
+.btn-create-evaluation {
+    padding: 12px 18px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+.btn-create-evaluation:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.btn-create-evaluation:active {
+    transform: translateY(0px);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+.btn-create-evaluation:disabled,
+.btn-create-evaluation.disabled {
+    background: #e5e7eb;
+    color: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
 }
 
 .btn-availability,
@@ -624,6 +660,73 @@
     text-align: left;
 }
 
+.delete-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* Contenedor */
+.delete-modal {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Contenido */
+.delete-content {
+    padding: 20px;
+}
+
+/* Texto */
+.delete-text {
+    font-size: 15px;
+    color: #374151;
+    line-height: 1.5;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+/* Botones */
+.delete-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Cancelar */
+.btn-delete-cancel {
+    padding: 10px 16px;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-delete-cancel:hover {
+    background: #e5e7eb;
+}
+
+/* Confirmar */
+.btn-delete-confirm {
+    padding: 10px 16px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-delete-confirm:hover {
+    background: #dc2626;
+}
+
 @media (max-width: 1024px) {
     .modal-container.group-modal-large {
         width: 90%; 
@@ -631,19 +734,21 @@
 }
 
 @media (max-width: 768px) {
-    .groups-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 16px;
+    .delete-modal {
+        max-width: 95%;
     }
 
-    .filters-wrapper {
-        justify-content: space-between;
+    .delete-actions {
+        flex-direction: column;
+    }
+
+    .btn-delete-cancel,
+    .btn-delete-confirm {
         width: 100%;
     }
 
-    .filter-select {
-        flex: 1;
+    .delete-text {
+        font-size: 14px;
     }
 
     .groups-grid {
@@ -665,13 +770,19 @@
     }
 
 
-    .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
 
     .btn-availability, .btn-add-student {
         width: 100%;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
     }
 }

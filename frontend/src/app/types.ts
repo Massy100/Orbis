@@ -11,6 +11,7 @@ export interface EstudianteGrupo {
     carne: string;
     nombre: string;
     pagado: boolean;
+    aprobado: boolean;
 }
 
 export interface TutorGrupo {
@@ -20,7 +21,7 @@ export interface TutorGrupo {
 
 export interface GroupDetail extends StudyGroup {
     tutores: TutorGrupo[];
-    estudiantes: EstudianteGrupo[];
+    estudiantes: EstudianteGrupo[]
 }
 
 export interface Evaluation {
