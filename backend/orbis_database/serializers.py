@@ -69,10 +69,34 @@ class TeacherSerializer(serializers.ModelSerializer):
     career_name = serializers.CharField(source='career.name', read_only=True)
     faculty_name = serializers.CharField(source='faculty.name', read_only=True)
 
+    courses = serializers.SerializerMethodField()
+    specialities = serializers.SerializerMethodField()
+
     class Meta:
         model = Teacher
         fields = '__all__'
 
+    def get_courses(self, obj):
+        return [
+            {
+                "id": item.course.id,
+                "name": item.course.name,
+            }
+            for item in CourseTeacher.objects.filter(
+                teacher=obj
+            ).select_related('course')
+        ]
+
+    def get_specialities(self, obj):
+        return [
+            {
+                "id": item.area.id,
+                "name": item.area.name,
+            }
+            for item in SpecialityTeacher.objects.filter(
+                teacher=obj
+            ).select_related('area')
+        ]
 
 class TeachersPeriodSerializer(serializers.ModelSerializer):
     class Meta:

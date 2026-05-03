@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import '../styles/upload-teacher-schedule.css'
 
 type UploadScheduleProps = {
@@ -14,7 +14,17 @@ export default function UploadTeacherSchedule({
 }: UploadScheduleProps) {
     const inputRef = useRef<HTMLInputElement | null>(null)
 
+    useEffect(() => {
+        if (!file && inputRef.current) {
+            inputRef.current.value = ''
+        }
+    }, [file])
+
     const handleOpenPicker = () => {
+        if (inputRef.current) {
+            inputRef.current.value = ''
+        }
+
         inputRef.current?.click()
     }
 

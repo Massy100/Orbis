@@ -9,6 +9,8 @@ from django.db.models import Count, Q
 from django.db.models.functions import ExtractMonth
 from .serializers import SystemUserSerializer
 
+from rest_framework import status
+from django.db import transaction, connection
 
 from .models import (
     Career, Faculty, Course, CourseTeacher,
@@ -27,6 +29,8 @@ from .serializers import (
     EvaluationSerializer, EvaluationTeacherSerializer, ResultSerializer,
     SystemUserSerializer
 )
+
+from parsers.teacher_schedule_parser import parse_teacher_schedule_excel
 
 # CRUD for simple tables
 
@@ -94,12 +98,21 @@ class CourseTeacherViewSet(viewsets.ModelViewSet):
 # CRUD for Teacher
 
 class TeacherViewSet(viewsets.ModelViewSet):
-    queryset = Teacher.objects.select_related('rol', 'career', 'faculty').all()
     serializer_class = TeacherSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['isactive', 'career', 'faculty', 'rol']
     search_fields = ['name', 'cat']
     ordering_fields = ['name', 'evaluationcount']
+
+    def get_queryset(self):
+        queryset = Teacher.objects.select_related('rol', 'career', 'faculty')
+
+        show_inactive = self.request.query_params.get("show_inactive")
+
+        if show_inactive == "true":
+            return queryset
+
+        return queryset.filter(isactive=True)
 
     ## para soft delete (toggle isactive)
     @action(detail=True, methods=['patch'], url_path='toggle-active')
@@ -116,6 +129,56 @@ class TeacherViewSet(viewsets.ModelViewSet):
             'status_text': estado_texto
         })
 
+    @action(detail=True, methods=['post'])
+    @transaction.atomic
+    def update_relations(self, request, pk=None):
+        teacher = self.get_object()
+
+        course_ids = request.data.get('courses', [])
+        speciality_ids = request.data.get('specialities', [])
+
+        CourseTeacher.objects.filter(teacher=teacher).delete()
+        SpecialityTeacher.objects.filter(teacher=teacher).delete()
+
+        for course_id in course_ids:
+            CourseTeacher.objects.create(
+                teacher=teacher,
+                course_id=course_id
+            )
+
+        for speciality_id in speciality_ids:
+            SpecialityTeacher.objects.create(
+                teacher=teacher,
+                area_id=speciality_id
+            )
+
+        return Response(
+            {"message": "Relaciones actualizadas"},
+            status=status.HTTP_200_OK
+        )
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        course_ids = request.data.get('courses', [])
+        speciality_ids = request.data.get('specialities', [])
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        teacher = serializer.save()
+
+        for course_id in course_ids:
+            CourseTeacher.objects.create(
+                teacher=teacher,
+                course_id=course_id
+            )
+
+        for speciality_id in speciality_ids:
+            SpecialityTeacher.objects.create(
+                teacher=teacher,
+                area_id=speciality_id
+            )
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class TeachersPeriodViewSet(viewsets.ModelViewSet):
     queryset = TeachersPeriod.objects.select_related('teacher', 'schedule').all()
@@ -129,6 +192,110 @@ class SpecialityTeacherViewSet(viewsets.ModelViewSet):
     serializer_class = SpecialityTeacherSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['teacher', 'area']
+
+class TeacherScheduleUploadView(APIView):
+    @transaction.atomic
+    def post(self, request):
+        file = request.FILES.get("file")
+        teacher_code = request.data.get("teacher_code")
+        teacher_id = request.data.get("teacher_id")
+        replace = request.data.get("replace") == "true"
+
+        if not file:
+            return Response(
+                {"error": "No se envió ningún archivo."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not teacher_code:
+            return Response(
+                {"error": "Debe enviar teacher_code."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            parsed = parse_teacher_schedule_excel(file, teacher_code)
+        except Exception as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+
+        schedules = parsed.get("schedules", [])
+
+        if replace and len(schedules) == 0:
+            return Response(
+                {
+                    "error": (
+                        "El archivo no tiene horarios marcados para este docente. "
+                        "No se reemplazó el horario anterior."
+                    ),
+                    "teacher_code": parsed["teacher_code"],
+                    "teacher_name_from_excel": parsed["teacher_name"],
+                    "total_schedules_found": 0,
+                },
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+
+        try:
+            if teacher_id:
+                teacher = Teacher.objects.get(id=teacher_id)
+            else:
+                teacher = Teacher.objects.get(cat=str(teacher_code).strip())
+        except Teacher.DoesNotExist:
+            return Response(
+                {
+                    "error": f"No existe un docente registrado con código {teacher_code}."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        deleted_relations = 0
+
+        if replace:
+            deleted_relations, _ = TeachersPeriod.objects.filter(
+                teacher=teacher
+            ).delete()
+
+        created_periods = 0
+        created_relations = 0
+        already_existing = 0
+
+        for schedule in schedules:
+            period, created = Period.objects.get_or_create(
+                day=schedule["day"],
+                starttime=schedule["starttime"],
+                endtime=schedule["endtime"],
+            )
+
+            if created:
+                created_periods += 1
+
+            relation, relation_created = TeachersPeriod.objects.get_or_create(
+                teacher=teacher,
+                schedule=period,
+            )
+
+            if relation_created:
+                created_relations += 1
+            else:
+                already_existing += 1
+
+        return Response(
+            {
+                "message": "Horario procesado correctamente.",
+                "teacher_code": parsed["teacher_code"],
+                "teacher_name_from_excel": parsed["teacher_name"],
+                "teacher_id": teacher.id,
+                "replace": replace,
+                "deleted_relations": deleted_relations,
+                "total_schedules_found": len(schedules),
+                "created_periods": created_periods,
+                "created_relations": created_relations,
+                "already_existing": already_existing,
+            },
+            status=status.HTTP_201_CREATED
+        )
 
 # CRUD for Student
 
@@ -305,4 +472,40 @@ class DashboardMetricsView(APIView):
             "pending_emails": evaluaciones_sin_resultado,
             "monthly_chart": chart_data,
             "top_teachers": teachers_data
+        })
+
+# Route to get the schedule of a teacher by their code (try in Posman, Bruno, etc)
+# GET /api/teacher-schedules/{teacher_code}/
+class TeacherScheduleDetailView(APIView):
+    def get(self, request, teacher_code):
+        try:
+            teacher = Teacher.objects.get(cat=str(teacher_code).strip())
+        except Teacher.DoesNotExist:
+            return Response(
+                {"error": f"No existe un docente con código {teacher_code}."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        schedules = TeachersPeriod.objects.filter(
+            teacher=teacher
+        ).select_related('schedule').order_by(
+            'schedule__day',
+            'schedule__starttime'
+        )
+
+        data = [
+            {
+                "day": item.schedule.day,
+                "starttime": item.schedule.starttime,
+                "endtime": item.schedule.endtime,
+            }
+            for item in schedules
+        ]
+
+        return Response({
+            "teacher_id": teacher.id,
+            "teacher_code": teacher.cat,
+            "teacher_name": teacher.name,
+            "total_schedules": len(data),
+            "schedules": data,
         })
