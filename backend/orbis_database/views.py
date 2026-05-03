@@ -186,6 +186,12 @@ class TeachersPeriodViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['teacher', 'schedule']
 
+    def get_queryset(self):
+        qs = TeachersPeriod.objects.select_related('teacher', 'schedule').all()
+        teacher_ids = self.request.query_params.getlist('teacher')
+        if teacher_ids:
+            qs = qs.filter(teacher__id__in=teacher_ids)
+        return qs
 
 class SpecialityTeacherViewSet(viewsets.ModelViewSet):
     queryset = SpecialityTeacher.objects.select_related('teacher', 'area').all()
