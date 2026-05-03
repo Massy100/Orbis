@@ -28,11 +28,15 @@
   justify-content: space-between;
   align-items: center;
   background: #f8fafc;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: flex-start;
 }
 
 .multi-teacher-selectors {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 
@@ -50,10 +54,9 @@
 
 .header-actions {
   display: flex;
-  flex-direction: row; 
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap; 
+  width: 100%;
 }
 
 .teacher-picker {
@@ -64,7 +67,7 @@
   padding: 4px 12px; 
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  height: 38px;
+  height: 36px;
   min-width: 160px; 
   max-width: 220px;
 }
@@ -92,6 +95,7 @@
 }
 
 .btn-confirm-main {
+  margin-left: auto;
   background: #2563eb;
   color: white;
   height: 38px;
@@ -101,7 +105,7 @@
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   cursor: pointer;
   transition: background 0.2s;
   white-space: nowrap;
@@ -241,7 +245,7 @@
   color: #334155;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 850px) {
   .availability-header {
     flex-direction: column;
     gap: 1rem;
@@ -253,6 +257,13 @@
     width: 100%;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .btn-confirm-main {
+    margin-left: 0;   
+    width: 100%;      
+    justify-content: center; 
+    margin-top: 10px;  
   }
 
   .multi-teacher-selectors {
