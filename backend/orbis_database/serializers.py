@@ -144,3 +144,32 @@ class SystemUserSerializer(serializers.ModelSerializer):
         elif obj.is_staff:
             return "Coordinador"
         return "Usuario"
+    
+class EvaluationSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='studentid.name', read_only=True)
+    student_carnet = serializers.CharField(source='studentid.est', read_only=True)
+    career_name = serializers.CharField(source='studentid.career.name', read_only=True)
+    type_name = serializers.CharField(source='type.name', read_only=True)
+    
+    pago = serializers.SerializerMethodField()
+    tutor_nombre = serializers.SerializerMethodField()
+    tutor_estado = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Evaluation
+        fields = ['id', 'studentid', 'student_name', 'student_carnet', 'career_name',
+                  'date', 'hour', 'classroom', 'building', 'type', 'type_name',
+                  'pago', 'tutor_nombre', 'tutor_estado']
+    
+    def get_pago(self, obj):
+        return "pagado" if obj.studentid.haspayment else "pendiente"
+    
+    def get_tutor_nombre(self, obj):
+        eval_teacher = EvaluationTeacher.objects.filter(evaluation=obj).first()
+        return eval_teacher.teacher.name if eval_teacher else "No asignado"
+    
+    def get_tutor_estado(self, obj):
+        result = Result.objects.filter(evaluationid=obj).first()
+        if result and result.state == "Aprobado":
+            return "acuerdo"
+        return "no_acuerdo"

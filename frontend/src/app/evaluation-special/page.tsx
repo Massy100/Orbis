@@ -4,6 +4,22 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../components/layout";
 import Toast from "../components/toast";
 
+export interface Evaluation {
+  id: number;
+  carnet: string;
+  nombre: string;
+  curso: string;
+  pago: "pagado" | "pendiente";
+  tutor: {
+    nombre: string;
+    estado: "acuerdo" | "no_acuerdo";
+  };
+  fecha?: string;
+  hora?: string;
+  aula?: string;
+  edificio?: string;
+}
+
 type Evaluator = {
     id: number;
     nombre: string;
