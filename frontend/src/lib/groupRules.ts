@@ -14,7 +14,7 @@ export const canCreateGroup = (
 };
 
 export const isGroupApproved = (
-  estudiantes: { aprobado: boolean; pagado: boolean }[],
+  estudiantes: { pagado: boolean }[],
   tutores: { aprobado: boolean }[]
 ) => {
   const allStudentsPaid = estudiantes.every(e => e.pagado);

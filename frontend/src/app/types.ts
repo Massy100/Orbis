@@ -11,7 +11,6 @@ export interface EstudianteGrupo {
     carne: string;
     nombre: string;
     pagado: boolean;
-    aprobado: boolean;
 }
 
 export interface TutorGrupo {

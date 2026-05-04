@@ -20,7 +20,17 @@ export const useGroups = () => {
     };
 
     const addGroup = async (group: GroupDetail) => {
-        await groupsService.create(group);
+        const status: GroupStatus = isGroupApproved(
+            group.estudiantes,
+            group.tutores
+        ) ? "Aprobado" : "Pendiente";
+
+        const finalGroup = {
+            ...group,
+            estado: status
+        };
+
+        await groupsService.create(finalGroup);
         await loadGroups();
     };
 

@@ -15,7 +15,6 @@ interface Estudiante {
     carne: string;
     nombre: string;
     pagado: boolean;
-    aprobado: boolean;
 }
 
 export default function GroupsPage() {
@@ -57,7 +56,6 @@ export default function GroupsPage() {
         ],
         estudiantes: estudiantes.map(e => ({
             ...e,
-            aprobado: e.aprobado ?? false,
             pagado: e.pagado ?? false
         }))
     });
@@ -73,7 +71,7 @@ export default function GroupsPage() {
 
     const handleAddStudent = () => {
         if (estudiantes.length < 6) {
-            setEstudiantes([...estudiantes, { id: Date.now(), carne: "", nombre: "", aprobado: false, pagado: false }]);
+            setEstudiantes([...estudiantes, { id: Date.now(), carne: "", nombre: "", pagado: false }]);
         }
     };
 
