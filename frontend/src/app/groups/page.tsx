@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Eye, Pencil, Trash2, Plus, UserCheck, X, Circle, UserPlus, CircleCheckBig } from 'lucide-react';
+import { Eye, Pencil, Trash2, Plus, UserCheck, X, Circle, UserPlus, CircleCheckBig, PlusSquare} from 'lucide-react';
 import DashboardLayout from '@/src/app/components/layout';
 import Pagination from '../components/pagination';
 import AvailabilityPicker from '../components/AvailabilityPicker';
@@ -692,6 +692,20 @@ export default function GroupsPage() {
                                                                             color="orange"
                                                                         />
                                                                     )}
+                                                                </button>
+                                                                <button
+                                                                    className="icon-btn btn-evaluation"
+                                                                    data-title={
+                                                                        est.pagado
+                                                                            ? "Crear evaluación"
+                                                                            : "Debe estar pagado"
+                                                                    }
+                                                                    disabled={!est.pagado}
+                                                                    onClick={() => {
+                                                                        console.log("Crear evaluación para:", est);
+                                                                    }}
+                                                                >
+                                                                    <Plus size={16} />
                                                                 </button>
                                                             </td>
                                                         </tr>
