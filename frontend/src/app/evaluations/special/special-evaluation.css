@@ -59,6 +59,11 @@
   border: 1px solid #E5E7EB;
   border-radius: 14px;
   -webkit-overflow-scrolling: touch; 
+  overflow: visible !important;
+  overflow-x: auto;
+  overflow-y: visible;
+  position: relative;
+  z-index: 0;
 }
 
 .eval-table {
@@ -73,6 +78,7 @@
   table-layout: fixed; 
   margin: 0;
   box-sizing: border-box;
+  overflow: visible !important;
 }
 
 .eval-table th,
@@ -101,7 +107,7 @@
   vertical-align: middle;
   font-weight: 600;
   position: relative;
-  overflow: hidden; 
+  overflow: visible; 
   text-overflow: ellipsis; 
   white-space: nowrap;
 }
@@ -173,14 +179,34 @@
   width: 100%; 
 }
 
-[data-title]::after {
-  z-index: 999;
-}
-
 .icon-btn {
+  position: relative;
   background: transparent;
   border: none;
   cursor: pointer;
+}
+
+.icon-btn::after {
+  content: attr(data-title);
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+
+  background: #111827;
+  color: white;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+
+  white-space: nowrap;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition: all 0.2s ease;
+  z-index: 9999;
 }
 
 .icon-btn,
@@ -207,7 +233,7 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .tutor-cell span:first-child {
@@ -237,6 +263,50 @@
   display: flex;
   gap: 10px;
   overflow: visible;
+  position: relative;
+}
+
+.icon-btn::after,
+.actions button::after {
+  content: attr(data-title);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px) scale(0.95);
+
+  background: #111827;
+  color: white;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+
+  white-space: nowrap;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  z-index: 9999;
+
+  transition: all 0.2s ease;
+}
+
+.icon-btn::before,
+.actions button::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+
+  border-width: 5px;
+  border-style: solid;
+  border-color: #111827 transparent transparent transparent;
+
+  opacity: 0;
+  visibility: hidden;
+
+  transition: all 0.2s ease;
 }
 
 .actions .btn-approve {
@@ -257,8 +327,7 @@
 
 .icon-btn:hover::after,
 .actions button:hover::after {
-  content: attr(data-title);
-  position: absolute;
+  position: fixed;
   bottom: 125%;
   left: 50%;
   transform: translateX(-50%);
@@ -271,6 +340,9 @@
   opacity: 1;
   pointer-events: none;
   z-index: 999;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 
 .icon-btn:hover::before,
@@ -279,11 +351,13 @@
   position: absolute;
   bottom: 83%;
   left: 50%;
-  transform: translateX(-50%);
   border-width: 5px;
   border-style: solid;
   border-color: #111827 transparent transparent transparent;
   z-index: 999;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
 }
 
 .modal-overlay {
@@ -503,6 +577,10 @@
     border: 1px solid #e2e8f0;
     width: 100%;
     box-sizing: border-box;
+}
+
+.eval-container {
+  overflow: visible;
 }
 
 .eval-container .pagination {
