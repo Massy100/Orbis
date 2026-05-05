@@ -120,7 +120,6 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
   return (
     <div className="availability-overlay">
       <div className="availability-container">
-
         {/* HEADER */}
         <div className="availability-header">
           <div className="header-left">
@@ -168,7 +167,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
         {/* NAVBAR DE FECHAS */}
         <div className="calendar-navbar">
           <div className="nav-left">
-            <span className="current-month">
+            <span className="month-text">
               {nombresMeses[currentDate.getMonth()]} {currentDate.getFullYear()}
             </span>
             <div className="nav-arrows">
@@ -179,6 +178,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
           <div className="nav-right">
             <span className="badge">Vista Semanal</span>
           </div>
+
         </div>
 
         {/* CALENDARIO */}
@@ -189,14 +189,17 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
             <div className="hour-column">
               <div className="hour-header-spacer" />
               {horasDelDia.map(hora => (
-                <div key={hora} className="hour-cell">{hora}</div>
+                <div key={hora} className="hour-cell">
+                  {hora}
+                </div>
               ))}
             </div>
 
             {/* Columnas de días */}
             <div className="day-grid">
               {diasDeLaSemana.map((diaObj, index) => {
-                const esHoy = diaObj.toDateString() === new Date().toDateString();
+                const esHoy =
+                  diaObj.toDateString() === new Date().toDateString();
 
                 // Eventos del día que pertenecen a los docentes seleccionados
                 const eventosDia = events.filter((e: AvailabilityEvent) =>
@@ -206,11 +209,16 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
 
                 return (
                   <div key={index} className="day-column">
-                    <div className={`day-header ${esHoy ? 'today' : ''}`}>
-                      <span className="day-name">{nombresDiasCortos[diaObj.getDay()]}</span>
-                      <span className="day-num">{diaObj.getDate()}</span>
+                    
+                    {/* HEADER DÍA */}
+                    <div className={`day-header ${esHoy ? 'today' : 'normal'}`}>
+                      <span>{nombresDiasCortos[diaObj.getDay()]}</span>
+                      <span className="day-number">
+                        {diaObj.getDate()}
+                      </span>
                     </div>
 
+                    {/* BODY */}
                     <div className="day-body">
                       {horasDelDia.map((_, i) => (
                         <div key={i} className="grid-line" />
