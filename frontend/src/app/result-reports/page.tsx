@@ -145,15 +145,29 @@ export default function ResultReports() {
     const openEmailModal = (report: BaseReport) => {
         setSelectedReport(report);
         
-        // Plantillas dinámicas
+        const fechaEval = formatDateToSpanish(report.fecha);
+        const evaluadoresList = report.evaluadores;
+        
+        // Asignación segura de la terna para el formato
+        const prof1 = evaluadoresList[0] || "[Pendiente asignar]";
+        const prof2 = evaluadoresList[1] || "[Pendiente asignar]";
+        const prof3 = evaluadoresList[2] || "[Pendiente asignar]";
+
         if (activeOption === "especial") {
             const espReport = report as EspecialReport;
-            setEmailSubject(`Resultados de Evaluación Especial - ${espReport.nombre}`);
-            setEmailBody(`Estimados catedráticos,\n\nPor este medio me dirijo a ustedes para notificar los resultados de la Evaluación Especial.\n\nEstudiante: ${espReport.nombre}\nCarnet: ${espReport.idEstudiante}\nCurso: ${espReport.curso}\nCalificación: ${espReport.calificacion}\n\nAgradecemos sus observaciones y su colaboración en el proceso de evaluación.\n\nAtentamente,\nCoordinación Académica`);
+            setEmailSubject(`Aprobación de terna de Evaluación Especial - ${espReport.nombre}`);
+            
+            // Plantilla extraída del Documento de Word
+            setEmailBody(`Estimada Mgtr. Alejandra,\nBuenas tardes. Deseo que se encuentre bien.\n\nQueremos solicitar amablemente la aprobación de la terna de evaluación de Ingeniería, por favor:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${espReport.nombre}\nCarné: ${espReport.idEstudiante}\nCarrera: Ingeniería en Sistemas\n\n--- TERNA EVALUADORA ---\nÁrea Informática: ${prof1}\nÁrea Sistemas: ${prof2}\nÁrea Gestión: ${prof3}\n\nAgradecidos de antemano por su apoyo, quedamos a la espera de su respuesta.\n\nCordialmente,\nCoordinación Académica`);
+        
         } else {
             const compReport = report as ComprensivaReport;
-            setEmailSubject(`Resultados de Evaluación Comprensiva - ${compReport.nombre}`);
-            setEmailBody(`Estimados catedráticos,\n\nPor este medio compartimos el informe de la Evaluación Comprensiva.\n\nEstudiante: ${compReport.nombre}\nCarnet: ${compReport.idEstudiante}\nGrupos de Estudio: ${compReport.gruposEstudio.join(", ")}\nCalificación: ${compReport.calificacion}\n\nFavor de revisar los detalles y proceder con la retroalimentación correspondiente.\n\nAtentamente,\nCoordinación Académica`);
+            const grupos = compReport.gruposEstudio.join(", ");
+            
+            setEmailSubject(`Informe de Evaluación Comprensiva - ${compReport.nombre}`);
+            
+            // Plantilla adaptada para Comprensiva
+            setEmailBody(`Estimada Mgtr. Alejandra,\nBuenas tardes. Deseo que se encuentre bien.\n\nPor este medio compartimos los resultados correspondientes a la Evaluación Comprensiva de Ingeniería:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${compReport.nombre}\nCarné: ${compReport.idEstudiante}\nGrupos de Estudio: ${grupos}\nResultado Final: ${compReport.calificacion}\n\n--- COMITÉ EVALUADOR ---\nDocente 1: ${prof1}\nDocente 2: ${prof2}\n\nAgradecidos de antemano por su apoyo y gestión.\n\nCordialmente,\nCoordinación Académica`);
         }
         
         setIsModalOpen(true);
@@ -167,7 +181,7 @@ export default function ResultReports() {
         const result = await sendReportEmail({
             subject: emailSubject,
             body: emailBody,
-            to: "aepereza@correo.url.edu.gt" // <- Correo de prueba
+            to: "allanperezajanel@gmail.com" // <- Correo de prueba
         });
 
         if (result.success) {
@@ -343,7 +357,7 @@ export default function ResultReports() {
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Cuerpo del Mensaje</label>
                                     <textarea 
-                                        rows={10}
+                                        rows={16}
                                         value={emailBody}
                                         onChange={(e) => setEmailBody(e.target.value)}
                                         className="w-full border border-gray-300 rounded-lg p-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"

@@ -12,31 +12,27 @@ interface Teacher {
 }
 
 interface AvailabilityEvent {
-  docenteId: string;
+  docenteId: string | number;
   diaSemana: number;
   inicio: number;
   fin: number;
 }
 
 const PALETAS = [
-  { bg: '#eff6ff', border: '#2563eb', text: '#1d4ed8' },
-  { bg: '#f0fdf4', border: '#10b981', text: '#065f46' },
-  { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
-  { bg: '#fdf4ff', border: '#a855f7', text: '#6b21a8' },
-  { bg: '#fff1f2', border: '#f43f5e', text: '#9f1239' },
+  { bg: '#eff6ff', border: '#2563eb', text: '#1d4ed8' }, // AZUL (Slot 1)
+  { bg: '#f0fdf4', border: '#10b981', text: '#065f46' }, // VERDE (Slot 2)
+  { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' }, // NARANJA (Slot 3)
 ];
 
 export default function AvailabilityPage() {
-  /** @type {{ teachers: Teacher[], events: AvailabilityEvent[], loading: boolean }} */
   const { teachers, events, loading } = useAvailability();
 
-  const [slots, setSlots]                   = useState(['', '', '']);
+  const [slots, setSlots]                   = useState<string[]>(['', '', '']);
   const [currentDate, setCurrentDate]       = useState(new Date());
   const [vistaCalendario, setVista]         = useState('week');
   const [hoveredEvent, setHoveredEvent]     = useState<string | null>(null);
   const [activeEvent, setActiveEvent]       = useState<string | null>(null);
 
-  // Inicializa slots con los primeros 3 docentes del backend
   useEffect(() => {
     if (teachers.length) {
       setSlots(teachers.slice(0, 3).map(t => String(t.id)));
@@ -47,18 +43,6 @@ export default function AvailabilityPage() {
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const horasDelDia       = ['7am', '8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm', '7pm', '8pm', '9pm'];
 
-  const configDocentes = Object.fromEntries(
-    teachers.map((t, i) => [
-      String(t.id),
-      { nombre: t.name, theme: PALETAS[i % PALETAS.length] }
-    ])
-  );
-
-  /**
-   * @param {number} decimalHours
-   * @returns {string}
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formatTime = (decimalHours: any) => {
     const hours   = Math.floor(decimalHours);
     const minutes = Math.round((decimalHours - hours) * 60);
@@ -115,36 +99,37 @@ export default function AvailabilityPage() {
           </label>
 
           <div className="teacher-grid">
-            {slots.map((slotId, slotIndex) => (
-              <select
-                key={slotIndex}
-                value={slotId}
-                onChange={(e) => {
-                  const updated = [...slots];
-                  updated[slotIndex] = e.target.value;
-                  setSlots(updated);
-                }}
-                className="select"
-                style={{
-                  border: `2px solid ${
-                    slotId && configDocentes[slotId]
-                      ? configDocentes[slotId].theme.border
-                      : '#d1d5db'
-                  }`
-                }}
-              >
-                <option value="">-- Docente {slotIndex + 1} --</option>
-                {teachers.map(t => (
-                  <option
-                    key={t.id}
-                    value={String(t.id)}
-                    disabled={slots.includes(String(t.id)) && String(t.id) !== slotId}
-                  >
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            ))}
+            {slots.map((slotId, slotIndex) => {
+              const theme = PALETAS[slotIndex];
+              return (
+                <select
+                  key={slotIndex}
+                  value={slotId}
+                  onChange={(e) => {
+                    const updated = [...slots];
+                    updated[slotIndex] = e.target.value;
+                    setSlots(updated);
+                  }}
+                  className="select"
+                  style={{
+                    border: `2px solid ${theme.border}`,
+                    backgroundColor: theme.bg,
+                    color: theme.text
+                  }}
+                >
+                  <option value="">-- Docente {slotIndex + 1} --</option>
+                  {teachers.map(t => (
+                    <option
+                      key={t.id}
+                      value={String(t.id)}
+                      disabled={slots.includes(String(t.id)) && String(t.id) !== slotId}
+                    >
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              );
+            })}
           </div>
         </div>
 
@@ -175,7 +160,6 @@ export default function AvailabilityPage() {
         <div className="calendar">
           {vistaCalendario === 'week' ? (
             <div className="week-container">
-
               <div className="hour-column">
                 <div className="hour-header-spacer" />
                 {horasDelDia.map(hora => (
@@ -186,8 +170,10 @@ export default function AvailabilityPage() {
               <div className="day-grid">
                 {diasDeLaSemana.map((diaObj, index) => {
                   const esHoy = diaObj.toDateString() === new Date().toDateString();
+                  
+                  // Forzamos String() para asegurar la coincidencia
                   const eventosDia = events.filter(e =>
-                    e.diaSemana === diaObj.getDay() && slots.includes(e.docenteId)
+                    e.diaSemana === diaObj.getDay() && slots.includes(String(e.docenteId))
                   );
 
                   return (
@@ -203,9 +189,12 @@ export default function AvailabilityPage() {
                         ))}
 
                         {eventosDia.map((evento, idx, arr) => {
-                          const config = configDocentes[evento.docenteId];
-                          if (!config) return null;
+                          // Obtenemos el color basado en el Slot, no en el docente
+                          const slotIndex = slots.indexOf(String(evento.docenteId));
+                          if (slotIndex === -1) return null;
+                          const theme = PALETAS[slotIndex];
 
+                          const docenteName = teachers.find(t => String(t.id) === String(evento.docenteId))?.name || 'Docente';
                           const eventKey = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
 
                           const overlapping = arr.filter(o =>
@@ -229,13 +218,13 @@ export default function AvailabilityPage() {
                                 width:           isLifted ? '92%' : `${width}%`,
                                 left:            isLifted ? '2%' : `${leftOffset}%`,
                                 zIndex:          isLifted ? 100 : 10 + overlapIndex,
-                                backgroundColor: config.theme.bg,
-                                borderLeftColor: config.theme.border,
-                                color:           config.theme.text,
+                                backgroundColor: theme.bg,
+                                borderLeftColor: theme.border,
+                                color:           theme.text,
                                 boxShadow:       isLifted
-                                  ? `0 8px 24px -4px ${config.theme.border}66`
+                                  ? `0 8px 24px -4px ${theme.border}66`
                                   : undefined,
-                                outline: isLifted ? `2px solid ${config.theme.border}` : undefined,
+                                outline: isLifted ? `2px solid ${theme.border}` : undefined,
                               }}
                               onMouseEnter={() => setHoveredEvent(eventKey)}
                               onMouseLeave={() => setHoveredEvent(null)}
@@ -247,7 +236,7 @@ export default function AvailabilityPage() {
                                 {formatTime(evento.inicio)} - {formatTime(evento.fin)}
                               </div>
                               {isLifted && (
-                                <div className="event-teacher">{config.nombre}</div>
+                                <div className="event-teacher">{docenteName}</div>
                               )}
                             </div>
                           );
@@ -281,21 +270,23 @@ export default function AvailabilityPage() {
                       <div>
                         {esEsteMes && events
                           .filter(e =>
-                            e.diaSemana === diaObj.getDay() && slots.includes(e.docenteId)
+                            e.diaSemana === diaObj.getDay() && slots.includes(String(e.docenteId))
                           )
                           .sort((a, b) => a.inicio - b.inicio)
                           .slice(0, 3)
                           .map((ev, idx) => {
-                            const config = configDocentes[ev.docenteId];
-                            if (!config) return null;
+                            const slotIndex = slots.indexOf(String(ev.docenteId));
+                            if (slotIndex === -1) return null;
+                            const theme = PALETAS[slotIndex];
+
                             return (
                               <div
                                 key={idx}
                                 className="month-event"
                                 style={{
-                                  backgroundColor: config.theme.bg,
-                                  borderLeftColor: config.theme.border,
-                                  color:           config.theme.text,
+                                  backgroundColor: theme.bg,
+                                  borderLeftColor: theme.border,
+                                  color:           theme.text,
                                 }}
                               >
                                 {formatTime(ev.inicio)}
