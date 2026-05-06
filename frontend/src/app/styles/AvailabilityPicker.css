@@ -1,5 +1,5 @@
 :root {
-  --cell-height: 10rem;
+  --cell-height: 48px;
 }
 
 .availability-overlay {
@@ -223,8 +223,7 @@
   background: #ffffff;
   overflow: auto;
   min-height: 0;
-  flex: 1;
-  padding: 1rem 2rem;
+  width: 100%;
 }
 
 .week-container {
@@ -247,7 +246,13 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
+.hour-header-spacer, .day-header {
+  height: 60px; 
+  border-bottom: 1px solid #e5e7eb;
+}
+
 .day-grid {
+  position: sticky;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   flex: 1;
@@ -271,6 +276,9 @@
 }
 
 .day-header {
+  position: sticky;
+  top: 0;
+  z-index: 150;
   height: 60px;
   display: flex;
   flex-direction: column;
@@ -294,7 +302,7 @@
 
 .day-body {
   position: relative;
-  height: calc(11 * 48px);
+  height: calc(15 * var(--cell-height));
 }
 
 .day-number {
@@ -311,6 +319,10 @@
 .grid-line {
   height: 48px;
   border-bottom: 1px solid #f3f4f6;
+}
+
+.grid-line, .hour-cell {
+  height: var(--cell-height);
 }
 
 .event {
@@ -404,25 +416,64 @@
 
 .event-card {
   position: absolute;
-  border-radius: 6px;
-  padding: 6px;
-  font-size: 10px;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 11px;
   display: flex;
   flex-direction: column;
-  border-left: 4px solid;
+  box-sizing: border-box;
+  opacity: 0.75;        
+  filter: saturate(0.9);
+  transform: scale(0.98);
+  
+  transition: 
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
+    opacity 0.2s ease, 
+    filter 0.2s ease,
+    box-shadow 0.3s ease;
+  
   cursor: pointer;
-  transition: 0.15s ease;
   overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .event-card.lifted {
-  transform: scale(1.02);
-  z-index: 10;
+  opacity: 1 !important;
+  filter: saturate(1.2) !important;
+  left: 5% !important; 
+  width: 90% !important;
+  transform: scale(1.05) translateY(-4px);
+  z-index: 1000 !important;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+}
+
+.event-card.lifted, 
+.event-card:hover {
+  opacity: 1;              
+  filter: saturate(1.2);  
+  transform: scale(1.02) translateY(-2px); 
+  box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+  z-index: 100 !important;
+}
+
+.event-card.lifted::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+  pointer-events: none;
 }
 
 .event-label {
-  font-weight: 800;
+  font-weight: 700;
+  margin-bottom: 2px;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.event-time-text {
+  font-size: 10px;
+  opacity: 0.8;
 }
 
 .event-time-text {

@@ -235,6 +235,17 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                         const config   = configDocentes[evento.docenteId];
                         if (!config) return null;
 
+                        const solapados = eventosDia.filter(e => 
+                          (evento.inicio < e.fin && evento.fin > e.inicio)
+                        );                        
+                        const numSolapados = solapados.length;
+                        const orden = solapados.findIndex(e => e.docenteId === evento.docenteId);
+                        const offsetX = 8;
+                        const offsetY = 8;
+                        
+                        const width = 100 / numSolapados;
+                        const left = width * orden;
+
                         const eventKey = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
                         const isLifted = hoveredEvent === eventKey || activeEvent === eventKey;
 
@@ -243,18 +254,18 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                             key={idx}
                             className={`event-card ${isLifted ? 'lifted' : ''}`}
                             style={{
-                              top: `calc((${evento.inicio} - 8) * var(--cell-height, 3rem))`,
-                              height: `calc((${evento.fin} - ${evento.inicio}) * var(--cell-height, 3rem))`,
+                              top: `calc(((${evento.inicio} - 7) * var(--cell-height)) + (${orden} * ${offsetY}px))`,
+                              height: `calc((${evento.fin} - ${evento.inicio}) * var(--cell-height))`,
                               backgroundColor: config.theme.bg,
                               borderLeft: `4px solid ${config.theme.border}`,
                               color: config.theme.text,
-                              zIndex: isLifted ? 10 : 1
+                              zIndex: isLifted ? 100 : (10 + orden),
+                              width: '87%',
+                              left: `calc(4% + (${orden} * ${offsetX}px))`,
                             }}
                             onMouseEnter={() => setHoveredEvent(eventKey)}
                             onMouseLeave={() => setHoveredEvent(null)}
-                            onClick={() =>
-                              setActiveEvent(activeEvent === eventKey ? null : eventKey)
-                            }
+                            onClick={() => setActiveEvent(activeEvent === eventKey ? null : eventKey)}
                           >
                             <span className="event-label">
                               {config.nombre.split(' ').pop()}
