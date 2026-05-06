@@ -4,76 +4,71 @@ from .models import (
     Career, Faculty, Course, CourseTeacher,
     Speciality, SpecialityTeacher,
     Teacher, TeachersPeriod,
-    Student, Studygroup, StudygroupTeacher,
+    Student,
+    StudyGroup, StudyGroupStudent, StudyGroupTeacher,
+    CourseTutorial,
     Period, Type, Evaluation, EvaluationTeacher, Result,
-    Rol,
 )
 
 # Simple tables
 
 class CareerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Career
+        model  = Career
         fields = '__all__'
 
 
 class FacultySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Faculty
+        model  = Faculty
         fields = '__all__'
-
-
-class RolSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rol
-        fields = '__all__'
-
 
 class SpecialitySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Speciality
+        model  = Speciality
         fields = '__all__'
 
 
 class TypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Type
+        model  = Type
         fields = '__all__'
 
 
 class PeriodSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Period
+        model  = Period
         fields = '__all__'
+
 
 # Course
 
 class CourseSerializer(serializers.ModelSerializer):
-    career_name = serializers.CharField(source='career.name', read_only=True)
+    career_name  = serializers.CharField(source='career.name',  read_only=True)
     faculty_name = serializers.CharField(source='faculty.name', read_only=True)
 
     class Meta:
-        model = Course
+        model  = Course
         fields = '__all__'
 
 
 class CourseTeacherSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CourseTeacher
+        model  = CourseTeacher
         fields = '__all__'
 
-# Teacher
+
+# Teacher 
 
 class TeacherSerializer(serializers.ModelSerializer):
-    rol_name = serializers.CharField(source='rol.name', read_only=True)
-    career_name = serializers.CharField(source='career.name', read_only=True)
+    career_name  = serializers.CharField(source='career.name',  read_only=True)
     faculty_name = serializers.CharField(source='faculty.name', read_only=True)
 
     courses = serializers.SerializerMethodField()
     specialities = serializers.SerializerMethodField()
 
     class Meta:
-        model = Teacher
+        model  = Teacher
         fields = '__all__'
 
     def get_courses(self, obj):
@@ -100,71 +95,101 @@ class TeacherSerializer(serializers.ModelSerializer):
 
 class TeachersPeriodSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TeachersPeriod
+        model  = TeachersPeriod
         fields = '__all__'
 
 
 class SpecialityTeacherSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SpecialityTeacher
+        model  = SpecialityTeacher
         fields = '__all__'
 
-# Student
+
+# Student 
 
 class StudentSerializer(serializers.ModelSerializer):
     faculty_name = serializers.CharField(source='faculty.name', read_only=True)
-    career_name = serializers.CharField(source='career.name', read_only=True)
+    career_name  = serializers.CharField(source='career.name',  read_only=True)
 
     class Meta:
-        model = Student
+        model  = Student
         fields = '__all__'
 
 
-class StudygroupSerializer(serializers.ModelSerializer):
+# StudyGroup 
+
+class StudyGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = StudyGroup
+        fields = '__all__'
+
+
+class StudyGroupStudentSerializer(serializers.ModelSerializer):
+    """REPLACES old StudygroupSerializer (which had student FK embedded)."""
     student_name = serializers.CharField(source='student.name', read_only=True)
 
     class Meta:
-        model = Studygroup
+        model  = StudyGroupStudent
         fields = '__all__'
 
 
-class StudygroupTeacherSerializer(serializers.ModelSerializer):
+class StudyGroupTeacherSerializer(serializers.ModelSerializer):
+    """REPLACES old StudygroupTeacherSerializer."""
+    teacher_name = serializers.CharField(source='teacher.name', read_only=True)
+
     class Meta:
-        model = StudygroupTeacher
+        model  = StudyGroupTeacher
         fields = '__all__'
 
-# Evaluation
+
+class CourseTutorialSerializer(serializers.ModelSerializer):
+    """NEW: links StudyGroup + Teacher + Course."""
+    teacher_name = serializers.CharField(source='teacher.name', read_only=True)
+    course_name  = serializers.CharField(source='course.name',  read_only=True)
+
+    class Meta:
+        model  = CourseTutorial
+        fields = '__all__'
+
+
+# Evaluation 
 
 class EvaluationSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source='studentid.name', read_only=True)
-    type_name = serializers.CharField(source='type.name', read_only=True)
+    type_name    = serializers.CharField(source='type.name',       read_only=True)
 
     class Meta:
-        model = Evaluation
+        model  = Evaluation
         fields = '__all__'
 
 
 class EvaluationTeacherSerializer(serializers.ModelSerializer):
+    teacher_name = serializers.CharField(source='teacher.name', read_only=True)
+    evaluation_id = serializers.IntegerField(source='evaluation.id', read_only=True)
+
     class Meta:
-        model = EvaluationTeacher
+        model  = EvaluationTeacher
         fields = '__all__'
 
 
 class ResultSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Result
+        model  = Result
         fields = '__all__'
+
+
+# System Users 
 
 class SystemUserSerializer(serializers.ModelSerializer):
     rol = serializers.SerializerMethodField()
 
     class Meta:
-        model = User
+        model  = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_active', 'rol']
 
     def get_rol(self, obj):
         if obj.is_superuser:
-            return "Administrador"
+            return 'Administrador'
         elif obj.is_staff:
-            return "Coordinador"
-        return "Usuario"
+            return 'Coordinador'
+        return 'Usuario'

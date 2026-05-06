@@ -2,37 +2,36 @@ from rest_framework import viewsets, filters, status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from parsers.pensum_parser import parse_pensum
-from django.contrib.auth.models import User
 from rest_framework.decorators import action
+from django.contrib.auth.models import User
 from django.db.models import Count, Q
+from django.db import transaction
 from django.db.models.functions import ExtractMonth
-from .serializers import SystemUserSerializer
 
-from rest_framework import status
-from django.db import transaction, connection
+from parsers.pensum_parser import parse_pensum
+from parsers.teacher_schedule_parser import parse_teacher_schedule_excel
 
 from .models import (
     Career, Faculty, Course, CourseTeacher,
     Speciality, SpecialityTeacher,
     Teacher, TeachersPeriod,
-    Student, Studygroup, StudygroupTeacher,
+    Student,
+    StudyGroup, StudyGroupStudent, StudyGroupTeacher,
+    CourseTutorial,
     Period, Type, Evaluation, EvaluationTeacher, Result,
-    Rol,
 )
+
 from .serializers import (
-    CareerSerializer, FacultySerializer, RolSerializer,
+    CareerSerializer, FacultySerializer,
     SpecialitySerializer, TypeSerializer, PeriodSerializer,
     CourseSerializer, CourseTeacherSerializer,
     TeacherSerializer, TeachersPeriodSerializer, SpecialityTeacherSerializer,
-    StudentSerializer, StudygroupSerializer, StudygroupTeacherSerializer,
+    StudentSerializer,
+    StudyGroupSerializer, StudyGroupStudentSerializer,
+    StudyGroupTeacherSerializer, CourseTutorialSerializer,
     EvaluationSerializer, EvaluationTeacherSerializer, ResultSerializer,
-    SystemUserSerializer
+    SystemUserSerializer,
 )
-
-from parsers.teacher_schedule_parser import parse_teacher_schedule_excel
-
-# CRUD for simple tables
 
 class CareerViewSet(viewsets.ModelViewSet):
     queryset = Career.objects.all()
@@ -48,14 +47,6 @@ class FacultyViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name']
     ordering_fields = ['name']
-
-
-class RolViewSet(viewsets.ModelViewSet):
-    queryset = Rol.objects.all()
-    serializer_class = RolSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name']
-
 
 class SpecialityViewSet(viewsets.ModelViewSet):
     queryset = Speciality.objects.all()
@@ -78,8 +69,6 @@ class PeriodViewSet(viewsets.ModelViewSet):
     filterset_fields = ['day']
     ordering_fields = ['day', 'starttime']
 
-# CRUD for Course
-
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.select_related('career', 'faculty').all()
     serializer_class = CourseSerializer
@@ -95,41 +84,36 @@ class CourseTeacherViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['course', 'teacher']
 
-# CRUD for Teacher
 
 class TeacherViewSet(viewsets.ModelViewSet):
     serializer_class = TeacherSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['isactive', 'career', 'faculty', 'rol']
+    filterset_fields = ['isactive', 'career', 'faculty']
     search_fields = ['name', 'cat']
     ordering_fields = ['name', 'evaluationcount']
 
     def get_queryset(self):
-        queryset = Teacher.objects.select_related('rol', 'career', 'faculty')
+        qs = Teacher.objects.select_related('career', 'faculty').all()
+        show_inactive = self.request.query_params.get('show_inactive')
 
-        show_inactive = self.request.query_params.get("show_inactive")
+        if show_inactive == 'true':
+            return qs
 
-        if show_inactive == "true":
-            return queryset
+        return qs.filter(isactive=True)
 
-        return queryset.filter(isactive=True)
-
-    ## para soft delete (toggle isactive)
     @action(detail=True, methods=['patch'], url_path='toggle-active')
     def toggle_active(self, request, pk=None):
         teacher = self.get_object()
         teacher.isactive = not teacher.isactive
         teacher.save()
 
-        estado_texto = 'Activo' if teacher.isactive else 'Inactivo'
-        
         return Response({
-            'message': f'Estado actualizado correctamente',
+            'message': 'Estado actualizado correctamente',
             'isactive': teacher.isactive,
-            'status_text': estado_texto
+            'status_text': 'Activo' if teacher.isactive else 'Inactivo',
         })
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], url_path='update_relations')
     @transaction.atomic
     def update_relations(self, request, pk=None):
         teacher = self.get_object()
@@ -141,21 +125,12 @@ class TeacherViewSet(viewsets.ModelViewSet):
         SpecialityTeacher.objects.filter(teacher=teacher).delete()
 
         for course_id in course_ids:
-            CourseTeacher.objects.create(
-                teacher=teacher,
-                course_id=course_id
-            )
+            CourseTeacher.objects.create(teacher=teacher, course_id=course_id)
 
         for speciality_id in speciality_ids:
-            SpecialityTeacher.objects.create(
-                teacher=teacher,
-                area_id=speciality_id
-            )
+            SpecialityTeacher.objects.create(teacher=teacher, area_id=speciality_id)
 
-        return Response(
-            {"message": "Relaciones actualizadas"},
-            status=status.HTTP_200_OK
-        )
+        return Response({'message': 'Relaciones actualizadas'}, status=status.HTTP_200_OK)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -167,21 +142,16 @@ class TeacherViewSet(viewsets.ModelViewSet):
         teacher = serializer.save()
 
         for course_id in course_ids:
-            CourseTeacher.objects.create(
-                teacher=teacher,
-                course_id=course_id
-            )
+            CourseTeacher.objects.create(teacher=teacher, course_id=course_id)
 
         for speciality_id in speciality_ids:
-            SpecialityTeacher.objects.create(
-                teacher=teacher,
-                area_id=speciality_id
-            )
+            SpecialityTeacher.objects.create(teacher=teacher, area_id=speciality_id)
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        headers = self.get_success_headers(serializer.data)
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 class TeachersPeriodViewSet(viewsets.ModelViewSet):
-    queryset = TeachersPeriod.objects.select_related('teacher', 'schedule').all()
     serializer_class = TeachersPeriodSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['teacher', 'schedule']
@@ -189,8 +159,10 @@ class TeachersPeriodViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = TeachersPeriod.objects.select_related('teacher', 'schedule').all()
         teacher_ids = self.request.query_params.getlist('teacher')
+
         if teacher_ids:
             qs = qs.filter(teacher__id__in=teacher_ids)
+
         return qs
 
 class SpecialityTeacherViewSet(viewsets.ModelViewSet):
@@ -202,46 +174,31 @@ class SpecialityTeacherViewSet(viewsets.ModelViewSet):
 class TeacherScheduleUploadView(APIView):
     @transaction.atomic
     def post(self, request):
-        file = request.FILES.get("file")
-        teacher_code = request.data.get("teacher_code")
-        teacher_id = request.data.get("teacher_id")
-        replace = request.data.get("replace") == "true"
+        file = request.FILES.get('file')
+        teacher_code = request.data.get('teacher_code')
+        teacher_id = request.data.get('teacher_id')
+        replace = request.data.get('replace') == 'true'
 
         if not file:
-            return Response(
-                {"error": "No se envió ningún archivo."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'No se envió ningún archivo.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not teacher_code:
-            return Response(
-                {"error": "Debe enviar teacher_code."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'Debe enviar teacher_code.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             parsed = parse_teacher_schedule_excel(file, teacher_code)
         except Exception as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY
-            )
+            return Response({'error': str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        schedules = parsed.get("schedules", [])
+        schedules = parsed.get('schedules', [])
 
         if replace and len(schedules) == 0:
-            return Response(
-                {
-                    "error": (
-                        "El archivo no tiene horarios marcados para este docente. "
-                        "No se reemplazó el horario anterior."
-                    ),
-                    "teacher_code": parsed["teacher_code"],
-                    "teacher_name_from_excel": parsed["teacher_name"],
-                    "total_schedules_found": 0,
-                },
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY
-            )
+            return Response({
+                'error': 'El archivo no tiene horarios marcados para este docente. No se reemplazó el horario anterior.',
+                'teacher_code': parsed.get('teacher_code'),
+                'teacher_name_from_excel': parsed.get('teacher_name'),
+                'total_schedules_found': 0,
+            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         try:
             if teacher_id:
@@ -249,19 +206,14 @@ class TeacherScheduleUploadView(APIView):
             else:
                 teacher = Teacher.objects.get(cat=str(teacher_code).strip())
         except Teacher.DoesNotExist:
-            return Response(
-                {
-                    "error": f"No existe un docente registrado con código {teacher_code}."
-                },
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({
+                'error': f'No existe un docente registrado con código {teacher_code}.'
+            }, status=status.HTTP_404_NOT_FOUND)
 
         deleted_relations = 0
 
         if replace:
-            deleted_relations, _ = TeachersPeriod.objects.filter(
-                teacher=teacher
-            ).delete()
+            deleted_relations, _ = TeachersPeriod.objects.filter(teacher=teacher).delete()
 
         created_periods = 0
         created_relations = 0
@@ -269,15 +221,15 @@ class TeacherScheduleUploadView(APIView):
 
         for schedule in schedules:
             period, created = Period.objects.get_or_create(
-                day=schedule["day"],
-                starttime=schedule["starttime"],
-                endtime=schedule["endtime"],
+                day=schedule['day'],
+                starttime=schedule['starttime'],
+                endtime=schedule['endtime'],
             )
 
             if created:
                 created_periods += 1
 
-            relation, relation_created = TeachersPeriod.objects.get_or_create(
+            _, relation_created = TeachersPeriod.objects.get_or_create(
                 teacher=teacher,
                 schedule=period,
             )
@@ -287,63 +239,98 @@ class TeacherScheduleUploadView(APIView):
             else:
                 already_existing += 1
 
-        return Response(
-            {
-                "message": "Horario procesado correctamente.",
-                "teacher_code": parsed["teacher_code"],
-                "teacher_name_from_excel": parsed["teacher_name"],
-                "teacher_id": teacher.id,
-                "replace": replace,
-                "deleted_relations": deleted_relations,
-                "total_schedules_found": len(schedules),
-                "created_periods": created_periods,
-                "created_relations": created_relations,
-                "already_existing": already_existing,
-            },
-            status=status.HTTP_201_CREATED
+        return Response({
+            'message': 'Horario procesado correctamente.',
+            'teacher_code': parsed.get('teacher_code'),
+            'teacher_name_from_excel': parsed.get('teacher_name'),
+            'teacher_id': teacher.id,
+            'replace': replace,
+            'deleted_relations': deleted_relations,
+            'total_schedules_found': len(schedules),
+            'created_periods': created_periods,
+            'created_relations': created_relations,
+            'already_existing': already_existing,
+        }, status=status.HTTP_201_CREATED)
+
+
+class TeacherScheduleDetailView(APIView):
+    def get(self, request, teacher_code):
+        try:
+            teacher = Teacher.objects.get(cat=str(teacher_code).strip())
+        except Teacher.DoesNotExist:
+            return Response({
+                'error': f'No existe un docente con código {teacher_code}.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        schedules = (
+            TeachersPeriod.objects
+            .filter(teacher=teacher)
+            .select_related('schedule')
+            .order_by('schedule__day', 'schedule__starttime')
         )
 
-# CRUD for Student
+        data = [
+            {
+                'day': item.schedule.day,
+                'starttime': item.schedule.starttime,
+                'endtime': item.schedule.endtime,
+            }
+            for item in schedules
+        ]
+
+        return Response({
+            'teacher_id': teacher.id,
+            'teacher_code': teacher.cat,
+            'teacher_name': teacher.name,
+            'total_schedules': len(data),
+            'schedules': data,
+        })
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.select_related('faculty', 'career').all()
     serializer_class = StudentSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['isactive', 'haspayment', 'faculty', 'career']
+    filterset_fields = ['isactive', 'faculty', 'career']
     search_fields = ['name', 'est']
     ordering_fields = ['name']
 
-
-class StudygroupViewSet(viewsets.ModelViewSet):
-    queryset = Studygroup.objects.select_related('student').all()
-    serializer_class = StudygroupSerializer
+class StudyGroupViewSet(viewsets.ModelViewSet):
+    queryset = StudyGroup.objects.all()
+    serializer_class = StudyGroupSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['approvedgroup', 'student']
+    filterset_fields = ['approvedgroup']
     search_fields = ['group']
 
-
-class StudygroupTeacherViewSet(viewsets.ModelViewSet):
-    queryset = StudygroupTeacher.objects.select_related('studygroup', 'teacher').all()
-    serializer_class = StudygroupTeacherSerializer
+class StudyGroupStudentViewSet(viewsets.ModelViewSet):
+    queryset = StudyGroupStudent.objects.select_related('studygroup', 'student').all()
+    serializer_class = StudyGroupStudentSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['studygroup', 'teacher']
+    filterset_fields = ['studygroup', 'student', 'haspayment']
 
-# CRUD for Evaluation
+class StudyGroupTeacherViewSet(viewsets.ModelViewSet):
+    queryset = StudyGroupTeacher.objects.select_related('studygroup', 'teacher').all()
+    serializer_class = StudyGroupTeacherSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['studygroup', 'teacher', 'hasaccepted']
+
+class CourseTutorialViewSet(viewsets.ModelViewSet):
+    queryset = CourseTutorial.objects.select_related('studygroup', 'teacher', 'course').all()
+    serializer_class = CourseTutorialSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['studygroup', 'teacher', 'course', 'hasaccepted', 'haspayment']
 
 class EvaluationViewSet(viewsets.ModelViewSet):
     queryset = Evaluation.objects.select_related('studentid', 'type').all()
     serializer_class = EvaluationSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['studentid', 'type', 'date', 'classroom', 'building']
-    ordering_fields = ['date', 'hour']
-
+    filterset_fields = ['studentid', 'type', 'date', 'classroom', 'building', 'haspayment']
+    ordering_fields = ['date', 'starthour']
 
 class EvaluationTeacherViewSet(viewsets.ModelViewSet):
     queryset = EvaluationTeacher.objects.select_related('evaluation', 'teacher').all()
     serializer_class = EvaluationTeacherSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['evaluation', 'teacher']
-
 
 class ResultViewSet(viewsets.ModelViewSet):
     queryset = Result.objects.select_related('evaluationid').all()
@@ -352,44 +339,51 @@ class ResultViewSet(viewsets.ModelViewSet):
     filterset_fields = ['state', 'evaluationid']
     search_fields = ['state', 'observation']
 
-# Espetial route for pensum upload
+class SystemUserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = SystemUserSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['first_name', 'last_name', 'email']
+
+    @action(detail=True, methods=['patch'], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        user = self.get_object()
+        user.is_active = not user.is_active
+        user.save()
+
+        return Response({
+            'message': 'Estado actualizado',
+            'is_active': user.is_active,
+            'status_text': 'Activo' if user.is_active else 'Inactivo',
+        })
 
 class PensumUploadView(APIView):
     def post(self, request):
-        file = request.FILES.get("file")
-        upload_type = request.data.get("type", "")
- 
+        file = request.FILES.get('file')
+        upload_type = request.data.get('type', '')
+
         if not file:
-            return Response(
-                {"error": "No file was provided."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
- 
-        allowed_types = ("especial", "comprensiva")
+            return Response({'error': 'No file was provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        allowed_types = ('especial', 'comprensiva')
+
         if upload_type not in allowed_types:
-            return Response(
-                {"error": f"'type' must be one of {allowed_types}."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
- 
+            return Response({
+                'error': f"'type' must be one of {allowed_types}."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             stats = parse_pensum(file)
         except Exception as exc:
-            return Response(
-                {"error": f"Failed to parse the pensum file: {str(exc)}"},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            )
- 
-        return Response(
-            {
-                "message": "Pensum uploaded successfully.",
-                "type": upload_type,
-                "stats": stats,
-            },
-            status=status.HTTP_201_CREATED,
-        )
- 
+            return Response({
+                'error': f'Failed to parse the pensum file: {str(exc)}'
+            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
+        return Response({
+            'message': 'Pensum uploaded successfully.',
+            'type': upload_type,
+            'stats': stats,
+        }, status=status.HTTP_201_CREATED)
 
 class DashboardStatsView(APIView):
     def get(self, request):
@@ -397,121 +391,75 @@ class DashboardStatsView(APIView):
         active_teachers = Teacher.objects.filter(isactive=True).count()
         total_students = Student.objects.count()
         total_courses = Course.objects.count()
-        total_evaluations = Evaluation.objects.count()
+        total_evals = Evaluation.objects.count()
 
-        roles_distribution = list(Teacher.objects.values('rol__name').annotate(total=Count('id')))
-
-        return Response({
+        response_data = {
             'overview': {
                 'total_teachers': total_teachers,
                 'active_teachers': active_teachers,
                 'total_students': total_students,
                 'total_courses': total_courses,
-                'total_evaluations': total_evaluations,
+                'total_evaluations': total_evals,
             },
-            'charts': {
-                'roles_distribution': roles_distribution
-            }
-        })
-    
-class SystemUserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = SystemUserSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['first_name', 'last_name', 'email']
+        }
 
-    # logica del soft delete
-    @action(detail=True, methods=['patch'], url_path='toggle-active')
-    def toggle_active(self, request, pk=None):
-        user = self.get_object()
-        
-        # Invertimos el estado actual del usuario
-        user.is_active = not user.is_active
-        user.save()
-        
-        estado_texto = 'Activo' if user.is_active else 'Inactivo'
-        
-        return Response({
-            'message': 'Estado actualizado',
-            'is_active': user.is_active,
-            'status_text': estado_texto
-        })
-    
+        teacher_fields = {field.name for field in Teacher._meta.get_fields()}
+
+        if 'rol' in teacher_fields:
+            response_data['charts'] = {
+                'roles_distribution': list(
+                    Teacher.objects.values('rol__name').annotate(total=Count('id'))
+                )
+            }
+
+        return Response(response_data)
+
 class DashboardMetricsView(APIView):
     def get(self, request):
-        # 1. Totales de Tarjetas
         total_evaluaciones = Evaluation.objects.count()
-        # Consideramos "Pendiente" si no existe un registro en la tabla Result para esa evaluacion
         evaluaciones_sin_resultado = Evaluation.objects.filter(result__isnull=True).count()
 
-        # 2. Datos para Gráfica de Barras (especial vs comprensiva por mes)
-        stats_mes = Evaluation.objects.annotate(month=ExtractMonth('date')).values('month').annotate(
-            especial=Count('id', filter=Q(type__name__icontains='Especial')),
-            comprensiva=Count('id', filter=Q(type__name__icontains='Comprensiva'))
-        ).order_by('month')
-
-        # Convertimos el número de mes a nombre corto (ENE, FEB, etc.)
-        meses_map = {1:'ENE', 2:'FEB', 3:'MAR', 4:'ABR', 5:'MAY', 6:'JUN', 
-                     7:'JUL', 8:'AGO', 9:'SEP', 10:'OCT', 11:'NOV', 12:'DIC'}
-        
-        chart_data = [
-            {
-                "mes": meses_map.get(item['month'], 'S/M'),
-                "especial": item['especial'],
-                "comprensiva": item['comprensiva']
-            } for item in stats_mes
-        ]
-
-        # 3. Docentes Top
-        top_teachers = Teacher.objects.order_by('-evaluationcount')[:4]
-        teachers_data = [
-            {
-                "name": t.name,
-                "initials": "".join([n[0] for n in t.name.split()[:2]]),
-                "dept": t.faculty.name,
-                "total": t.evaluationcount
-            } for t in top_teachers
-        ]
-
-        return Response({
-            "total_evaluations": total_evaluaciones,
-            "pending_emails": evaluaciones_sin_resultado,
-            "monthly_chart": chart_data,
-            "top_teachers": teachers_data
-        })
-
-# Route to get the schedule of a teacher by their code (try in Posman, Bruno, etc)
-# GET /api/teacher-schedules/{teacher_code}/
-class TeacherScheduleDetailView(APIView):
-    def get(self, request, teacher_code):
-        try:
-            teacher = Teacher.objects.get(cat=str(teacher_code).strip())
-        except Teacher.DoesNotExist:
-            return Response(
-                {"error": f"No existe un docente con código {teacher_code}."},
-                status=status.HTTP_404_NOT_FOUND
+        stats_mes = (
+            Evaluation.objects
+            .annotate(month=ExtractMonth('date'))
+            .values('month')
+            .annotate(
+                especial=Count('id', filter=Q(type__name__icontains='Especial')),
+                comprensiva=Count('id', filter=Q(type__name__icontains='Comprensiva')),
             )
-
-        schedules = TeachersPeriod.objects.filter(
-            teacher=teacher
-        ).select_related('schedule').order_by(
-            'schedule__day',
-            'schedule__starttime'
+            .order_by('month')
         )
 
-        data = [
+        meses_map = {
+            1: 'ENE', 2: 'FEB', 3: 'MAR', 4: 'ABR',
+            5: 'MAY', 6: 'JUN', 7: 'JUL', 8: 'AGO',
+            9: 'SEP', 10: 'OCT', 11: 'NOV', 12: 'DIC',
+        }
+
+        chart_data = [
             {
-                "day": item.schedule.day,
-                "starttime": item.schedule.starttime,
-                "endtime": item.schedule.endtime,
+                'mes': meses_map.get(item['month'], 'S/M'),
+                'especial': item['especial'],
+                'comprensiva': item['comprensiva'],
             }
-            for item in schedules
+            for item in stats_mes
+        ]
+
+        top_teachers = Teacher.objects.order_by('-evaluationcount')[:4]
+
+        teachers_data = [
+            {
+                'name': t.name,
+                'initials': ''.join([n[0] for n in t.name.split()[:2]]),
+                'dept': t.faculty.name if t.faculty else '',
+                'total': t.evaluationcount,
+            }
+            for t in top_teachers
         ]
 
         return Response({
-            "teacher_id": teacher.id,
-            "teacher_code": teacher.cat,
-            "teacher_name": teacher.name,
-            "total_schedules": len(data),
-            "schedules": data,
+            'total_evaluations': total_evaluaciones,
+            'pending_emails': evaluaciones_sin_resultado,
+            'monthly_chart': chart_data,
+            'top_teachers': teachers_data,
         })

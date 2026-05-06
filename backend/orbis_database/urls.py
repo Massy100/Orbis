@@ -8,7 +8,6 @@ router = DefaultRouter()
 # Routes for simple tables 
 router.register(r'careers',      views.CareerViewSet,      basename='career')
 router.register(r'faculties',    views.FacultyViewSet,     basename='faculty')
-router.register(r'roles',        views.RolViewSet,         basename='rol')
 router.register(r'specialities', views.SpecialityViewSet,  basename='speciality')
 router.register(r'types',        views.TypeViewSet,        basename='type')
 router.register(r'periods',      views.PeriodViewSet,      basename='period')
@@ -24,8 +23,8 @@ router.register(r'speciality-teachers',  views.SpecialityTeacherViewSet,basename
 
 # Routes for Student 
 router.register(r'students',           views.StudentViewSet,          basename='student')
-router.register(r'studygroups',        views.StudygroupViewSet,       basename='studygroup')
-router.register(r'studygroup-teachers',views.StudygroupTeacherViewSet,basename='studygroup-teacher')
+router.register(r'studygroups',        views.StudyGroupViewSet,       basename='studygroup')
+router.register(r'studygroup-teachers',views.StudyGroupTeacherViewSet,basename='studygroup-teacher')
 
 # Routes for Evaluation
 router.register(r'evaluations',         views.EvaluationViewSet,       basename='evaluation')
@@ -43,7 +42,7 @@ urlpatterns = [
     # Route for teacher schedule upload
     path( 'api/teacher-schedules/upload/', views.TeacherScheduleUploadView.as_view(), name='teacher-schedule-upload' ),
 
-    # Route to get the schedule of a teacher by their code (try in Posman, Bruno, etc)
+    # Route to get the schedule of a teacher by their code 
     path( 'api/teacher-schedules/<str:teacher_code>/', views.TeacherScheduleDetailView.as_view(), name='teacher-schedule-detail' ),
 
     path('api/dashboard-stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
