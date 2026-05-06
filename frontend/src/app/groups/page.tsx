@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Eye, Pencil, Trash2, Plus, UserCheck, X, Circle, UserPlus, CircleCheckBig, PlusSquare} from 'lucide-react';
+import { Pencil, Trash2, Plus, UserCheck, X, Circle, UserPlus, CircleCheckBig, PlusSquare} from 'lucide-react';
 import DashboardLayout from '@/src/app/components/layout';
 import Pagination from '../components/pagination';
 import AvailabilityPicker from '../components/AvailabilityPicker';
@@ -33,7 +33,6 @@ export default function GroupsPage() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showAvailability, setShowAvailability] = useState(false);
-    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [groupToDelete, setGroupToDelete] = useState<number | null>(null);
     const [selectedGroup, setSelectedGroup] = useState<GroupDetail | null>(null);
@@ -82,15 +81,6 @@ export default function GroupsPage() {
         closeModal();
     };
 
-    const handleViewGroup = async (id: number) => {
-        const detail = await getGroupDetail(id);
-
-        if (!detail) return;
-
-        setSelectedGroup(detail);
-        setIsViewModalOpen(true);
-    };
-
     const handleUpdateGroup = () => {
         if (!editingGroup) return;
 
@@ -133,11 +123,6 @@ export default function GroupsPage() {
         if (!confirmDelete) return;
 
         deleteGroup(id);
-
-        if (selectedGroup?.id === id) {
-            setSelectedGroup(null);
-            setIsViewModalOpen(false);
-        }
 
         if (editingGroup?.id === id) {
             setEditingGroup(null);
@@ -209,7 +194,6 @@ export default function GroupsPage() {
 
         if (selectedGroup?.id === groupToDelete) {
             setSelectedGroup(null);
-            setIsViewModalOpen(false);
         }
 
         if (editingGroup?.id === groupToDelete) {
@@ -259,12 +243,6 @@ export default function GroupsPage() {
                                 <div className="card-header">
                                     <h3 className="group-name">{group.nombre}</h3>
                                     <div className="card-actions">
-                                        <button
-                                            className="action-icon btn-view"
-                                            onClick={() => handleViewGroup(group.id)}
-                                        >
-                                            <Eye size={20} />
-                                        </button>
                                         <button 
                                             className="action-icon btn-edit"
                                             onClick={() => handleEditGroup(group.id)}
@@ -501,225 +479,6 @@ export default function GroupsPage() {
                     </div>
                 )}
 
-                {/* MODAL DE VISUALIZACIÓN */}
-                {isViewModalOpen && selectedGroup && (
-                    <div className="modal-overlay">
-                        <div className="modal-container group-modal-large">
-                            <div className="modal-header">
-                                <h2>Detalle del Grupo</h2>
-
-                                <button
-                                    className="close-x"
-                                    onClick={() => {
-                                        setIsViewModalOpen(false);
-                                        setSelectedGroup(null);
-                                    }}
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <div className="modal-form">
-                                <header className="modal-id-header">
-                                    ID Grupo: #{selectedGroup.id}
-                                    <button
-                                        className={`btn-create-evaluation ${
-                                            canCreateEvaluation ? "enabled" : "disabled"
-                                        }`}
-                                        disabled={!canCreateEvaluation}
-                                        title={
-                                            canCreateEvaluation
-                                                ? "Crear evaluación del grupo"
-                                                : "El grupo debe estar aprobado"
-                                        }
-                                    >
-                                        Crear Evaluación
-                                    </button>
-                                </header>
-                                
-                                <section className="modal-section">
-                                    <div className="section-header">
-                                        <h3>Información General</h3>
-                                    </div>
-
-                                    <div className="tutors-list">
-                                        <div className="tutor-row">
-                                            <label>Nombre:</label>
-
-                                            <input
-                                                type="text"
-                                                value={selectedGroup.nombre}
-                                                readOnly
-                                                className="input-readonly"
-                                            />
-                                        </div>
-
-                                        <div className="tutor-row">
-                                            <label>Estado:</label>
-
-                                            <input
-                                                type="text"
-                                                value={selectedGroup.estado}
-                                                readOnly
-                                                className="input-readonly"
-                                            />
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <section className="modal-section">
-                                    <div className="section-header">
-                                        <h3>Tutores</h3>
-                                    </div>
-
-                                    <div className="tutors-list">
-                                        {selectedGroup.tutores.map((tutor, index) => (
-                                            <div
-                                                key={index}
-                                                className="tutor-row"
-                                            >
-                                                <label>
-                                                    Tutor {index + 1}:
-                                                </label>
-
-                                                <input
-                                                    type="text"
-                                                    value={tutor.nombre}
-                                                    readOnly
-                                                    className="input-readonly"
-                                                />
-
-                                                <button
-                                                    className={`icon-btn tutor-status-btn ${
-                                                        tutor.aprobado ? "approved" : "pending"
-                                                    }`}
-                                                    data-title={
-                                                        tutor.aprobado
-                                                            ? "De acuerdo"
-                                                            : "No de acuerdo"
-                                                    }
-                                                >
-                                                    {tutor.aprobado ? (
-                                                        <UserCheck
-                                                            size={18}
-                                                            color="green"
-                                                        />
-                                                    ) : (
-                                                        <X
-                                                            size={18}
-                                                            color="red"
-                                                        />
-                                                    )}
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
-
-                                <section className="modal-section">
-                                    <div className="section-header">
-                                        <h3>
-                                            Estudiantes (
-                                            {selectedGroup.estudiantes.length}/6)
-                                        </h3>
-                                    </div>
-
-                                    <div className="students-table-wrapper">
-                                        <table className="students-modal-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>CARNÉ</th>
-                                                    <th>NOMBRE</th>
-                                                    <th
-                                                        style={{
-                                                            textAlign: "center"
-                                                        }}
-                                                    >
-                                                        PAGO
-                                                    </th>
-                                                </tr>
-                                            </thead>
-
-                                            <tbody>
-                                                {selectedGroup.estudiantes.map(
-                                                    (est) => (
-                                                        <tr key={est.id}>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    value={est.carne}
-                                                                    readOnly
-                                                                    className="table-input"
-                                                                />
-                                                            </td>
-
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    value={est.nombre}
-                                                                    readOnly
-                                                                    className="table-input"
-                                                                />
-                                                            </td>
-
-                                                            <td
-                                                                style={{
-                                                                    display: "flex",
-                                                                    justifyContent:
-                                                                        "center"
-                                                                }}
-                                                            >
-                                                                <button
-                                                                    className={`icon-btn payment-status-btn ${
-                                                                        est.pagado
-                                                                            ? "paid"
-                                                                            : "pending"
-                                                                    }`}
-                                                                    data-title={
-                                                                        est.pagado
-                                                                            ? "Pagado"
-                                                                            : "Pendiente"
-                                                                    }
-                                                                >
-                                                                    {est.pagado ? (
-                                                                        <CircleCheckBig
-                                                                            size={18}
-                                                                            color="green"
-                                                                        />
-                                                                    ) : (
-                                                                        <Circle
-                                                                            size={18}
-                                                                            color="orange"
-                                                                        />
-                                                                    )}
-                                                                </button>
-                                                                <button
-                                                                    className="icon-btn btn-evaluation"
-                                                                    data-title={
-                                                                        est.pagado
-                                                                            ? "Crear evaluación"
-                                                                            : "Debe estar pagado"
-                                                                    }
-                                                                    disabled={!est.pagado}
-                                                                    onClick={() => {
-                                                                        console.log("Crear evaluación para:", est);
-                                                                    }}
-                                                                >
-                                                                    <Plus size={16} />
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    )
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </section>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* MODAL DE EDICIÓN */}
                 {isEditModalOpen && editingGroup && (
                     <div className="modal-overlay">
@@ -921,6 +680,20 @@ export default function GroupsPage() {
                                                                         color="orange"
                                                                     />
                                                                 )}
+                                                            </button>
+                                                            <button
+                                                                className="icon-btn btn-evaluation"
+                                                                data-title={
+                                                                    est.pagado
+                                                                        ? "Crear evaluación"
+                                                                        : "Debe estar pagado"
+                                                                }
+                                                                disabled={!est.pagado}
+                                                                onClick={() => {
+                                                                    console.log("Crear evaluación para:", est);
+                                                                }}
+                                                            >
+                                                                <Plus size={16} />
                                                             </button>
                                                         </td>
                                                     </tr>
