@@ -108,18 +108,18 @@ class TeacherViewSet(viewsets.ModelViewSet):
         teacher = self.get_object()
         teacher.isactive = not teacher.isactive
         teacher.save()
-
+        estado_texto = 'Activo' if teacher.isactive else 'Inactivo'
+        
         return Response({
             'message': 'Estado actualizado correctamente',
             'isactive': teacher.isactive,
-            'status_text': 'Activo' if teacher.isactive else 'Inactivo',
+            'status_text': estado_texto,
         })
 
     @action(detail=True, methods=['post'], url_path='update_relations')
     @transaction.atomic
     def update_relations(self, request, pk=None):
         teacher = self.get_object()
-
         course_ids = request.data.get('courses', [])
         speciality_ids = request.data.get('specialities', [])
 
@@ -212,7 +212,6 @@ class TeacherScheduleUploadView(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
         deleted_relations = 0
-
         if replace:
             deleted_relations, _ = TeachersPeriod.objects.filter(teacher=teacher).delete()
 
@@ -226,7 +225,6 @@ class TeacherScheduleUploadView(APIView):
                 starttime=schedule['starttime'],
                 endtime=schedule['endtime'],
             )
-
             if created:
                 created_periods += 1
 
@@ -383,11 +381,9 @@ class DashboardStatsView(APIView):
 
 class DashboardMetricsView(APIView):
     def get(self, request):
-        # 1. TARJETAS SUPERIORES (Totales por tipo)
         total_comprensivas = Evaluation.objects.filter(type__name__icontains='Comprensiva').count()
         total_especiales = Evaluation.objects.filter(type__name__icontains='Especial').count()
 
-        # 2. GRÁFICA DE BARRAS INTELIGENTE (Últimos 3 meses CON DATOS)
         stats_mes = Evaluation.objects.annotate(
             month=ExtractMonth('date'),
             year=ExtractYear('date')
@@ -408,7 +404,6 @@ class DashboardMetricsView(APIView):
             for item in stats_mes_list
         ]
 
-        # 3. DOCENTES TOP (Límite estricto de 4)
         top_comprensiva = Teacher.objects.filter(
             evaluationteacher__evaluation__type__name__icontains='Comprensiva'
         ).annotate(total=Count('evaluationteacher')).order_by('-total')[:4]
@@ -426,7 +421,6 @@ class DashboardMetricsView(APIView):
                 "total": t.total
             }
 
-        # 4. CONFIRMACIONES
         conf_eval_comp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Evaluación Comprensiva').count()
         conf_tut_comp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Tutoría Comprensiva').count()
         conf_eval_esp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Evaluación Especial').count()
@@ -490,20 +484,15 @@ class ResultReportsView(APIView):
         comprensiva_reports = []
 
         for eval_obj in evaluations:
-            # 1. Calificación segura
             result_obj = Result.objects.filter(evaluationid=eval_obj).first()
             calificacion = result_obj.state if result_obj else "Pendiente"
-
-            # 2. Evaluadores seguros
             et_list = EvaluationTeacher.objects.filter(evaluation=eval_obj)
             evaluadores = [et.teacher.name for et in et_list if et.teacher]
             
-            # 3. Datos del estudiante
             est_name = eval_obj.studentid.name if eval_obj.studentid else "Sin asignar"
             est_id = str(eval_obj.studentid.id) if eval_obj.studentid else "N/A"
-            
-            # 4. Formateo de fecha seguro
             fecha_str = "Sin fecha"
+            
             if eval_obj.date:
                 try:
                     fecha_str = eval_obj.date.strftime("%d/%m/%Y")
@@ -515,7 +504,6 @@ class ResultReportsView(APIView):
                         fecha_str = str(eval_obj.date)
 
             type_name = eval_obj.type.name if eval_obj.type else ""
-
             base_data = {
                 "id": eval_obj.id,
                 "nombre": est_name,
@@ -532,7 +520,6 @@ class ResultReportsView(APIView):
             elif 'Comprensiva' in type_name:
                 if eval_obj.studentid:
                     try:
-                        # Adaptado al nuevo modelo StudyGroupStudent
                         grupos_rel = StudyGroupStudent.objects.filter(student=eval_obj.studentid).select_related('studygroup')
                         base_data["gruposEstudio"] = [g.studygroup.group for g in grupos_rel if g.studygroup] if grupos_rel.exists() else ["Sin grupo asignado"]
                     except Exception:
@@ -555,11 +542,9 @@ class SendEmailView(APIView):
         if not subject or not body or not correo_destino:
             return Response({"error": "Faltan datos de asunto, cuerpo o destino"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Obtenemos las credenciales directo del .env
         api_key = os.getenv('SENDGRID_API_KEY')
         from_email = os.getenv('DEFAULT_FROM_EMAIL')
 
-        # Usar la API REST de SendGrid directamente evita todos los errores de ASCII/SMTP
         url = "https://api.sendgrid.com/v3/mail/send"
         
         payload = {
@@ -569,7 +554,6 @@ class SendEmailView(APIView):
             "content": [{"type": "text/plain", "value": body}]
         }
         
-        # Convertimos a JSON y forzamos la codificación UTF-8 para proteger el español
         data = json.dumps(payload).encode('utf-8')
         
         req = urllib.request.Request(url, data=data, headers={
