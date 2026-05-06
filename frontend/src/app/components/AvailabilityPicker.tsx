@@ -133,11 +133,18 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
             <div className="multi-teacher-selectors">
               {selectedTeacherIds.map((id, index) => (
                 <div key={index} className="teacher-picker">
-                  <UserIcon size={18} className="icon-blue" />
                   <select
                     value={id}
                     onChange={(e) => handleTeacherChange(index, e.target.value)}
                     className="select-teacher"
+                    style={{
+                      border: `2px solid ${
+                        id ? configDocentes[id]?.theme.border : '#e5e7eb'
+                      }`,
+                      backgroundColor: id
+                        ? `${configDocentes[id]?.theme.border}10`
+                        : '#ffffff'
+                    }}
                   >
                     <option className="select-option" value="">
                       -- Seleccionar --
