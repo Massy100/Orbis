@@ -529,7 +529,6 @@ export default function Teachers() {
                     cat: teacherCode,
                     isactive: true,
                     evaluationcount: 0,
-                    rol: 1,
                     career: 1,
                     faculty: 1,
                     courses: selectedCourse.map(c => c.id),

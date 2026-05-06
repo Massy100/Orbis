@@ -172,7 +172,6 @@
   flex-direction: column;
   width: 100%;
   background-color: #ffffff;
-  /* ✅ borde exterior completo del calendario */
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
@@ -191,7 +190,6 @@
   flex-shrink: 0;
   border-right: 1px solid #e5e7eb;
   background: white;
-  /* ✅ sticky para que las horas no se vayan al hacer scroll */
   position: sticky;
   left: 0;
   z-index: 30;
@@ -216,24 +214,19 @@
   letter-spacing: 0.05em;
 }
 
-/* ✅ El grid ocupa exactamente el espacio restante y cierra sus bordes */
 .day-grid {
   display: grid;
-  /* columna mínima de 100px para que en móvil se pueda hacer scroll */
   grid-template-columns: repeat(7, minmax(100px, 1fr));
   flex: 1;
-  /* borde derecho del grid para cerrar la última columna */
   border-right: 1px solid #e5e7eb;
 }
 
 .day-column {
-  /* ✅ borde entre columnas, excepto la última */
   border-right: 1px solid #e5e7eb;
   position: relative;
   min-width: 0;
 }
 
-/* ✅ Elimina borde duplicado en la última columna */
 .day-column:last-child {
   border-right: none;
 }
@@ -267,8 +260,7 @@
 .day-body {
   position: relative;
   z-index: 1;
-  /* ✅ altura fija basada en el número de horas × 48px */
-  height: calc(11 * 48px); /* 8am→6pm = 11 horas */
+  height: calc(11 * 48px); 
 }
 
 .day-number {
