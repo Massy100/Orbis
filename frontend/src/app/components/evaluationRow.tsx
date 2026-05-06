@@ -63,7 +63,6 @@ export const EvaluationRow = ({
       </td>
       <td>
         <div className="actions">
-          <button data-title="Crear evaluación" onClick={() => onCreate(item)}><Plus size={18} /></button>
           <button data-title="Editar evaluación" onClick={() => onEdit(item)}><Pencil size={18} /></button>
           <button data-title="Eliminar evaluación" onClick={() => onDelete(item.id)}><Trash2 size={18} /></button>
           <button data-title={isReady ? "Crear Evaluación" : "Requisitos incompletos"} disabled={!isReady} className="btn-approve" onClick={() => onApprove(item.id)}>

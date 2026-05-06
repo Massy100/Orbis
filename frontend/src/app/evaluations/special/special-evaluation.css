@@ -321,8 +321,8 @@
 
 .actions button:disabled {
   color: #d1d5db; 
-  cursor: not-allowed;
-  transform: none !important; 
+  cursor: not-allowed; 
+  pointer-events: auto !important;
 }
 
 .icon-btn:hover::after,
@@ -675,6 +675,13 @@
     font-weight: 600;
     color: #0f172a;
     background: #ffffff;
+}
+
+.actions button:disabled:hover::after,
+.actions button:disabled:hover::before {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto !important;
 }
 
 @keyframes fadeIn {
