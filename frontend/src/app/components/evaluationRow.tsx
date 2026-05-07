@@ -8,7 +8,7 @@ interface EvaluationRowProps {
   onDelete: (id: number) => void;
   onTogglePago: (id: number) => void;
   onToggleTutor: (id: number) => void;
-  onApprove: (id: number) => void;
+  onApprove: (carnet: string) => void;
 }
 
 export const EvaluationRow = ({ 
@@ -65,7 +65,7 @@ export const EvaluationRow = ({
         <div className="actions">
           <button data-title="Editar evaluación" onClick={() => onEdit(item)}><Pencil size={18} /></button>
           <button data-title="Eliminar evaluación" onClick={() => onDelete(item.id)}><Trash2 size={18} /></button>
-          <button data-title={isReady ? "Crear Evaluación" : "Requisitos incompletos"} disabled={!isReady} className="btn-approve" onClick={() => onApprove(item.id)}>
+          <button data-title={isReady ? "Crear Evaluación" : "Requisitos incompletos"} disabled={!isReady} className="btn-approve" onClick={() => onApprove(item.carnet)}>
             <Check size={18} />
           </button>
         </div>

@@ -1,8 +1,14 @@
 "use client";
-import "../styles/evaluations-management.css";
+import "../../styles/evaluations-management.css";
+
+import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import DashboardLayout from "../components/layout";
-import Toast from "../components/toast";
+import DashboardLayout from "../../components/layout";
+import Toast from "../../components/toast";
+import AvailabilityPicker from "../../components/AvailabilityPicker";
+
+
+
 
 type Evaluator = {
     id: number;
@@ -40,6 +46,14 @@ const evaluadoresEspecial: Evaluator[] = [
 ];
 
 export default function EvaluationSpecialPage() {
+
+    const router = useRouter();
+    const params = useParams();
+    const estudianteCarnet = params?.id as string;
+
+    const [docenteSeleccionado, setDocenteSeleccionado] = useState<string | null>(null);
+    const [showAvailability, setShowAvailability] = useState(false);
+
     const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" | "info" }>({
         show: false,
         message: "",
@@ -75,13 +89,26 @@ export default function EvaluationSpecialPage() {
         }));
     };
 
+    const addMinutesToTime = (time: string, minutesToAdd: number) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        const date = new Date();
+
+        date.setHours(hours, minutes + minutesToAdd, 0, 0);
+
+        return date.toTimeString().slice(0, 5);
+    };
+
     const handleScheduleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
+
         setScheduleData((prev) => ({
             ...prev,
             [name]: value,
+            ...(name === "horaInicio" && value
+                ? { horaFin: addMinutesToTime(value, 80) }
+                : {}),
         }));
     };
 
@@ -133,6 +160,16 @@ export default function EvaluationSpecialPage() {
 
     const especialFiltered = evaluadoresEspecial;
 
+    const evaluadorEspecialSeleccionado: Evaluator | null = docenteSeleccionado
+        ? {
+            ...evaluadoresEspecial[0],
+            nombre: docenteSeleccionado,
+        }
+        : null;
+
+    const isSelected =
+        selectedEvaluatorEspecial?.id === evaluadorEspecialSeleccionado?.id;
+
     const canSave =
         selectedEvaluatorEspecial !== null &&
         studentData.nombreCompleto.trim() !== "" &&
@@ -159,6 +196,12 @@ export default function EvaluationSpecialPage() {
             <div className="evaluations-page">
                 <div className="evaluations-content">
                     <div className="evaluations-main">
+                        <div className="evaluations-back-btn">
+                            <button className="evaluations-back-btn" onClick={() => router.back()}>
+                                <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 11L6.414 11 11.707 5.707 10.293 4.293 2.586 12 10.293 19.707 11.707 18.293 6.414 13 21 13z"></path></svg>
+                                Volver
+                            </button>
+                        </div>
                         <section className="evaluations-content-card">
                             <div className="evaluations-section-title">
                                 Información del estudiante
@@ -172,16 +215,18 @@ export default function EvaluationSpecialPage() {
                                         value={studentData.nombreCompleto}
                                         onChange={handleStudentChange}
                                         placeholder="Ingresa el nombre del estudiante"
+                                        readOnly
                                     />
                                 </div>
 
                                 <div className="evaluations-field">
-                                    <label>Carné / ID</label>
+                                    <label>Carné</label>
                                     <input
                                         name="carnet"
                                         value={studentData.carnet}
                                         onChange={handleStudentChange}
-                                        placeholder="Ingresa el carné o ID"
+                                        placeholder="Ingresa el carné"
+                                        readOnly
                                     />
                                 </div>
                             </div>
@@ -279,6 +324,7 @@ export default function EvaluationSpecialPage() {
                                     <button
                                         type="button"
                                         className="evaluations-availability-button"
+                                        onClick={() => setShowAvailability(true)}
                                     >
                                         Ver disponibilidad
                                     </button>
@@ -297,29 +343,24 @@ export default function EvaluationSpecialPage() {
                                     </thead>
 
                                     <tbody>
-                                        {especialFiltered.length > 0 ? (
-                                            especialFiltered.map((item) => {
-                                                const isSelected =
-                                                    selectedEvaluatorEspecial?.id === item.id;
-
-                                                return (
-                                                    <tr key={item.id}>
-                                                        <td>{item.nombre}</td>
-                                                        <td>{item.curso}</td>
-                                                        <td>{item.evaluaciones}</td>
-                                                        <td className="evaluations-action-cell">
-                                                            <div className="approval-check">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={isSelected}
-                                                                    disabled={item.disabled}
-                                                                    onChange={() => handleSelectEvaluatorEspecial(item)}
-                                                                />
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })
+                                        {evaluadorEspecialSeleccionado ? (
+                                            <tr>
+                                                <td>{evaluadorEspecialSeleccionado.nombre}</td>
+                                                <td>{evaluadorEspecialSeleccionado.curso}</td>
+                                                <td>E{evaluadorEspecialSeleccionado.evaluaciones}</td>
+                                                <td className="evaluations-action-cell">
+                                                    <div className="approval-check">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            disabled={evaluadorEspecialSeleccionado.disabled}
+                                                            onChange={() =>
+                                                                handleSelectEvaluatorEspecial(evaluadorEspecialSeleccionado)
+                                                            }
+                                                        />
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         ) : (
                                             <tr>
                                                 <td colSpan={5}>
@@ -438,6 +479,17 @@ export default function EvaluationSpecialPage() {
                         </div>
                     </aside>
                 </div>
+                {showAvailability && (
+                    <AvailabilityPicker
+                        maxSelections={1}
+                        onCancel={() => setShowAvailability(false)}
+                        onSave={(names) => {
+                            setDocenteSeleccionado(names[0]);
+                            setSelectedEvaluatorEspecial(null);
+                            setShowAvailability(false);
+                        }}
+                    />
+                )}
             </div>
             <Toast
                 show={toast.show}
