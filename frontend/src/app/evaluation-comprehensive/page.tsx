@@ -1,8 +1,13 @@
 "use client";
 import "../styles/evaluations-management.css";
+
+import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import DashboardLayout from "../components/layout";
 import Toast from "../components/toast";
+
+
+
 
 type AreaType = "informatica" | "sistemas" | "gestion";
 
@@ -61,6 +66,11 @@ const evaluadoresComprensiva: Record<AreaType, Evaluator[]> = {
 };
 
 export default function EvaluationComprehensivePage() {
+
+    const router = useRouter();
+    const params = useParams();
+    const estudianteCarnet = params?.id as string;
+
     const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" | "info" }>({
         show: false,
         message: "",
@@ -102,13 +112,26 @@ export default function EvaluationComprehensivePage() {
         }));
     };
 
+    const addHoursToTime = (time: string, hoursToAdd: number) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        const date = new Date();
+
+        date.setHours(hours + hoursToAdd, minutes, 0, 0);
+
+        return date.toTimeString().slice(0, 5);
+    };
+
     const handleScheduleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
+
         setScheduleData((prev) => ({
             ...prev,
             [name]: value,
+            ...(name === "horaInicio" && value
+                ? { horaFin: addHoursToTime(value, 3) }
+                : {}),
         }));
     };
 
@@ -196,6 +219,12 @@ export default function EvaluationComprehensivePage() {
             <div className="evaluations-page">
                 <div className="evaluations-content">
                     <div className="evaluations-main">
+                        <div className="evaluations-back-btn">
+                            <button className="evaluations-back-btn" onClick={() => router.back()}>
+                                <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 11L6.414 11 11.707 5.707 10.293 4.293 2.586 12 10.293 19.707 11.707 18.293 6.414 13 21 13z"></path></svg>
+                                Volver
+                            </button>
+                        </div>
                         <section className="evaluations-content-card">
                             <div className="evaluations-section-title">
                                 Información del estudiante
@@ -209,16 +238,18 @@ export default function EvaluationComprehensivePage() {
                                         value={studentData.nombreCompleto}
                                         onChange={handleStudentChange}
                                         placeholder="Ingresa el nombre del estudiante"
+                                        readOnly
                                     />
                                 </div>
 
                                 <div className="evaluations-field">
-                                    <label>Carné / ID</label>
+                                    <label>Carné</label>
                                     <input
                                         name="carnet"
                                         value={studentData.carnet}
                                         onChange={handleStudentChange}
-                                        placeholder="Ingresa el carné o ID"
+                                        placeholder="Ingresa el carné"
+                                        readOnly
                                     />
                                 </div>
                             </div>
