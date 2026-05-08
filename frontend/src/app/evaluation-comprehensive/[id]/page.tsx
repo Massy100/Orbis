@@ -1,8 +1,14 @@
 "use client";
-import "../styles/evaluations-management.css";
+import "../../styles/evaluations-management.css";
+
+import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import DashboardLayout from "../components/layout";
-import Toast from "../components/toast";
+import DashboardLayout from "../../components/layout";
+import Toast from "../../components/toast";
+import AvailabilityPicker from "../../components/AvailabilityPicker";
+
+
+
 
 type AreaType = "informatica" | "sistemas" | "gestion";
 
@@ -30,12 +36,12 @@ type ScheduleForm = {
     pagado: boolean;
 };
 
-const evaluadoresComprensiva: Record<AreaType, Evaluator[]> = {
+const evaluadoresComprensivaBase: Record<AreaType, Evaluator[]> = {
     informatica: [
         {
             id: 1,
-            nombre: "Ing. José Ramírez",
-            evaluaciones: 6,
+            nombre: "",
+            evaluaciones: 0,
             facultad: "Facultad de Ingeniería",
             codigo: "COMP-INF-001",
         },
@@ -43,8 +49,8 @@ const evaluadoresComprensiva: Record<AreaType, Evaluator[]> = {
     sistemas: [
         {
             id: 6,
-            nombre: "Ing. Carlos Pérez",
-            evaluaciones: 5,
+            nombre: "",
+            evaluaciones: 0,
             facultad: "Facultad de Ingeniería",
             codigo: "COMP-SIS-001",
         },
@@ -52,8 +58,8 @@ const evaluadoresComprensiva: Record<AreaType, Evaluator[]> = {
     gestion: [
         {
             id: 9,
-            nombre: "Lic. Mario Castillo",
-            evaluaciones: 4,
+            nombre: "",
+            evaluaciones: 0,
             facultad: "Facultad de Ingeniería",
             codigo: "COMP-GES-001",
         },
@@ -61,6 +67,13 @@ const evaluadoresComprensiva: Record<AreaType, Evaluator[]> = {
 };
 
 export default function EvaluationComprehensivePage() {
+
+    const router = useRouter();
+    const params = useParams();
+    const estudianteCarnet = params?.id as string;
+
+    const [showAvailability, setShowAvailability] = useState(false);
+
     const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" | "info" }>({
         show: false,
         message: "",
@@ -102,13 +115,26 @@ export default function EvaluationComprehensivePage() {
         }));
     };
 
+    const addHoursToTime = (time: string, hoursToAdd: number) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        const date = new Date();
+
+        date.setHours(hours + hoursToAdd, minutes, 0, 0);
+
+        return date.toTimeString().slice(0, 5);
+    };
+
     const handleScheduleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
+
         setScheduleData((prev) => ({
             ...prev,
             [name]: value,
+            ...(name === "horaInicio" && value
+                ? { horaFin: addHoursToTime(value, 3) }
+                : {}),
         }));
     };
 
@@ -160,6 +186,13 @@ export default function EvaluationComprehensivePage() {
     const locationDisplay = `${scheduleData.lugar || "Sin lugar"}${scheduleData.salon ? `, Salón ${scheduleData.salon}` : ""
         }`;
 
+    const [evaluadoresComprensiva, setEvaluadoresComprensiva] =
+        useState<Record<AreaType, Evaluator[]>>({
+            informatica: [],
+            sistemas: [],
+            gestion: [],
+        });
+
     const comprensivaFiltered = evaluadoresComprensiva[activeArea];
 
     const allSelectedComprensiva = [
@@ -196,6 +229,12 @@ export default function EvaluationComprehensivePage() {
             <div className="evaluations-page">
                 <div className="evaluations-content">
                     <div className="evaluations-main">
+                        <div className="evaluations-back-btn">
+                            <button className="evaluations-back-btn" onClick={() => router.back()}>
+                                <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M21 11L6.414 11 11.707 5.707 10.293 4.293 2.586 12 10.293 19.707 11.707 18.293 6.414 13 21 13z"></path></svg>
+                                Volver
+                            </button>
+                        </div>
                         <section className="evaluations-content-card">
                             <div className="evaluations-section-title">
                                 Información del estudiante
@@ -209,16 +248,18 @@ export default function EvaluationComprehensivePage() {
                                         value={studentData.nombreCompleto}
                                         onChange={handleStudentChange}
                                         placeholder="Ingresa el nombre del estudiante"
+                                        readOnly
                                     />
                                 </div>
 
                                 <div className="evaluations-field">
-                                    <label>Carné / ID</label>
+                                    <label>Carné</label>
                                     <input
                                         name="carnet"
                                         value={studentData.carnet}
                                         onChange={handleStudentChange}
-                                        placeholder="Ingresa el carné o ID"
+                                        placeholder="Ingresa el carné"
+                                        readOnly
                                     />
                                 </div>
                             </div>
@@ -316,6 +357,7 @@ export default function EvaluationComprehensivePage() {
                                     <button
                                         type="button"
                                         className="evaluations-availability-button"
+                                        onClick={() => setShowAvailability(true)}
                                     >
                                         Ver disponibilidad
                                     </button>
@@ -521,6 +563,33 @@ export default function EvaluationComprehensivePage() {
                         </div>
                     </aside>
                 </div>
+                {showAvailability && (
+                    <AvailabilityPicker
+                        maxSelections={3}
+                        onCancel={() => setShowAvailability(false)}
+                        onSave={(names) => {
+                            setEvaluadoresComprensiva({
+                                informatica: names[0]
+                                    ? [{ ...evaluadoresComprensivaBase.informatica[0], nombre: names[0] }]
+                                    : [],
+                                sistemas: names[1]
+                                    ? [{ ...evaluadoresComprensivaBase.sistemas[0], nombre: names[1] }]
+                                    : [],
+                                gestion: names[2]
+                                    ? [{ ...evaluadoresComprensivaBase.gestion[0], nombre: names[2] }]
+                                    : [],
+                            });
+
+                            setSelectedEvaluatorsComprensiva({
+                                informatica: null,
+                                sistemas: null,
+                                gestion: null,
+                            });
+
+                            setShowAvailability(false);
+                        }}
+                    />
+                )}
             </div>
             <Toast
                 show={toast.show}

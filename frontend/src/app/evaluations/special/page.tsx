@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "@/src/app/components/layout";
 import AvailabilityPicker from "../../components/AvailabilityPicker";
@@ -14,6 +16,14 @@ import "./special-evaluation.css";
 import {Plus, X} from "lucide-react";
 
 export default function EvaluacionEspecialPage() {
+
+  const router = useRouter();
+
+  const handleApprove = (carnet: string) => {
+    console.log("Carnet enviado:", carnet);
+    router.push(`/evaluation-special/${carnet}`);
+  };
+
   const { 
     data, 
     togglePago, 
@@ -130,7 +140,7 @@ export default function EvaluacionEspecialPage() {
                     onDelete={deleteEvaluation}
                     onTogglePago={togglePago}
                     onToggleTutor={toggleTutor}
-                    onApprove={(id) => console.log("Aprobado:", id)}
+                    onApprove={handleApprove}
                   />
                 ))
               )}

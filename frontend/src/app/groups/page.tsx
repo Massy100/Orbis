@@ -1,12 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import React, { useState, useMemo } from 'react';
-import { Pencil, Trash2, Plus, UserCheck, X, Circle, UserPlus, CircleCheckBig, PlusSquare} from 'lucide-react';
+import { Pencil, Trash2, Plus, UserCheck, X, Circle, UserPlus, CircleCheckBig, PlusSquare } from 'lucide-react';
 import DashboardLayout from '@/src/app/components/layout';
 import Pagination from '../components/pagination';
 import AvailabilityPicker from '../components/AvailabilityPicker';
 import { GroupDetail } from "../types";
-import { useGroups } from '../hooks/useGroups'; 
+import { useGroups } from '../hooks/useGroups';
 import { canCreateGroup } from '@/src/lib/groupRules';
 import './groups.css';
 
@@ -18,7 +20,15 @@ interface Estudiante {
 }
 
 export default function GroupsPage() {
-   const {
+
+    const router = useRouter();
+
+    const handleApprove = (carnet: string) => {
+        console.log("Carnet enviado:", carnet);
+        router.push(`/evaluation-comprehensive/${carnet}`);
+    };
+
+    const {
         filter,
         setFilter,
         filteredGroups,
@@ -38,7 +48,7 @@ export default function GroupsPage() {
     const [selectedGroup, setSelectedGroup] = useState<GroupDetail | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<GroupDetail | null>(null);
-    
+
     const [groupName, setGroupName] = useState("");
     const [comprensive, setComprensive] = useState(["No Seleccionado", "No Seleccionado", "No Seleccionado"]);
     const [tutorApprovals, setTutorApprovals] = useState({ sistemas: false, gestion: false, informatica: false });
@@ -213,7 +223,7 @@ export default function GroupsPage() {
     return (
         <DashboardLayout>
             <div className="groups-container">
-                
+
                 <div className="groups-controls">
                     <button className="btn-create" onClick={() => setIsModalOpen(true)}>
                         <Plus size={18} />
@@ -222,7 +232,7 @@ export default function GroupsPage() {
 
                     <div className="filters-wrapper">
                         <span>Filtrar por:</span>
-                        <select 
+                        <select
                             className="filter-select"
                             value={filter}
                             onChange={(e) => setFilter(e.target.value as any)}
@@ -234,19 +244,27 @@ export default function GroupsPage() {
                     </div>
                 </div>
 
-                <div className="groups-grid" key={`${filter}-${page}`}>
-                    {paginatedGroups.length === 0 ? (
-                        <div className="no-results-message">No hay resultados para esta categoría</div>
-                    ) : (
-                        paginatedGroups.map((group) => (
+
+                {paginatedGroups.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="empty-state-svg">
+                            <svg stroke="currentColor" fill="none" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </div>
+
+                        <h3>No hay resultados</h3>
+                        <p>No encontramos elementos para esta categoría.</p>
+                    </div>
+                ) : (
+                    <div className="groups-grid" key={`${filter}-${page}`}>
+                        {paginatedGroups.map((group) => (
                             <div key={group.id} className="group-card">
                                 <div className="card-header">
                                     <h3 className="group-name">{group.nombre}</h3>
                                     <div className="card-actions">
-                                        <button 
+                                        <button
                                             className="action-icon btn-edit"
                                             onClick={() => handleEditGroup(group.id)}
-                                        >   
+                                        >
                                             <Pencil size={20} />
                                         </button>
                                         <button
@@ -263,9 +281,9 @@ export default function GroupsPage() {
                                     </span>
                                 </div>
                             </div>
-                        ))
-                    )}
-                </div>
+                        ))}
+                    </div>
+                )}
 
                 <footer className="groups-pagination-footer">
                     {totalItems > 0 && (
@@ -286,7 +304,7 @@ export default function GroupsPage() {
                 {isModalOpen && (
                     <div className="modal-overlay">
                         <div className="modal-container group-modal-large">
-                            <div className="modal-header">  
+                            <div className="modal-header">
                                 <h2>Crear Nuevo Grupo</h2>
                                 <button className="close-x" onClick={closeModal}>
                                     <X size={20} />
@@ -342,9 +360,8 @@ export default function GroupsPage() {
                                                     />
 
                                                     <button
-                                                        className={`icon-btn tutor-status-btn ${
-                                                            isApproved ? "approved" : "pending"
-                                                        }`}
+                                                        className={`icon-btn tutor-status-btn ${isApproved ? "approved" : "pending"
+                                                            }`}
                                                         data-title={
                                                             isApproved
                                                                 ? "De acuerdo"
@@ -435,9 +452,8 @@ export default function GroupsPage() {
                                                             </button>
 
                                                             <button
-                                                                className={`icon-btn payment-status-btn ${
-                                                                    est.pagado ? "paid" : "pending"
-                                                                }`}
+                                                                className={`icon-btn payment-status-btn ${est.pagado ? "paid" : "pending"
+                                                                    }`}
                                                                 data-title={
                                                                     est.pagado
                                                                         ? "Pagado"
@@ -534,7 +550,7 @@ export default function GroupsPage() {
                                         ].map((tutor) => {
                                             const isApproved =
                                                 tutorApprovals[
-                                                    tutor.key as keyof typeof tutorApprovals
+                                                tutor.key as keyof typeof tutorApprovals
                                                 ];
 
                                             return (
@@ -550,9 +566,8 @@ export default function GroupsPage() {
                                                     />
 
                                                     <button
-                                                        className={`icon-btn tutor-status-btn ${
-                                                            isApproved ? "approved" : "pending"
-                                                        }`}
+                                                        className={`icon-btn tutor-status-btn ${isApproved ? "approved" : "pending"
+                                                            }`}
                                                         data-title={
                                                             isApproved
                                                                 ? "De acuerdo"
@@ -655,11 +670,10 @@ export default function GroupsPage() {
                                                             </button>
 
                                                             <button
-                                                                className={`icon-btn payment-status-btn ${
-                                                                    est.pagado
-                                                                        ? "paid"
-                                                                        : "pending"
-                                                                }`}
+                                                                className={`icon-btn payment-status-btn ${est.pagado
+                                                                    ? "paid"
+                                                                    : "pending"
+                                                                    }`}
                                                                 data-title={
                                                                     est.pagado
                                                                         ? "Pagado"
@@ -690,7 +704,7 @@ export default function GroupsPage() {
                                                                 }
                                                                 disabled={!est.pagado}
                                                                 onClick={() => {
-                                                                    console.log("Crear evaluación para:", est);
+                                                                    handleApprove(est.carne);
                                                                 }}
                                                             >
                                                                 <Plus size={16} />
@@ -733,7 +747,7 @@ export default function GroupsPage() {
 
                             <div className="modal-form delete-content">
                                 <p className="delete-text">
-                                    ¿Estás seguro de que deseas eliminar este grupo?  
+                                    ¿Estás seguro de que deseas eliminar este grupo?
                                     <br />
                                     Esta acción no se puede deshacer.
                                 </p>
@@ -765,9 +779,9 @@ export default function GroupsPage() {
                     <AvailabilityPicker
                         maxSelections={3}
                         onCancel={() => setShowAvailability(false)}
-                        onSave={(names) => { 
-                            setComprensive(names); 
-                            setShowAvailability(false); 
+                        onSave={(names) => {
+                            setComprensive(names);
+                            setShowAvailability(false);
                         }}
                     />
                 )}
