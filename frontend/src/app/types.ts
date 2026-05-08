@@ -20,7 +20,7 @@ export interface TutorGrupo {
 
 export interface GroupDetail extends StudyGroup {
     tutores: TutorGrupo[];
-    estudiantes: EstudianteGrupo[];
+    estudiantes: EstudianteGrupo[]
 }
 
 export interface Evaluation {

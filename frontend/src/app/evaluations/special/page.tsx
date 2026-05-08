@@ -82,16 +82,21 @@ export default function EvaluacionEspecialPage() {
     );
   }, [form.curso]);
 
+  const handleCreateFromRow = (item: Evaluation) => {
+    setForm({
+      carnet: item.carnet,
+      nombre: item.nombre,
+      curso: item.curso,
+      tutor: item.tutor.nombre
+    });
+
+    setEditingId(null); // importante: es nuevo, no edición
+    setIsModalOpen(true);
+  };
+
   return (
     <DashboardLayout>
       <div className="eval-container">
-
-        <div className="eval-header">
-          <button className="btn-add" onClick={() => setIsModalOpen(true)}>
-            <Plus size={18} />
-            Agregar Evaluación
-          </button>
-        </div>
 
         <div className="table-wrapper">
           <table className="eval-table">
@@ -120,6 +125,7 @@ export default function EvaluacionEspecialPage() {
                   <EvaluationRow 
                     key={item.id}
                     item={item}
+                    onCreate={handleCreateFromRow}
                     onEdit={handleOpenEdit} 
                     onDelete={deleteEvaluation}
                     onTogglePago={togglePago}

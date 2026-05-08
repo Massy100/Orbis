@@ -1,8 +1,9 @@
-import { CircleCheckBig, Circle, UserCheck, X, Pencil, Trash2, Check } from "lucide-react";
+import { CircleCheckBig, Circle, UserCheck, X, Pencil, Trash2, Check, Plus } from "lucide-react";
 import { Evaluation } from "../types";
 
 interface EvaluationRowProps {
   item: Evaluation;
+  onCreate: (item: Evaluation) => void;
   onEdit: (item: Evaluation) => void;
   onDelete: (id: number) => void;
   onTogglePago: (id: number) => void;
@@ -12,6 +13,7 @@ interface EvaluationRowProps {
 
 export const EvaluationRow = ({ 
   item, 
+  onCreate,
   onEdit, 
   onDelete, 
   onTogglePago, 

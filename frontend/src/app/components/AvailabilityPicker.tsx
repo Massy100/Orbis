@@ -120,7 +120,6 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
   return (
     <div className="availability-overlay">
       <div className="availability-container">
-
         {/* HEADER */}
         <div className="availability-header">
           <div className="header-left">
@@ -134,11 +133,18 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
             <div className="multi-teacher-selectors">
               {selectedTeacherIds.map((id, index) => (
                 <div key={index} className="teacher-picker">
-                  <UserIcon size={18} className="icon-blue" />
                   <select
                     value={id}
                     onChange={(e) => handleTeacherChange(index, e.target.value)}
                     className="select-teacher"
+                    style={{
+                      border: `2px solid ${
+                        id ? configDocentes[id]?.theme.border : '#e5e7eb'
+                      }`,
+                      backgroundColor: id
+                        ? `${configDocentes[id]?.theme.border}10`
+                        : '#ffffff'
+                    }}
                   >
                     <option className="select-option" value="">
                       -- Seleccionar --
@@ -168,7 +174,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
         {/* NAVBAR DE FECHAS */}
         <div className="calendar-navbar">
           <div className="nav-left">
-            <span className="current-month">
+            <span className="month-text">
               {nombresMeses[currentDate.getMonth()]} {currentDate.getFullYear()}
             </span>
             <div className="nav-arrows">
@@ -179,6 +185,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
           <div className="nav-right">
             <span className="badge">Vista Semanal</span>
           </div>
+
         </div>
 
         {/* CALENDARIO */}
@@ -189,14 +196,17 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
             <div className="hour-column">
               <div className="hour-header-spacer" />
               {horasDelDia.map(hora => (
-                <div key={hora} className="hour-cell">{hora}</div>
+                <div key={hora} className="hour-cell">
+                  {hora}
+                </div>
               ))}
             </div>
 
             {/* Columnas de días */}
             <div className="day-grid">
               {diasDeLaSemana.map((diaObj, index) => {
-                const esHoy = diaObj.toDateString() === new Date().toDateString();
+                const esHoy =
+                  diaObj.toDateString() === new Date().toDateString();
 
                 // Eventos del día que pertenecen a los docentes seleccionados
                 const eventosDia = events.filter((e: AvailabilityEvent) =>
@@ -206,11 +216,16 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
 
                 return (
                   <div key={index} className="day-column">
-                    <div className={`day-header ${esHoy ? 'today' : ''}`}>
-                      <span className="day-name">{nombresDiasCortos[diaObj.getDay()]}</span>
-                      <span className="day-num">{diaObj.getDate()}</span>
+                    
+                    {/* HEADER DÍA */}
+                    <div className={`day-header ${esHoy ? 'today' : 'normal'}`}>
+                      <span>{nombresDiasCortos[diaObj.getDay()]}</span>
+                      <span className="day-number">
+                        {diaObj.getDate()}
+                      </span>
                     </div>
 
+                    {/* BODY */}
                     <div className="day-body">
                       {horasDelDia.map((_, i) => (
                         <div key={i} className="grid-line" />
@@ -220,6 +235,17 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                         const config   = configDocentes[evento.docenteId];
                         if (!config) return null;
 
+                        const solapados = eventosDia.filter(e => 
+                          (evento.inicio < e.fin && evento.fin > e.inicio)
+                        );                        
+                        const numSolapados = solapados.length;
+                        const orden = solapados.findIndex(e => e.docenteId === evento.docenteId);
+                        const offsetX = 8;
+                        const offsetY = 8;
+                        
+                        const width = 100 / numSolapados;
+                        const left = width * orden;
+
                         const eventKey = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
                         const isLifted = hoveredEvent === eventKey || activeEvent === eventKey;
 
@@ -228,12 +254,14 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                             key={idx}
                             className={`event-card ${isLifted ? 'lifted' : ''}`}
                             style={{
-                              top:             `${(evento.inicio - 7) * 3}rem`,
-                              height:          `${(evento.fin - evento.inicio) * 3}rem`,
+                              top: `calc(((${evento.inicio} - 7) * var(--cell-height)) + (${orden} * ${offsetY}px))`,
+                              height: `calc((${evento.fin} - ${evento.inicio}) * var(--cell-height))`,
                               backgroundColor: config.theme.bg,
-                              borderLeft:      `4px solid ${config.theme.border}`,
-                              color:           config.theme.text,
-                              zIndex:          isLifted ? 10 : 1,
+                              borderLeft: `4px solid ${config.theme.border}`,
+                              color: config.theme.text,
+                              zIndex: isLifted ? 100 : (10 + orden),
+                              width: '87%',
+                              left: `calc(4% + (${orden} * ${offsetX}px))`,
                             }}
                             onMouseEnter={() => setHoveredEvent(eventKey)}
                             onMouseLeave={() => setHoveredEvent(null)}
@@ -242,18 +270,22 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                             <span className="event-label">
                               {config.nombre.split(' ').pop()}
                             </span>
+
                             <span className="event-time-text">
                               {formatTime(evento.inicio)} - {formatTime(evento.fin)}
                             </span>
+
                             {isLifted && (
-                              <span className="event-teacher-full">{config.nombre}</span>
+                              <span className="event-teacher-full">
+                                {config.nombre}
+                              </span>
                             )}
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                );
+                  );
               })}
             </div>
           </div>

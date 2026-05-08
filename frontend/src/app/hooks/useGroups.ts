@@ -1,86 +1,75 @@
-import { useState, useMemo } from "react";
-import {
-    StudyGroup,
-    GroupDetail,
-    GroupStatus
-} from "../types";
-
-import { STUDY_GROUPS_MOCK } from "../data/groups-mocks";
+import { useState, useEffect, useMemo } from "react";
+import { StudyGroup, GroupDetail, GroupStatus } from "../types";
+import { groupsService } from "../services/groupService";
+import { isGroupApproved } from "@/src/lib/groupRules";
 
 export const useGroups = () => {
-    const [groups, setGroups] = useState<StudyGroup[]>(STUDY_GROUPS_MOCK);
 
-    const [groupDetails, setGroupDetails] = useState<GroupDetail[]>(
-        STUDY_GROUPS_MOCK.map((group) => ({
-            ...group,
-            tutores: [
-                { nombre: "No asignado", aprobado: false },
-                { nombre: "No asignado", aprobado: false },
-                { nombre: "No asignado", aprobado: false }
-            ],
-            estudiantes: []
-        }))
-    );
-
+    const [groups, setGroups] = useState<StudyGroup[]>([]);
+    const [groupDetails, setGroupDetails] = useState<GroupDetail[]>([]);
     const [filter, setFilter] = useState<GroupStatus | "Todos">("Todos");
 
-    const addGroup = (newGroup: GroupDetail) => {
-        setGroupDetails((prev) => [newGroup, ...prev]);
-
-        setGroups((prev) => [
-            {
-                id: newGroup.id,
-                nombre: newGroup.nombre,
-                estado: newGroup.estado
-            },
-            ...prev
-        ]);
+    const loadGroups = async () => {
+        const data = await groupsService.getAll();
+        setGroups(data);
     };
 
-    const updateGroup = (updatedGroup: GroupDetail) => {
-        setGroupDetails((prev) =>
-            prev.map((group) =>
-                group.id === updatedGroup.id
-                    ? updatedGroup
-                    : group
-            )
-        );
-
-        setGroups((prev) =>
-            prev.map((group) =>
-                group.id === updatedGroup.id
-                    ? {
-                        id: updatedGroup.id,
-                        nombre: updatedGroup.nombre,
-                        estado: updatedGroup.estado
-                    }
-                    : group
-            )
-        );
+    const getGroupDetail = async (id: number) => {
+        const detail = await groupsService.getById(id);
+        return detail;
     };
 
-    const deleteGroup = (id: number) => {
-        setGroups((prev) =>
-            prev.filter((group) => group.id !== id)
-        );
+    const addGroup = async (group: GroupDetail) => {
+        const status: GroupStatus = isGroupApproved(
+            group.estudiantes,
+            group.tutores
+        ) ? "Aprobado" : "Pendiente";
+
+        const finalGroup = {
+            ...group,
+            estado: status
+        };
+
+        await groupsService.create(finalGroup);
+        await loadGroups();
     };
 
-    const getGroupDetail = (id: number) => {
-        return groupDetails.find((group) => group.id === id) || null;
+    const updateGroup = async (group: GroupDetail) => {
+        const status: GroupStatus = isGroupApproved(
+            group.estudiantes,
+            group.tutores
+        ) ? "Aprobado" : "Pendiente";
+
+        const finalGroup = {
+            ...group,
+            estado: status
+        };
+
+        await groupsService.update(finalGroup);
+        await loadGroups();
+    };
+
+    const deleteGroup = async (id: number) => {
+        await groupsService.remove(id);
+        await loadGroups();
     };
 
     const filteredGroups = useMemo(() => {
         if (filter === "Todos") return groups;
-        return groups.filter((group) => group.estado === filter);
-    }, [filter, groups]);
+        return groups.filter(g => g.estado === filter);
+    }, [groups, filter]);
+
+    useEffect(() => {
+        loadGroups();
+    }, []);
 
     return {
         filter,
         setFilter,
         filteredGroups,
         addGroup,
-        getGroupDetail,
         updateGroup,
-        deleteGroup
+        deleteGroup,
+        getGroupDetail
     };
 };
