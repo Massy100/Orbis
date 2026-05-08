@@ -8,6 +8,9 @@ from django.db.models import Count, Q
 from django.db import transaction
 from django.db.models.functions import ExtractMonth
 
+from django.utils import timezone
+from datetime import datetime
+
 from parsers.pensum_parser import parse_pensum
 from parsers.teacher_schedule_parser import parse_teacher_schedule_excel
 
@@ -22,7 +25,7 @@ from .models import (
 )
 
 from .serializers import (
-    CareerSerializer, FacultySerializer,
+    CareerSerializer, CreateSpecialEvaluationSerializer, FacultySerializer,
     SpecialitySerializer, TypeSerializer, PeriodSerializer,
     CourseSerializer, CourseTeacherSerializer,
     TeacherSerializer, TeachersPeriodSerializer, SpecialityTeacherSerializer,
@@ -462,4 +465,217 @@ class DashboardMetricsView(APIView):
             'pending_emails': evaluaciones_sin_resultado,
             'monthly_chart': chart_data,
             'top_teachers': teachers_data,
+        })
+        
+class SpecialEvaluationTeacherListView(APIView):
+    
+    def get(self, request):
+        teachers = Teacher.objects.filter(isactive=True).select_related('faculty').order_by('name')
+        
+        result = []
+        for teacher in teachers:
+            courses = CourseTeacher.objects.filter(teacher=teacher).select_related('course')
+            course_names = [ct.course.name for ct in courses if ct.course]
+            curso = course_names[0] if course_names else "Sin curso asignado"
+            
+            result.append({
+                'id': teacher.id,
+                'nombre': teacher.name,
+                'curso': curso,
+                'evaluaciones': teacher.evaluationcount or 0,
+                'facultad': teacher.faculty.name if teacher.faculty else "Facultad no asignada",
+                'codigo': teacher.cat or "N/A",
+                'disabled': False
+            })
+        
+        return Response({
+            'success': True,
+            'teachers': result,
+            'total': len(result)
+        }, status=status.HTTP_200_OK)
+
+
+class CreateSpecialEvaluationView(APIView):
+    
+    @transaction.atomic
+    def post(self, request):
+        serializer = CreateSpecialEvaluationSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response({
+                'success': False,
+                'errors': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        data = serializer.validated_data
+        
+        try:
+            student, created = Student.objects.get_or_create(
+                est=data['estudiante_carnet'],
+                defaults={
+                    'name': data['estudiante_nombre'],
+                    'isactive': True
+                }
+            )
+            
+            if not created and student.name != data['estudiante_nombre']:
+                student.name = data['estudiante_nombre']
+                student.save()
+            
+            evaluation_type, _ = Type.objects.get_or_create(
+                name__iexact='Especial',
+                defaults={'name': 'Especial'}
+            )
+            
+            evaluation = Evaluation.objects.create(
+                studentid=student,
+                date=data['fecha'],
+                starthour=data['hora_inicio'],
+                endhour=data['hora_fin'],
+                haspayment=data['pagado'],
+                classroom=data['salon'],
+                building=data['lugar'],
+                type=evaluation_type
+            )
+            
+            teacher = Teacher.objects.get(id=data['teacher_id'])
+            EvaluationTeacher.objects.create(
+                evaluation=evaluation,
+                teacher=teacher
+            )
+            
+            teacher.evaluationcount = (teacher.evaluationcount or 0) + 1
+            teacher.save()
+            
+            Result.objects.create(
+                evaluationid=evaluation,
+                state='Pendiente',
+                observation='Evaluación especial creada'
+            )
+            
+            return Response({
+                'success': True,
+                'message': 'Evaluación especial creada exitosamente',
+                'evaluation_id': evaluation.id,
+                'student': {
+                    'id': student.id,
+                    'name': student.name,
+                    'est': student.est,
+                    'created': created
+                }
+            }, status=status.HTTP_201_CREATED)
+            
+        except Teacher.DoesNotExist:
+            return Response({
+                'success': False,
+                'errors': {'teacher_id': 'El docente seleccionado no existe'}
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'errors': {'general': f'Error al crear la evaluación: {str(e)}'}
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CheckTeacherAvailabilityView(APIView):
+    
+    def post(self, request):
+        teacher_id = request.data.get('teacher_id')
+        fecha = request.data.get('fecha')
+        hora_inicio = request.data.get('hora_inicio')
+        hora_fin = request.data.get('hora_fin')
+        
+        if not all([teacher_id, fecha, hora_inicio, hora_fin]):
+            return Response({
+                'success': False,
+                'error': 'Faltan parámetros requeridos'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            teacher = Teacher.objects.get(id=teacher_id)
+            fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
+            hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time()
+            hora_fin_obj = datetime.strptime(hora_fin, '%H:%M').time()
+            
+            conflicting_evaluations = EvaluationTeacher.objects.filter(
+                teacher=teacher,
+                evaluation__date=fecha_obj,
+                evaluation__starthour__lt=hora_fin_obj,
+                evaluation__endhour__gt=hora_inicio_obj
+            ).exists()
+            
+            dia_semana = fecha_obj.strftime('%A').lower()
+            dias_map = {
+                'monday': 'Lunes', 'tuesday': 'Martes', 'wednesday': 'Miércoles',
+                'thursday': 'Jueves', 'friday': 'Viernes', 'saturday': 'Sábado',
+                'sunday': 'Domingo'
+            }
+            dia_espanol = dias_map.get(dia_semana, dia_semana)
+            
+            teacher_schedule = TeachersPeriod.objects.filter(
+                teacher=teacher,
+                schedule__day=dia_espanol,
+                schedule__starttime__lte=hora_inicio_obj,
+                schedule__endtime__gte=hora_fin_obj
+            ).exists()
+            
+            return Response({
+                'success': True,
+                'available': not conflicting_evaluations,
+                'has_schedule': teacher_schedule,
+                'teacher_name': teacher.name,
+                'conflicting_evaluations': conflicting_evaluations,
+                'message': self._get_availability_message(conflicting_evaluations, teacher_schedule)
+            }, status=status.HTTP_200_OK)
+            
+        except Teacher.DoesNotExist:
+            return Response({
+                'success': False,
+                'error': 'Docente no encontrado'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _get_availability_message(self, has_conflict, has_schedule):
+        if has_conflict:
+            return "El docente ya tiene una evaluación programada en ese horario"
+        if not has_schedule:
+            return "El docente no tiene disponibilidad en su horario regular para ese día/horario"
+        return "El docente está disponible en ese horario"
+
+
+class StudentSearchView(APIView):
+    
+    def get(self, request):
+        query = request.query_params.get('q', '')
+        
+        if not query or len(query) < 2:
+            return Response({
+                'success': True,
+                'students': [],
+                'total': 0
+            })
+        
+        students = Student.objects.filter(
+            Q(name__icontains=query) | Q(est__icontains=query),
+            isactive=True
+        ).select_related('faculty', 'career')[:10]
+        
+        result = []
+        for student in students:
+            result.append({
+                'id': student.id,
+                'name': student.name,
+                'est': student.est,
+                'faculty': student.faculty.name if student.faculty else None,
+                'career': student.career.name if student.career else None
+            })
+        
+        return Response({
+            'success': True,
+            'students': result,
+            'total': len(result)
         })

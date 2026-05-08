@@ -193,3 +193,47 @@ class SystemUserSerializer(serializers.ModelSerializer):
         elif obj.is_staff:
             return 'Coordinador'
         return 'Usuario'
+    
+# Agregar al final del archivo serializers.py
+
+class TeacherForSpecialEvaluationSerializer(serializers.ModelSerializer):
+    """Serializer específico para la evaluación especial"""
+    curso = serializers.SerializerMethodField()
+    facultad = serializers.CharField(source='faculty.name', read_only=True)
+    codigo = serializers.CharField(source='cat', read_only=True)
+    evaluaciones = serializers.IntegerField(source='evaluationcount', read_only=True)
+    
+    class Meta:
+        model = Teacher
+        fields = ['id', 'nombre', 'curso', 'evaluaciones', 'facultad', 'codigo']
+    
+    def get_nombre(self, obj):
+        return obj.name
+    
+    def get_curso(self, obj):
+        # Obtener el primer curso del docente (puedes modificar la lógica)
+        first_course = CourseTeacher.objects.filter(teacher=obj).select_related('course').first()
+        return first_course.course.name if first_course and first_course.course else "Sin curso asignado"
+
+class CreateSpecialEvaluationSerializer(serializers.Serializer):
+    estudiante_nombre = serializers.CharField(max_length=100)
+    estudiante_carnet = serializers.CharField(max_length=50)
+    fecha = serializers.DateField()
+    hora_inicio = serializers.TimeField()
+    hora_fin = serializers.TimeField()
+    lugar = serializers.CharField(max_length=20)
+    salon = serializers.CharField(max_length=4)
+    pagado = serializers.BooleanField()
+    teacher_id = serializers.IntegerField()
+    
+    def validate_teacher_id(self, value):
+        try:
+            teacher = Teacher.objects.get(id=value, isactive=True)
+            return value
+        except Teacher.DoesNotExist:
+            raise serializers.ValidationError("El docente no existe o no está activo")
+    
+    def validate(self, data):
+        if data['hora_inicio'] >= data['hora_fin']:
+            raise serializers.ValidationError("La hora de inicio debe ser menor a la hora de fin")
+        return data

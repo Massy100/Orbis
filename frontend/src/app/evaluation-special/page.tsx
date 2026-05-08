@@ -28,27 +28,12 @@ type ScheduleForm = {
     pagado: boolean;
 };
 
-const evaluadoresEspecial: Evaluator[] = [
-    {
-        id: 1,
-        nombre: "Dr. Roberto Santizo",
-        curso: "Cálculo II",
-        evaluaciones: 14,
-        facultad: "Facultad de Ingeniería",
-        codigo: "CAT-T-002",
-    },
-];
-
 export default function EvaluationSpecialPage() {
     const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" | "info" }>({
         show: false,
         message: "",
         type: "success",
     });
-
-    const handleSave = () => {
-        setToast({ show: true, message: "Evaluación guardada exitosamente", type: "success" });
-    };
 
     const [studentData, setStudentData] = useState<StudentForm>({
         nombreCompleto: "",
@@ -66,6 +51,95 @@ export default function EvaluationSpecialPage() {
 
     const [selectedEvaluatorEspecial, setSelectedEvaluatorEspecial] =
         useState<Evaluator | null>(null);
+
+    const [teachers, setTeachers] = useState<Evaluator[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchTeachers();
+    }, []);
+
+    const fetchTeachers = async () => {
+        try {
+            setLoading(true);
+            const response = await fetch('/api/special-evaluation/teachers/');
+            const data = await response.json();
+            
+            if (data.success) {
+                setTeachers(data.teachers);
+            } else {
+                setToast({ 
+                    show: true, 
+                    message: 'Error al cargar los docentes', 
+                    type: 'error' 
+                });
+            }
+        } catch (error) {
+            setToast({ 
+                show: true, 
+                message: 'Error de conexión al cargar docentes', 
+                type: 'error' 
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!canSave) return;
+        
+        try {
+            const response = await fetch('/api/special-evaluation/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    estudiante_nombre: studentData.nombreCompleto,
+                    estudiante_carnet: studentData.carnet,
+                    fecha: scheduleData.fecha,
+                    hora_inicio: scheduleData.horaInicio,
+                    hora_fin: scheduleData.horaFin,
+                    lugar: scheduleData.lugar,
+                    salon: scheduleData.salon,
+                    pagado: scheduleData.pagado,
+                    teacher_id: selectedEvaluatorEspecial?.id
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                setToast({ 
+                    show: true, 
+                    message: "Evaluación guardada exitosamente", 
+                    type: "success" 
+                });
+                
+                setTimeout(() => {
+                    setStudentData({ nombreCompleto: "", carnet: "" });
+                    setScheduleData({
+                        fecha: "",
+                        horaInicio: "",
+                        horaFin: "",
+                        lugar: "Central",
+                        salon: "",
+                        pagado: false,
+                    });
+                    setSelectedEvaluatorEspecial(null);
+                }, 1500);
+            } else {
+                const errorMsg = result.errors?.general || result.message || 'Error al guardar la evaluación';
+                setToast({ show: true, message: errorMsg, type: "error" });
+            }
+        } catch (error) {
+            setToast({ 
+                show: true, 
+                message: "Error de conexión al guardar la evaluación", 
+                type: "error" 
+            });
+        }
+    };
 
     const handleStudentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -131,7 +205,7 @@ export default function EvaluationSpecialPage() {
     const locationDisplay = `${scheduleData.lugar || "Sin lugar"}${scheduleData.salon ? `, Salón ${scheduleData.salon}` : ""
         }`;
 
-    const especialFiltered = evaluadoresEspecial;
+    const especialFiltered = teachers;
 
     const canSave =
         selectedEvaluatorEspecial !== null &&
@@ -152,7 +226,6 @@ export default function EvaluationSpecialPage() {
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
-
 
     return (
         <DashboardLayout>

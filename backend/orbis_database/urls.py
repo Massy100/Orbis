@@ -47,4 +47,10 @@ urlpatterns = [
 
     path('api/dashboard-stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('api/dashboard-metrics/', views.DashboardMetricsView.as_view(), name='dashboard-metrics'),
+    
+    # Route for special evaluation creation
+    path('api/special-evaluation/teachers/', views.SpecialEvaluationTeacherListView.as_view(), name='special-evaluation-teachers'),
+    path('api/special-evaluation/create/', views.CreateSpecialEvaluationView.as_view(), name='create-special-evaluation'),
+    path('api/special-evaluation/check-availability/', views.CheckTeacherAvailabilityView.as_view(), name='check-teacher-availability'),
+    path('api/special-evaluation/search-student/', views.StudentSearchView.as_view(), name='search-student'),
 ]
