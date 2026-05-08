@@ -368,14 +368,11 @@ class DashboardStatsView(APIView):
             },
         }
 
-        teacher_fields = {field.name for field in Teacher._meta.get_fields()}
-
-        if 'rol' in teacher_fields:
-            response_data['charts'] = {
-                'roles_distribution': list(
-                    Teacher.objects.values('rol__name').annotate(total=Count('id'))
-                )
-            }
+        # NOTA: Como la tabla Rol fue eliminada del modelo, 
+        # enviamos una lista vacía para que el frontend no falle
+        response_data['charts'] = {
+            'roles_distribution': []
+        }
 
         return Response(response_data)
 
@@ -520,6 +517,7 @@ class ResultReportsView(APIView):
             elif 'Comprensiva' in type_name:
                 if eval_obj.studentid:
                     try:
+                        # NUEVA RELACIÓN: Usamos StudyGroupStudent para llegar al nombre del grupo
                         grupos_rel = StudyGroupStudent.objects.filter(student=eval_obj.studentid).select_related('studygroup')
                         base_data["gruposEstudio"] = [g.studygroup.group for g in grupos_rel if g.studygroup] if grupos_rel.exists() else ["Sin grupo asignado"]
                     except Exception:

@@ -13,9 +13,9 @@ interface Teacher {
 
 interface AvailabilityEvent {
   docenteId: string | number;
-  diaSemana: number;
-  inicio: number;
-  fin: number;
+  diaSemana: number | string;
+  inicio: number | string;
+  fin: number | string;
 }
 
 const PALETAS = [
@@ -25,13 +25,80 @@ const PALETAS = [
 ];
 
 export default function AvailabilityPage() {
-  const { teachers, events, loading } = useAvailability();
+  const { teachers, loading } = useAvailability();
 
+  const [localEvents, setLocalEvents]       = useState<AvailabilityEvent[]>([]);
+  const [teacherAreas, setTeacherAreas]     = useState<Record<string, string>>({});
   const [slots, setSlots]                   = useState<string[]>(['', '', '']);
   const [currentDate, setCurrentDate]       = useState(new Date());
   const [vistaCalendario, setVista]         = useState('week');
   const [hoveredEvent, setHoveredEvent]     = useState<string | null>(null);
   const [activeEvent, setActiveEvent]       = useState<string | null>(null);
+
+  // PUENTE DIRECTO A LA BASE DE DATOS
+  useEffect(() => {
+    const fetchDirectEvents = async () => {
+      try {
+        const url = 'http://localhost:8001/api';
+        
+        // Consultamos horarios, docentes y carreras simultáneamente
+        const [tpRes, pRes, tRes, cRes] = await Promise.all([
+          fetch(`${url}/teachers-periods/`),
+          fetch(`${url}/periods/`),
+          fetch(`${url}/teachers/`),
+          fetch(`${url}/careers/`)
+        ]);
+
+        if (!tpRes.ok || !pRes.ok) return;
+
+        const tpData = await tpRes.json();
+        const pData = await pRes.json();
+        
+        // Manejo seguro por si Django devuelve arrays directos o paginación (.results)
+        const tRaw = tRes.ok ? await tRes.json() : [];
+        const cRaw = cRes.ok ? await cRes.json() : [];
+        const tData = Array.isArray(tRaw) ? tRaw : (tRaw.results || []);
+        const cData = Array.isArray(cRaw) ? cRaw : (cRaw.results || []);
+
+        // 1. Mapear Carreras y limpiar texto (Ej. "Ingeniería en Sistemas" -> "Sistemas")
+        const careersMap: Record<string, string> = {};
+        cData.forEach((c: any) => {
+          careersMap[c.id] = c.name.replace('Ingeniería en ', '').replace('Ingeniería ', '');
+        });
+
+        // 2. Asignar la carrera limpia a cada docente
+        const areasMap: Record<string, string> = {};
+        tData.forEach((t: any) => {
+          const careerId = typeof t.career === 'object' ? t.career?.id : t.career;
+          areasMap[t.id] = careersMap[careerId] || 'Área General';
+        });
+        setTeacherAreas(areasMap);
+
+        // 3. Mapear Horarios
+        const periodsMap: Record<string, any> = {};
+        pData.forEach((p: any) => {
+          periodsMap[p.id] = p;
+        });
+
+        const mappedEvents: AvailabilityEvent[] = tpData.map((tp: any) => {
+          const period = periodsMap[tp.schedule];
+          if (!period) return null;
+          return {
+            docenteId: String(tp.teacher),
+            diaSemana: Number(period.day),
+            inicio: period.starttime,
+            fin: period.endtime
+          };
+        }).filter(Boolean);
+
+        setLocalEvents(mappedEvents);
+      } catch (error) {
+        console.error("Error al obtener datos directamente:", error);
+      }
+    };
+
+    fetchDirectEvents();
+  }, []);
 
   useEffect(() => {
     if (teachers.length) {
@@ -43,11 +110,19 @@ export default function AvailabilityPage() {
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const horasDelDia       = ['7am', '8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm', '7pm', '8pm', '9pm'];
 
+  const parseTimeToDecimal = (time: string | number): number => {
+    if (typeof time === 'number') return time;
+    if (!time || typeof time !== 'string') return 0;
+    const [h, m] = time.split(':');
+    return parseInt(h) + (parseInt(m) || 0) / 60;
+  };
+
   const formatTime = (decimalHours: any) => {
-    const hours   = Math.floor(decimalHours);
-    const minutes = Math.round((decimalHours - hours) * 60);
+    const hoursNum = typeof decimalHours === 'string' ? parseTimeToDecimal(decimalHours) : decimalHours;
+    const hours   = Math.floor(hoursNum);
+    const minutes = Math.round((hoursNum - hours) * 60);
     const ampm    = hours >= 12 ? 'pm' : 'am';
-    const display = hours > 12 ? hours - 12 : hours;
+    const display = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
     return `${display}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
 
@@ -91,7 +166,6 @@ export default function AvailabilityPage() {
     <DashboardLayout>
       <div className="container">
 
-        {/* SELECCIÓN DE DOCENTES */}
         <div className="teacher-section">
           <label className="teacher-label">
             <UserIcon size={16} />
@@ -133,7 +207,6 @@ export default function AvailabilityPage() {
           </div>
         </div>
 
-        {/* NAVBAR */}
         <div className="navbar">
           <div className="nav-left">
             <span className="month-text">
@@ -156,7 +229,6 @@ export default function AvailabilityPage() {
           </div>
         </div>
 
-        {/* CALENDARIO */}
         <div className="calendar">
           {vistaCalendario === 'week' ? (
             <div className="week-container">
@@ -171,9 +243,8 @@ export default function AvailabilityPage() {
                 {diasDeLaSemana.map((diaObj, index) => {
                   const esHoy = diaObj.toDateString() === new Date().toDateString();
                   
-                  // Forzamos String() para asegurar la coincidencia
-                  const eventosDia = events.filter(e =>
-                    e.diaSemana === diaObj.getDay() && slots.includes(String(e.docenteId))
+                  const eventosDia = localEvents.filter(e =>
+                    Number(e.diaSemana) === diaObj.getDay() && slots.includes(String(e.docenteId))
                   );
 
                   return (
@@ -189,18 +260,23 @@ export default function AvailabilityPage() {
                         ))}
 
                         {eventosDia.map((evento, idx, arr) => {
-                          // Obtenemos el color basado en el Slot, no en el docente
                           const slotIndex = slots.indexOf(String(evento.docenteId));
                           if (slotIndex === -1) return null;
                           const theme = PALETAS[slotIndex];
 
+                          const inicioDec = parseTimeToDecimal(evento.inicio);
+                          const finDec = parseTimeToDecimal(evento.fin);
+
                           const docenteName = teachers.find(t => String(t.id) === String(evento.docenteId))?.name || 'Docente';
                           const eventKey = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
 
-                          const overlapping = arr.filter(o =>
-                            evento.inicio < o.fin && evento.fin > o.inicio
-                          );
-                          overlapping.sort((a, b) => a.inicio - b.inicio);
+                          const overlapping = arr.filter(o => {
+                            const oIni = parseTimeToDecimal(o.inicio);
+                            const oFin = parseTimeToDecimal(o.fin);
+                            return inicioDec < oFin && finDec > oIni;
+                          });
+                          
+                          overlapping.sort((a, b) => parseTimeToDecimal(a.inicio) - parseTimeToDecimal(b.inicio));
                           const overlapIndex = overlapping.indexOf(evento);
 
                           const leftOffset  = 2 + overlapIndex * 5;
@@ -213,17 +289,15 @@ export default function AvailabilityPage() {
                               key={idx}
                               className={`event ${isLifted ? 'lifted' : 'normal'}`}
                               style={{
-                                top:             `calc(${(evento.inicio - 7) * 3}rem + ${topOffsetPx}px)`,
-                                height:          `${(evento.fin - evento.inicio) * 3}rem`,
+                                top:             `calc(${(inicioDec - 7) * 3}rem + ${topOffsetPx}px)`,
+                                height:          `${(finDec - inicioDec) * 3}rem`,
                                 width:           isLifted ? '92%' : `${width}%`,
                                 left:            isLifted ? '2%' : `${leftOffset}%`,
                                 zIndex:          isLifted ? 100 : 10 + overlapIndex,
                                 backgroundColor: theme.bg,
                                 borderLeftColor: theme.border,
                                 color:           theme.text,
-                                boxShadow:       isLifted
-                                  ? `0 8px 24px -4px ${theme.border}66`
-                                  : undefined,
+                                boxShadow:       isLifted ? `0 8px 24px -4px ${theme.border}66` : undefined,
                                 outline: isLifted ? `2px solid ${theme.border}` : undefined,
                               }}
                               onMouseEnter={() => setHoveredEvent(eventKey)}
@@ -236,7 +310,12 @@ export default function AvailabilityPage() {
                                 {formatTime(evento.inicio)} - {formatTime(evento.fin)}
                               </div>
                               {isLifted && (
-                                <div className="event-teacher">{docenteName}</div>
+                                <div style={{ display: 'flex', flexDirection: 'column', marginTop: '2px' }}>
+                                  <div className="event-teacher">{docenteName}</div>
+                                  <div style={{ fontSize: '0.75rem', fontWeight: 500, opacity: 0.9 }}>
+                                    {teacherAreas[String(evento.docenteId)] || 'Ingeniería'}
+                                  </div>
+                                </div>
                               )}
                             </div>
                           );
@@ -248,57 +327,28 @@ export default function AvailabilityPage() {
               </div>
             </div>
           ) : (
-            <>
-              <div className="month-header">
-                {nombresDiasCortos.map(dia => (
-                  <div key={dia} className="month-day-name">{dia}</div>
-                ))}
+            <div className="month-grid-container">
+               <div className="month-header">
+                {nombresDiasCortos.map(dia => <div key={dia} className="month-day-name">{dia}</div>)}
               </div>
-
               <div className="month-grid">
                 {diasDelMes.map((diaObj, i) => {
                   const esEsteMes = diaObj.getMonth() === currentDate.getMonth();
-                  const esHoy     = diaObj.toDateString() === new Date().toDateString();
-
+                  const esHoy = diaObj.toDateString() === new Date().toDateString();
                   return (
-                    <div
-                      key={i}
-                      className={`month-cell ${esHoy ? 'today' : ''}`}
-                      style={{ opacity: esEsteMes ? 1 : 0.6, background: !esEsteMes ? '#f9fafb' : undefined }}
-                    >
+                    <div key={i} className={`month-cell ${esHoy ? 'today' : ''}`} style={{ opacity: esEsteMes ? 1 : 0.4 }}>
                       <span className="month-number">{diaObj.getDate()}</span>
-                      <div>
-                        {esEsteMes && events
-                          .filter(e =>
-                            e.diaSemana === diaObj.getDay() && slots.includes(String(e.docenteId))
-                          )
-                          .sort((a, b) => a.inicio - b.inicio)
-                          .slice(0, 3)
-                          .map((ev, idx) => {
-                            const slotIndex = slots.indexOf(String(ev.docenteId));
-                            if (slotIndex === -1) return null;
-                            const theme = PALETAS[slotIndex];
-
-                            return (
-                              <div
-                                key={idx}
-                                className="month-event"
-                                style={{
-                                  backgroundColor: theme.bg,
-                                  borderLeftColor: theme.border,
-                                  color:           theme.text,
-                                }}
-                              >
-                                {formatTime(ev.inicio)}
-                              </div>
-                            );
-                          })}
+                      <div className="month-events-preview">
+                        {localEvents.filter(e => Number(e.diaSemana) === diaObj.getDay() && slots.includes(String(e.docenteId)))
+                          .slice(0, 2).map((ev, idx) => (
+                            <div key={idx} className="month-event-dot" style={{ backgroundColor: PALETAS[slots.indexOf(String(ev.docenteId))]?.border }} />
+                          ))}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </>
+            </div>
           )}
         </div>
 
