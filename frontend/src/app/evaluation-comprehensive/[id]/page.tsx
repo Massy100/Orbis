@@ -1,10 +1,11 @@
 "use client";
-import "../styles/evaluations-management.css";
+import "../../styles/evaluations-management.css";
 
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import DashboardLayout from "../components/layout";
-import Toast from "../components/toast";
+import DashboardLayout from "../../components/layout";
+import Toast from "../../components/toast";
+import AvailabilityPicker from "../../components/AvailabilityPicker";
 
 
 
@@ -35,12 +36,12 @@ type ScheduleForm = {
     pagado: boolean;
 };
 
-const evaluadoresComprensiva: Record<AreaType, Evaluator[]> = {
+const evaluadoresComprensivaBase: Record<AreaType, Evaluator[]> = {
     informatica: [
         {
             id: 1,
-            nombre: "Ing. José Ramírez",
-            evaluaciones: 6,
+            nombre: "",
+            evaluaciones: 0,
             facultad: "Facultad de Ingeniería",
             codigo: "COMP-INF-001",
         },
@@ -48,8 +49,8 @@ const evaluadoresComprensiva: Record<AreaType, Evaluator[]> = {
     sistemas: [
         {
             id: 6,
-            nombre: "Ing. Carlos Pérez",
-            evaluaciones: 5,
+            nombre: "",
+            evaluaciones: 0,
             facultad: "Facultad de Ingeniería",
             codigo: "COMP-SIS-001",
         },
@@ -57,8 +58,8 @@ const evaluadoresComprensiva: Record<AreaType, Evaluator[]> = {
     gestion: [
         {
             id: 9,
-            nombre: "Lic. Mario Castillo",
-            evaluaciones: 4,
+            nombre: "",
+            evaluaciones: 0,
             facultad: "Facultad de Ingeniería",
             codigo: "COMP-GES-001",
         },
@@ -70,6 +71,8 @@ export default function EvaluationComprehensivePage() {
     const router = useRouter();
     const params = useParams();
     const estudianteCarnet = params?.id as string;
+
+    const [showAvailability, setShowAvailability] = useState(false);
 
     const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" | "info" }>({
         show: false,
@@ -182,6 +185,13 @@ export default function EvaluationComprehensivePage() {
 
     const locationDisplay = `${scheduleData.lugar || "Sin lugar"}${scheduleData.salon ? `, Salón ${scheduleData.salon}` : ""
         }`;
+
+    const [evaluadoresComprensiva, setEvaluadoresComprensiva] =
+        useState<Record<AreaType, Evaluator[]>>({
+            informatica: [],
+            sistemas: [],
+            gestion: [],
+        });
 
     const comprensivaFiltered = evaluadoresComprensiva[activeArea];
 
@@ -347,6 +357,7 @@ export default function EvaluationComprehensivePage() {
                                     <button
                                         type="button"
                                         className="evaluations-availability-button"
+                                        onClick={() => setShowAvailability(true)}
                                     >
                                         Ver disponibilidad
                                     </button>
@@ -552,6 +563,33 @@ export default function EvaluationComprehensivePage() {
                         </div>
                     </aside>
                 </div>
+                {showAvailability && (
+                    <AvailabilityPicker
+                        maxSelections={3}
+                        onCancel={() => setShowAvailability(false)}
+                        onSave={(names) => {
+                            setEvaluadoresComprensiva({
+                                informatica: names[0]
+                                    ? [{ ...evaluadoresComprensivaBase.informatica[0], nombre: names[0] }]
+                                    : [],
+                                sistemas: names[1]
+                                    ? [{ ...evaluadoresComprensivaBase.sistemas[0], nombre: names[1] }]
+                                    : [],
+                                gestion: names[2]
+                                    ? [{ ...evaluadoresComprensivaBase.gestion[0], nombre: names[2] }]
+                                    : [],
+                            });
+
+                            setSelectedEvaluatorsComprensiva({
+                                informatica: null,
+                                sistemas: null,
+                                gestion: null,
+                            });
+
+                            setShowAvailability(false);
+                        }}
+                    />
+                )}
             </div>
             <Toast
                 show={toast.show}
