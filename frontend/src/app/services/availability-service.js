@@ -18,4 +18,16 @@ export const availabilityService = {
       : base;
     return fetch(url).then(r => r.json());
   },
+
+  /**
+   * @param {number} studygroupId
+   */
+  getStudyGroupTeachers: (studygroupId) =>
+    fetch(`${API}studygroup-teachers/?studygroup=${studygroupId}`).then(r => r.json()),
+
+  /**
+   * @param {number} studygroupId
+   */
+  getCourseTutorials: (studygroupId) =>
+    fetch(`${API}course-tutorials/?studygroup=${studygroupId}`).then(r => r.json()),
 };
