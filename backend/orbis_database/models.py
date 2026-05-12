@@ -135,6 +135,7 @@ class Student(models.Model):
 class StudyGroup(models.Model):
     group = models.CharField(max_length=50, blank=True, null=True)
     approvedgroup = models.BooleanField(blank=True, null=True)
+    isactive = models.BooleanField(default=True)
 
     class Meta:
         managed = True

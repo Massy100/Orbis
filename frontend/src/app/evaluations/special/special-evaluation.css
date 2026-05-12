@@ -165,10 +165,10 @@
 
 .eval-table th:last-child,
 .eval-table td:last-child {
-  overflow: visible !important; /* Permite que el tooltip flote hacia arriba */
-  text-overflow: clip;          /* No queremos puntos suspensivos aquí */
-  white-space: normal;          /* Permite que los botones se acomoden */
-  width: 120px;                 /* Mantén un ancho fijo para que no baile */
+  overflow: visible !important;
+  text-overflow: clip;      
+  white-space: normal;      
+  width: 120px;               
 }
 
 .truncate-text {

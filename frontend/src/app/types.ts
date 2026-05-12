@@ -2,8 +2,18 @@ export type GroupStatus = 'Aprobado' | 'Pendiente';
 
 export interface StudyGroup {
     id: number;
-    nombre: string;
-    estado: GroupStatus;
+    group: string;
+    approvedgroup: boolean;
+
+    teachers: {
+        teacher: number;
+        hasaccepted: boolean;
+    }[];
+
+    students: {
+        student: number;
+        haspayment: boolean;
+    }[];
 }
 
 export interface EstudianteGrupo {
@@ -16,6 +26,11 @@ export interface EstudianteGrupo {
 export interface TutorGrupo {
     nombre: string;
     aprobado: boolean;
+}
+
+export interface SelectedTeacher {
+  id: number;
+  name: string;
 }
 
 export interface GroupDetail extends StudyGroup {
@@ -33,4 +48,5 @@ export interface Evaluation {
     nombre: string;
     estado: "acuerdo" | "no_acuerdo";
   };
+  tutors?: SelectedTeacher[];
 }

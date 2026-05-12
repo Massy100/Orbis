@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import "@/src/app/styles/AvailabilityPicker.css";
 import { useAvailability } from '@/src/app/hooks/use-availability';
+import { SelectedTeacher } from "../types";
 
 interface Teacher {
   id: number;
@@ -24,7 +25,7 @@ interface AvailabilityEvent {
 }
 
 interface AvailabilityPickerProps {
-  onSave: (names: string[]) => void;
+  onSave: (teachers: SelectedTeacher[]) => void;
   onCancel: () => void;
   maxSelections?: number;
 }
@@ -68,10 +69,14 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
   };
 
   const handleConfirm = () => {
-    const names = selectedTeacherIds
+    const selectedTeachers = selectedTeacherIds
       .filter(id => id && configDocentes[id])
-      .map(id => configDocentes[id].nombre);
-    onSave(names);
+      .map(id => ({
+        id: Number(id),
+        name: configDocentes[id].nombre
+      }));
+
+    onSave(selectedTeachers);
   };
 
   const formatTime = (decimalHours: number) => {

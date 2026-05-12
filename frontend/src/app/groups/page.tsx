@@ -7,9 +7,10 @@ import { Pencil, Trash2, Plus, UserCheck, X, Circle, UserPlus, CircleCheckBig, P
 import DashboardLayout from '@/src/app/components/layout';
 import Pagination from '../components/pagination';
 import AvailabilityPicker from '../components/AvailabilityPicker';
-import { GroupDetail } from "../types";
+import { GroupDetail, SelectedTeacher } from "../types";
 import { useGroups } from '../hooks/useGroups';
 import { canCreateGroup } from '@/src/lib/groupRules';
+import { studentService } from '@/src/app/services/student-service';
 import './groups.css';
 
 interface Estudiante {
@@ -50,25 +51,40 @@ export default function GroupsPage() {
     const [editingGroup, setEditingGroup] = useState<GroupDetail | null>(null);
 
     const [groupName, setGroupName] = useState("");
-    const [comprensive, setComprensive] = useState(["No Seleccionado", "No Seleccionado", "No Seleccionado"]);
+    const [comprensive, setComprensive] = useState<(SelectedTeacher | null)[]>([
+        null,
+        null,
+        null
+    ]);
     const [tutorApprovals, setTutorApprovals] = useState({ sistemas: false, gestion: false, informatica: false });
     const [estudiantes, setEstudiantes] = useState<Estudiante[]>([]);
 
-    const buildGroup = (id: number): GroupDetail => ({
-        id,
-        nombre: groupName,
-        estado: "Pendiente",
-        tutores: [
-            { nombre: comprensive[0], aprobado: tutorApprovals.sistemas },
-            { nombre: comprensive[1], aprobado: tutorApprovals.gestion },
-            { nombre: comprensive[2], aprobado: tutorApprovals.informatica }
-        ],
-        estudiantes: estudiantes.map(e => ({
-            ...e,
-            pagado: e.pagado ?? false
+    console.log("filteredGroups:", filteredGroups);
+
+    const buildGroupPayload = () => ({
+        group: groupName,
+
+        teachers: [
+            {
+                teacher: comprensive[0]?.id,
+                hasaccepted: tutorApprovals.sistemas
+            },
+            {
+                teacher: comprensive[1]?.id,
+                hasaccepted: tutorApprovals.gestion
+            },
+            {
+                teacher: comprensive[2]?.id,
+                hasaccepted: tutorApprovals.informatica
+            }
+        ].filter(t => t.teacher),
+
+        students: estudiantes.map((e) => ({
+            name: e.nombre,
+            est: e.carne,
+            haspayment: e.pagado
         }))
     });
-    const canCreateEvaluation = selectedGroup?.estado === "Aprobado";
 
     const paginatedGroups = useMemo(() => {
         const start = (page - 1) * pageSize;
@@ -84,64 +100,155 @@ export default function GroupsPage() {
         }
     };
 
-    const handleCreateGroup = () => {
+    const handleCreateGroup = async () => {
         if (!canCreate) return;
 
-        addGroup(buildGroup(Date.now()));
-        closeModal();
+        try {
+            const studentsWithIds = await Promise.all(
+                estudiantes.map(async (est) => {
+                    const foundStudent = await studentService.findByCarnet(est.carne);
+
+                    if (!foundStudent) {
+                        throw new Error(
+                            `No se encontró el estudiante con carnet ${est.carne}`
+                        );
+                    }
+
+                    return {
+                        student: foundStudent.id,
+                        haspayment: est.pagado
+                    };
+                })
+            );
+
+            const payload = {
+                group: groupName,
+                teachers: [
+                    {
+                        teacher: comprensive[0]?.id,
+                        hasaccepted: tutorApprovals.sistemas
+                    },
+                    {
+                        teacher: comprensive[1]?.id,
+                        hasaccepted: tutorApprovals.gestion
+                    },
+                    {
+                        teacher: comprensive[2]?.id,
+                        hasaccepted: tutorApprovals.informatica
+                    }
+                ].filter(t => t.teacher),
+                students: studentsWithIds
+            };
+
+            await addGroup(payload);
+            closeModal();
+
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    const handleUpdateGroup = () => {
+    const handleUpdateGroup = async () => {
         if (!editingGroup) return;
 
-        updateGroup(buildGroup(editingGroup.id));
+        try {
+            const studentsWithIds = await Promise.all(
+                estudiantes.map(async (est) => {
+                    const foundStudent =
+                        await studentService.findByCarnet(est.carne);
 
-        setIsEditModalOpen(false);
-        setEditingGroup(null);
-        closeModal();
+                    if (!foundStudent) {
+                        throw new Error(
+                            `No se encontró el estudiante con carnet ${est.carne}`
+                        );
+                    }
+
+                    return {
+                        student: foundStudent.id,
+                        haspayment: est.pagado
+                    };
+                })
+            );
+
+            const payload = {
+                group: groupName,
+                teachers: [
+                    {
+                        teacher: comprensive[0]?.id,
+                        hasaccepted: tutorApprovals.sistemas
+                    },
+                    {
+                        teacher: comprensive[1]?.id,
+                        hasaccepted: tutorApprovals.gestion
+                    },
+                    {
+                        teacher: comprensive[2]?.id,
+                        hasaccepted: tutorApprovals.informatica
+                    }
+                ].filter(t => t.teacher),
+
+                students: studentsWithIds
+            };
+
+            await updateGroup(
+                editingGroup.id,
+                payload
+            );
+
+            setIsEditModalOpen(false);
+            setEditingGroup(null);
+            closeModal();
+
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     const handleEditGroup = async (id: number) => {
         const detail = await getGroupDetail(id);
+
         if (!detail) return;
 
+        console.log("Detail:", detail);
+
         setEditingGroup(detail);
-        setGroupName(detail.nombre);
+        setGroupName(detail.group);
 
-        setComprensive([
-            detail.tutores[0]?.nombre || "No Seleccionado",
-            detail.tutores[1]?.nombre || "No Seleccionado",
-            detail.tutores[2]?.nombre || "No Seleccionado"
-        ]);
+        const selectedTeachers: (SelectedTeacher | null)[] = [
+            null,
+            null,
+            null
+        ];
 
-        setTutorApprovals({
-            sistemas: detail.tutores[0]?.aprobado || false,
-            gestion: detail.tutores[1]?.aprobado || false,
-            informatica: detail.tutores[2]?.aprobado || false
+        detail.teachers.forEach((teacher: any, index: number) => {
+            if (index < 3) {
+                selectedTeachers[index] = {
+                    id: teacher.id,
+                    name: teacher.name
+                };
+            }
         });
 
-        setEstudiantes(detail.estudiantes);
+        setComprensive(selectedTeachers);
 
-        setIsEditModalOpen(true);
-    };
+        setTutorApprovals({
+            sistemas: detail.teachers[0]?.hasaccepted || false,
+            gestion: detail.teachers[1]?.hasaccepted || false,
+            informatica: detail.teachers[2]?.hasaccepted || false
+        });
 
-    const handleDeleteGroup = (id: number) => {
-        const confirmDelete = window.confirm(
-            "¿Estás seguro de que deseas eliminar este grupo?"
+        const formattedStudents = detail.students.map(
+            (student: any) => ({
+                id: student.id,
+                carne: student.est,
+                nombre: student.name,
+                pagado: student.haspayment
+            })
         );
 
-        if (!confirmDelete) return;
+        setEstudiantes(formattedStudents);
 
-        deleteGroup(id);
-
-        if (editingGroup?.id === id) {
-            setEditingGroup(null);
-            setIsEditModalOpen(false);
-        }
-
-        if (paginatedGroups.length === 1 && page > 1) {
-            setPage(page - 1);
-        }
+        setIsEditModalOpen(true);
     };
 
     const togglePayment = (id: number) => {
@@ -152,10 +259,17 @@ export default function GroupsPage() {
         setEstudiantes(updated);
 
         if (editingGroup) {
-            updateGroup({
-                ...buildGroup(editingGroup.id),
-                estudiantes: updated
-            });
+            updateGroup(
+                editingGroup.id,
+                {
+                    ...buildGroupPayload(),
+                    students: updated.map((e) => ({
+                        name: e.nombre,
+                        est: e.carne,
+                        haspayment: e.pagado
+                    }))
+                }
+            );
         }
     };
 
@@ -177,19 +291,37 @@ export default function GroupsPage() {
         setEstudiantes(updated);
 
         if (editingGroup) {
-            updateGroup({
-                ...buildGroup(editingGroup.id),
-                estudiantes: updated
-            });
+            updateGroup(
+                editingGroup.id,
+                {
+                    ...buildGroupPayload(),
+                    students: updated.map((e) => ({
+                        name: e.nombre,
+                        est: e.carne,
+                        haspayment: e.pagado
+                    }))
+                }
+            );
         }
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
-        setGroupName("")
-        setComprensive(["No Seleccionado", "No Seleccionado", "No Seleccionado"]);
+        setGroupName("");
+        
+        setComprensive([
+            null,
+            null,
+            null
+        ]);
+
         setEstudiantes([]);
-        setTutorApprovals({ sistemas: false, gestion: false, informatica: false });
+        
+        setTutorApprovals({
+            sistemas: false,
+            gestion: false,
+            informatica: false
+        });
     };
 
     const openDeleteModal = (id: number) => {
@@ -197,23 +329,28 @@ export default function GroupsPage() {
         setIsDeleteModalOpen(true);
     };
 
-    const confirmDeleteGroup = () => {
-        if (groupToDelete === null) return;
+    const confirmDeleteGroup = async () => {
+    if (groupToDelete === null) return;
 
-        deleteGroup(groupToDelete);
+    try {
+        await deleteGroup(groupToDelete);
 
         if (selectedGroup?.id === groupToDelete) {
-            setSelectedGroup(null);
+        setSelectedGroup(null);
         }
 
         if (editingGroup?.id === groupToDelete) {
-            setEditingGroup(null);
-            setIsEditModalOpen(false);
+        setEditingGroup(null);
+        setIsEditModalOpen(false);
         }
 
         setIsDeleteModalOpen(false);
         setGroupToDelete(null);
-    };
+
+    } catch (error) {
+        console.error("Error al eliminar grupo:", error);
+    }
+};
 
     const cancelDelete = () => {
         setIsDeleteModalOpen(false);
@@ -244,22 +381,39 @@ export default function GroupsPage() {
                     </div>
                 </div>
 
+                <div className="groups-grid" key={`${filter}-${page}`}>
+                    {paginatedGroups.length === 0 ? (
+                        <div className="empty-state">
+                            <div className="empty-state-svg">
+                                <svg
+                                    stroke="currentColor"
+                                    fill="none"
+                                    strokeWidth="0"
+                                    viewBox="0 0 24 24"
+                                    height="1em"
+                                    width="1em"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                                    />
+                                </svg>
+                            </div>
 
-                {paginatedGroups.length === 0 ? (
-                    <div className="empty-state">
-                        <div className="empty-state-svg">
-                            <svg stroke="currentColor" fill="none" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            <h3>No hay resultados</h3>
+                            <p>No encontramos elementos para esta categoría.</p>
                         </div>
-
-                        <h3>No hay resultados</h3>
-                        <p>No encontramos elementos para esta categoría.</p>
-                    </div>
-                ) : (
-                    <div className="groups-grid" key={`${filter}-${page}`}>
-                        {paginatedGroups.map((group) => (
+                    ) : (
+                        paginatedGroups.map((group) => (
                             <div key={group.id} className="group-card">
                                 <div className="card-header">
-                                    <h3 className="group-name">{group.nombre}</h3>
+                                    <h3 className="group-name">
+                                        {group.group}
+                                    </h3>
+
                                     <div className="card-actions">
                                         <button
                                             className="action-icon btn-edit"
@@ -267,6 +421,7 @@ export default function GroupsPage() {
                                         >
                                             <Pencil size={20} />
                                         </button>
+
                                         <button
                                             className="action-icon btn-delete"
                                             onClick={() => openDeleteModal(group.id)}
@@ -275,15 +430,24 @@ export default function GroupsPage() {
                                         </button>
                                     </div>
                                 </div>
+
                                 <div className="card-body">
-                                    <span className={`status-badge ${group.estado === 'Aprobado' ? 'status-aprobado' : 'status-pendiente'}`}>
-                                        {group.estado}
+                                    <span
+                                        className={`status-badge ${
+                                            group.approvedgroup
+                                                ? "status-aprobado"
+                                                : "status-pendiente"
+                                        }`}
+                                    >
+                                        {group.approvedgroup
+                                            ? "Aprobado"
+                                            : "Pendiente"}
                                     </span>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                )}
+                        ))
+                    )}
+                </div>
 
                 <footer className="groups-pagination-footer">
                     {totalItems > 0 && (
@@ -354,7 +518,7 @@ export default function GroupsPage() {
 
                                                     <input
                                                         type="text"
-                                                        value={comprensive[tutor.idx]}
+                                                        value={comprensive[tutor.idx]?.name || "No Seleccionado"}
                                                         readOnly
                                                         className="input-readonly"
                                                     />
@@ -560,7 +724,7 @@ export default function GroupsPage() {
 
                                                     <input
                                                         type="text"
-                                                        value={comprensive[tutor.idx]}
+                                                        value={comprensive[tutor.idx]?.name || "No Seleccionado"}
                                                         readOnly
                                                         className="input-readonly"
                                                     />
@@ -775,12 +939,12 @@ export default function GroupsPage() {
                     </div>
                 )}
 
-                {showAvailability && (
+               {showAvailability && (
                     <AvailabilityPicker
                         maxSelections={3}
                         onCancel={() => setShowAvailability(false)}
-                        onSave={(names) => {
-                            setComprensive(names);
+                        onSave={(teachers) => {
+                            setComprensive(teachers);
                             setShowAvailability(false);
                         }}
                     />
