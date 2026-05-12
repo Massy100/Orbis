@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../../components/layout";
 import Toast from "../../components/toast";
 import AvailabilityPicker from "../../components/AvailabilityPicker";
-
+import { availabilityService } from "../../services/availability-service";
 
 
 
@@ -50,6 +50,7 @@ export default function EvaluationSpecialPage() {
     const router = useRouter();
     const params = useParams();
     const estudianteCarnet = params?.id as string;
+    const [studygroupId, setStudygroupId] = useState<number | null>(null);
 
     const [docenteSeleccionado, setDocenteSeleccionado] = useState<string | null>(null);
     const [showAvailability, setShowAvailability] = useState(false);
@@ -190,6 +191,12 @@ export default function EvaluationSpecialPage() {
         }
     }, [toast.show]);
 
+    useEffect(() => {
+    if (!estudianteCarnet) return;
+    availabilityService.getStudyGroupIdByEst(estudianteCarnet).then((id) => {
+        setStudygroupId(id);
+    });
+    }, [estudianteCarnet]);
 
     return (
         <DashboardLayout>
@@ -481,6 +488,7 @@ export default function EvaluationSpecialPage() {
                 </div>
                 {showAvailability && (
                     <AvailabilityPicker
+                        filterOptions={{ mode: 'tutorial-evaluator', ...(studygroupId !== null && { studygroupId }) }}
                         maxSelections={1}
                         onCancel={() => setShowAvailability(false)}
                         onSave={(names) => {

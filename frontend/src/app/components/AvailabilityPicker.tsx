@@ -24,8 +24,25 @@ interface AvailabilityEvent {
   fin: number;
 }
 
+/**
+ * Modes that drive filtering logic:
+ *
+ * FLUJO 1 — Privados:
+ *   'group-mentor'    → Grupos: docentes con evaluationcount < 15
+ *   'group-evaluator' → Evaluaciones privadas: evaluationcount < 15 + excluye studygroup-teachers
+ *
+ * FLUJO 2 — Terna:
+ *   'tutorial-tutor'     → Asignación de tutor: docentes con evaluationcount < 15
+ *   'tutorial-evaluator' → Evaluaciones terna: evaluationcount < 15 + excluye course-tutorials
+ */
+type AvailabilityMode =
+  | 'group-mentor'
+  | 'group-evaluator'
+  | 'tutorial-tutor'
+  | 'tutorial-evaluator';
+
 interface FilterOptions {
-  mode?: 'comprehensive' | 'special';
+  mode?: AvailabilityMode;
   studygroupId?: number;
 }
 
@@ -51,7 +68,6 @@ export default function AvailabilityPicker({
   filterOptions = {},
 }: AvailabilityPickerProps) {
 
-  // Propaga filterOptions al hook para que filtre los docentes elegibles
   const { teachers, events, loading } = useAvailability([], filterOptions);
 
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>(
@@ -65,7 +81,6 @@ export default function AvailabilityPicker({
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const horasDelDia       = ['7am', '8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm', '7pm', '8pm', '9pm'];
 
-  // Create a dinamic config for teachers to assign colors and names easily only for the selected ones (those that appear on events)
   const configDocentes: Record<string, { nombre: string; theme: typeof PALETAS[0] }> = Object.fromEntries(
     teachers.map((t: Teacher, i: number) => [
       String(t.id),
@@ -73,23 +88,42 @@ export default function AvailabilityPicker({
     ])
   );
 
-  // ─── Helpers ───────────────────────────────────────────────────────────────
+  // ─── Labels ────────────────────────────────────────────────────────────────
 
-  /** Get label based on filter options */
+  /**
+   * Returns the confirm-button label based on mode and maxSelections.
+   *
+   * group-mentor / tutorial-tutor  → singular/plural tutor label
+   * group-evaluator / tutorial-evaluator → evaluator label
+   */
   const getLabel = () => {
-    if (filterOptions.mode === 'comprehensive') {
+    const { mode } = filterOptions;
+    if (mode === 'group-evaluator' || mode === 'tutorial-evaluator') {
       return maxSelections > 1 ? 'Asignar Evaluadores' : 'Asignar Evaluador';
     }
-    if (filterOptions.mode === 'special') {
-      return maxSelections > 1 ? 'Asignar Evaluadores' : 'Asignar Evaluador';
-    }
+    // group-mentor, tutorial-tutor, or no mode
     return maxSelections > 1 ? 'Asignar Tutores' : 'Asignar Catedrático';
   };
 
+  /**
+   * Returns the picker title based on mode.
+   *
+   * group-mentor       → Disponibilidad — Mentores (Privados)
+   * group-evaluator    → Disponibilidad — Evaluadores (Privados)
+   * tutorial-tutor     → Disponibilidad — Tutores (Terna)
+   * tutorial-evaluator → Disponibilidad — Evaluadores (Terna)
+   * (none)             → Disponibilidad de Catedráticos / Tutores
+   */
   const getTitle = () => {
-    if (filterOptions.mode === 'comprehensive') return 'Disponibilidad — Evaluadores (Comprensiva)';
-    if (filterOptions.mode === 'special')        return 'Disponibilidad — Evaluadores (Especial)';
-    return maxSelections > 1 ? 'Disponibilidad de Tutores' : 'Disponibilidad de Catedráticos';
+    const { mode } = filterOptions;
+    switch (mode) {
+      case 'group-mentor':       return 'Disponibilidad — Mentores (Privados)';
+      case 'group-evaluator':    return 'Disponibilidad — Evaluadores (Privados)';
+      case 'tutorial-tutor':     return 'Disponibilidad — Tutores (Terna)';
+      case 'tutorial-evaluator': return 'Disponibilidad — Evaluadores (Terna)';
+      default:
+        return maxSelections > 1 ? 'Disponibilidad de Tutores' : 'Disponibilidad de Catedráticos';
+    }
   };
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
@@ -131,7 +165,6 @@ export default function AvailabilityPicker({
     setCurrentDate(d);
   };
 
-  // Días de la semana actual
   const inicioDeSemana = new Date(currentDate);
   inicioDeSemana.setDate(currentDate.getDate() - currentDate.getDay());
   const diasDeLaSemana = Array.from({ length: 7 }).map((_, i) => {
@@ -190,7 +223,6 @@ export default function AvailabilityPicker({
                       <option
                         key={t.id}
                         value={String(t.id)}
-                        // Evita seleccionar el mismo docente dos veces
                         disabled={selectedTeacherIds.includes(String(t.id)) && String(t.id) !== id}
                       >
                         {t.name}
@@ -222,7 +254,6 @@ export default function AvailabilityPicker({
           <div className="nav-right">
             <span className="badge">Vista Semanal</span>
           </div>
-
         </div>
 
         {/* CALENDARIO */}
@@ -245,7 +276,6 @@ export default function AvailabilityPicker({
                 const esHoy =
                   diaObj.toDateString() === new Date().toDateString();
 
-                // Eventos del día que pertenecen a los docentes seleccionados
                 const eventosDia = events.filter((e: AvailabilityEvent) =>
                   e.diaSemana === diaObj.getDay() &&
                   selectedTeacherIds.includes(e.docenteId)
@@ -253,7 +283,7 @@ export default function AvailabilityPicker({
 
                 return (
                   <div key={index} className="day-column">
-                    
+
                     {/* HEADER DÍA */}
                     <div className={`day-header ${esHoy ? 'today' : 'normal'}`}>
                       <span>{nombresDiasCortos[diaObj.getDay()]}</span>
@@ -272,16 +302,13 @@ export default function AvailabilityPicker({
                         const config = configDocentes[evento.docenteId];
                         if (!config) return null;
 
-                        const solapados = eventosDia.filter(e => 
+                        const solapados = eventosDia.filter(e =>
                           (evento.inicio < e.fin && evento.fin > e.inicio)
-                        );                        
+                        );
                         const numSolapados = solapados.length;
                         const orden = solapados.findIndex(e => e.docenteId === evento.docenteId);
                         const offsetX = 8;
                         const offsetY = 8;
-                        
-                        const width = 100 / numSolapados;
-                        const left = width * orden;
 
                         const eventKey = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
                         const isLifted = hoveredEvent === eventKey || activeEvent === eventKey;
@@ -322,7 +349,7 @@ export default function AvailabilityPicker({
                       })}
                     </div>
                   </div>
-                  );
+                );
               })}
             </div>
           </div>

@@ -30,4 +30,25 @@ export const availabilityService = {
    */
   getCourseTutorials: (studygroupId) =>
     fetch(`${API}course-tutorials/?studygroup=${studygroupId}`).then(r => r.json()),
+
+  /**
+   * Given a student carnet (est), resolves the studygroup ID the student belongs to.
+   * Flow: est → students/?est=<est> → student.id → studygroup-students/?student=<id> → studygroup id
+   *
+   * @param {string} est  - The student carnet/code from the URL param
+   * @returns {Promise<number|null>} The studygroup ID, or null if not found
+   */
+  getStudyGroupIdByEst: async (est) => {
+    // Step 1: find the student record by carnet (est field)
+    const students = await fetch(`${API}students/?est=${encodeURIComponent(est)}`).then(r => r.json());
+    if (!students.length) return null;
+
+    const studentId = students[0].id;
+
+    // Step 2: find the studygroup-student record for this student
+    const sgStudents = await fetch(`${API}studygroup-students/?student=${studentId}`).then(r => r.json());
+    if (!sgStudents.length) return null;
+
+    return sgStudents[0].studygroup;
+  },
 };
