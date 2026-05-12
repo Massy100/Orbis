@@ -108,7 +108,25 @@ export default function EvaluacionEspecialPage() {
   return (
     <DashboardLayout>
       <div className="eval-container">
+        <div className="eval-header">
+          <button
+            className="btn-add"
+            onClick={() => {
+              setForm({
+                carnet: "",
+                nombre: "",
+                curso: "",
+                tutor: ""
+              });
 
+              setEditingId(null);
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus size={18} />
+            Agregar Evaluación
+          </button>
+        </div>
         <div className="table-wrapper">
           <table className="eval-table">
 
