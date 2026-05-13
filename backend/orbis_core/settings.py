@@ -154,3 +154,14 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
 ]
+
+# configuration for sending emails with Gmail SMTP
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+# this will be used in views.py to send emails, and should be set in the .env file
+import os
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'correo_del_proyecto@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'contraseña_de_aplicacion')

@@ -1,3 +1,8 @@
+import json
+import urllib.request
+import urllib.error
+import os
+
 from rest_framework import viewsets, filters, status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import APIView
@@ -5,12 +10,14 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
-from django.db import transaction
-from django.db.models.functions import ExtractMonth
+from django.db import transaction, connection
+from django.db.models.functions import ExtractMonth, ExtractYear
+from django.utils import timezone
 
 from parsers.pensum_parser import parse_pensum
 from parsers.teacher_schedule_parser import parse_teacher_schedule_excel
 
+from .serializers import SystemUserSerializer
 from .models import (
     Career, Faculty, Course, CourseTeacher,
     Speciality, SpecialityTeacher,
@@ -40,7 +47,6 @@ class CareerViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
     ordering_fields = ['name']
 
-
 class FacultyViewSet(viewsets.ModelViewSet):
     queryset = Faculty.objects.all()
     serializer_class = FacultySerializer
@@ -54,13 +60,11 @@ class SpecialityViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
 
-
 class TypeViewSet(viewsets.ModelViewSet):
     queryset = Type.objects.all()
     serializer_class = TypeSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
-
 
 class PeriodViewSet(viewsets.ModelViewSet):
     queryset = Period.objects.all()
@@ -77,13 +81,11 @@ class CourseViewSet(viewsets.ModelViewSet):
     search_fields = ['name']
     ordering_fields = ['name']
 
-
 class CourseTeacherViewSet(viewsets.ModelViewSet):
     queryset = CourseTeacher.objects.select_related('course', 'teacher').all()
     serializer_class = CourseTeacherSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['course', 'teacher']
-
 
 class TeacherViewSet(viewsets.ModelViewSet):
     serializer_class = TeacherSerializer
@@ -106,18 +108,18 @@ class TeacherViewSet(viewsets.ModelViewSet):
         teacher = self.get_object()
         teacher.isactive = not teacher.isactive
         teacher.save()
-
+        estado_texto = 'Activo' if teacher.isactive else 'Inactivo'
+        
         return Response({
             'message': 'Estado actualizado correctamente',
             'isactive': teacher.isactive,
-            'status_text': 'Activo' if teacher.isactive else 'Inactivo',
+            'status_text': estado_texto,
         })
 
     @action(detail=True, methods=['post'], url_path='update_relations')
     @transaction.atomic
     def update_relations(self, request, pk=None):
         teacher = self.get_object()
-
         course_ids = request.data.get('courses', [])
         speciality_ids = request.data.get('specialities', [])
 
@@ -148,7 +150,6 @@ class TeacherViewSet(viewsets.ModelViewSet):
             SpecialityTeacher.objects.create(teacher=teacher, area_id=speciality_id)
 
         headers = self.get_success_headers(serializer.data)
-
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 class TeachersPeriodViewSet(viewsets.ModelViewSet):
@@ -211,7 +212,6 @@ class TeacherScheduleUploadView(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
 
         deleted_relations = 0
-
         if replace:
             deleted_relations, _ = TeachersPeriod.objects.filter(teacher=teacher).delete()
 
@@ -225,7 +225,6 @@ class TeacherScheduleUploadView(APIView):
                 starttime=schedule['starttime'],
                 endtime=schedule['endtime'],
             )
-
             if created:
                 created_periods += 1
 
@@ -251,40 +250,6 @@ class TeacherScheduleUploadView(APIView):
             'created_relations': created_relations,
             'already_existing': already_existing,
         }, status=status.HTTP_201_CREATED)
-
-
-class TeacherScheduleDetailView(APIView):
-    def get(self, request, teacher_code):
-        try:
-            teacher = Teacher.objects.get(cat=str(teacher_code).strip())
-        except Teacher.DoesNotExist:
-            return Response({
-                'error': f'No existe un docente con código {teacher_code}.'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        schedules = (
-            TeachersPeriod.objects
-            .filter(teacher=teacher)
-            .select_related('schedule')
-            .order_by('schedule__day', 'schedule__starttime')
-        )
-
-        data = [
-            {
-                'day': item.schedule.day,
-                'starttime': item.schedule.starttime,
-                'endtime': item.schedule.endtime,
-            }
-            for item in schedules
-        ]
-
-        return Response({
-            'teacher_id': teacher.id,
-            'teacher_code': teacher.cat,
-            'teacher_name': teacher.name,
-            'total_schedules': len(data),
-            'schedules': data,
-        })
 
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.select_related(
@@ -575,63 +540,206 @@ class DashboardStatsView(APIView):
             },
         }
 
-        teacher_fields = {field.name for field in Teacher._meta.get_fields()}
-
-        if 'rol' in teacher_fields:
-            response_data['charts'] = {
-                'roles_distribution': list(
-                    Teacher.objects.values('rol__name').annotate(total=Count('id'))
-                )
-            }
+        # NOTA: Como la tabla Rol fue eliminada del modelo, 
+        # enviamos una lista vacía para que el frontend no falle
+        response_data['charts'] = {
+            'roles_distribution': []
+        }
 
         return Response(response_data)
 
 class DashboardMetricsView(APIView):
     def get(self, request):
-        total_evaluaciones = Evaluation.objects.count()
-        evaluaciones_sin_resultado = Evaluation.objects.filter(result__isnull=True).count()
+        total_comprensivas = Evaluation.objects.filter(type__name__icontains='Comprensiva').count()
+        total_especiales = Evaluation.objects.filter(type__name__icontains='Especial').count()
 
-        stats_mes = (
-            Evaluation.objects
-            .annotate(month=ExtractMonth('date'))
-            .values('month')
-            .annotate(
-                especial=Count('id', filter=Q(type__name__icontains='Especial')),
-                comprensiva=Count('id', filter=Q(type__name__icontains='Comprensiva')),
-            )
-            .order_by('month')
-        )
+        stats_mes = Evaluation.objects.annotate(
+            month=ExtractMonth('date'),
+            year=ExtractYear('date')
+        ).values('year', 'month').annotate(
+            especial=Count('id', filter=Q(type__name__icontains='Especial')),
+            comprensiva=Count('id', filter=Q(type__name__icontains='Comprensiva'))
+        ).order_by('-year', '-month')[:3]
 
-        meses_map = {
-            1: 'ENE', 2: 'FEB', 3: 'MAR', 4: 'ABR',
-            5: 'MAY', 6: 'JUN', 7: 'JUL', 8: 'AGO',
-            9: 'SEP', 10: 'OCT', 11: 'NOV', 12: 'DIC',
-        }
-
+        stats_mes_list = list(stats_mes)[::-1]
+        meses_map = {1:'ENE', 2:'FEB', 3:'MAR', 4:'ABR', 5:'MAY', 6:'JUN', 7:'JUL', 8:'AGO', 9:'SEP', 10:'OCT', 11:'NOV', 12:'DIC'}
+        
         chart_data = [
             {
-                'mes': meses_map.get(item['month'], 'S/M'),
-                'especial': item['especial'],
-                'comprensiva': item['comprensiva'],
+                "mes": meses_map.get(item['month'], 'S/M'), 
+                "especial": item['especial'], 
+                "comprensiva": item['comprensiva']
             }
-            for item in stats_mes
+            for item in stats_mes_list
         ]
 
-        top_teachers = Teacher.objects.order_by('-evaluationcount')[:4]
+        top_comprensiva = Teacher.objects.filter(
+            evaluationteacher__evaluation__type__name__icontains='Comprensiva'
+        ).annotate(total=Count('evaluationteacher')).order_by('-total')[:4]
+        
+        top_especial = Teacher.objects.filter(
+            evaluationteacher__evaluation__type__name__icontains='Especial'
+        ).annotate(total=Count('evaluationteacher')).order_by('-total')[:4]
 
-        teachers_data = [
-            {
-                'name': t.name,
-                'initials': ''.join([n[0] for n in t.name.split()[:2]]),
-                'dept': t.faculty.name if t.faculty else '',
-                'total': t.evaluationcount,
+        def format_teacher(t):
+            initials = "".join([word[0] for word in t.name.split()[:2]]) if t.name else "NN"
+            return {
+                "name": t.name,
+                "initials": initials.upper(),
+                "dept": t.faculty.name if t.faculty else "Sin Facultad",
+                "total": t.total
             }
-            for t in top_teachers
+
+        conf_eval_comp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Evaluación Comprensiva').count()
+        conf_tut_comp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Tutoría Comprensiva').count()
+        conf_eval_esp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Evaluación Especial').count()
+        conf_tut_esp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Tutoría Especial').count()
+
+        return Response({
+            "cards_totals": {
+                "comprensivas": total_comprensivas,
+                "especiales": total_especiales
+            },
+            "monthly_chart": chart_data,
+            "top_teachers": {
+                "comprensivas": [format_teacher(t) for t in top_comprensiva],
+                "especiales": [format_teacher(t) for t in top_especial]
+            },
+            "confirmations": [
+                {"label": "Tutoría Comprensiva", "value": conf_tut_comp, "max": total_comprensivas, "color": "#2563EB"},
+                {"label": "Evaluación Comprensiva", "value": conf_eval_comp, "max": total_comprensivas, "color": "#3B82F6"},
+                {"label": "Tutoría Especial", "value": conf_tut_esp, "max": total_especiales, "color": "#93C5FD"},
+                {"label": "Evaluación Especial", "value": conf_eval_esp, "max": total_especiales, "color": "#DBEAFE"},
+            ]
+        })
+
+class TeacherScheduleDetailView(APIView):
+    def get(self, request, teacher_code):
+        try:
+            teacher = Teacher.objects.get(cat=str(teacher_code).strip())
+        except Teacher.DoesNotExist:
+            return Response({
+                'error': f'No existe un docente con código {teacher_code}.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        schedules = (
+            TeachersPeriod.objects
+            .filter(teacher=teacher)
+            .select_related('schedule')
+            .order_by('schedule__day', 'schedule__starttime')
+        )
+
+        data = [
+            {
+                'day': item.schedule.day,
+                'starttime': item.schedule.starttime,
+                'endtime': item.schedule.endtime,
+            }
+            for item in schedules
         ]
 
         return Response({
-            'total_evaluations': total_evaluaciones,
-            'pending_emails': evaluaciones_sin_resultado,
-            'monthly_chart': chart_data,
-            'top_teachers': teachers_data,
+            'teacher_id': teacher.id,
+            'teacher_code': teacher.cat,
+            'teacher_name': teacher.name,
+            'total_schedules': len(data),
+            'schedules': data,
         })
+
+class ResultReportsView(APIView):
+    def get(self, request):
+        evaluations = Evaluation.objects.select_related('studentid', 'type').all()
+        especial_reports = []
+        comprensiva_reports = []
+
+        for eval_obj in evaluations:
+            result_obj = Result.objects.filter(evaluationid=eval_obj).first()
+            calificacion = result_obj.state if result_obj else "Pendiente"
+            et_list = EvaluationTeacher.objects.filter(evaluation=eval_obj)
+            evaluadores = [et.teacher.name for et in et_list if et.teacher]
+            
+            est_name = eval_obj.studentid.name if eval_obj.studentid else "Sin asignar"
+            est_id = str(eval_obj.studentid.id) if eval_obj.studentid else "N/A"
+            fecha_str = "Sin fecha"
+            
+            if eval_obj.date:
+                try:
+                    fecha_str = eval_obj.date.strftime("%d/%m/%Y")
+                except AttributeError:
+                    parts = str(eval_obj.date).split("-")
+                    if len(parts) == 3:
+                        fecha_str = f"{parts[2]}/{parts[1]}/{parts[0]}"
+                    else:
+                        fecha_str = str(eval_obj.date)
+
+            type_name = eval_obj.type.name if eval_obj.type else ""
+            base_data = {
+                "id": eval_obj.id,
+                "nombre": est_name,
+                "idEstudiante": est_id,
+                "fecha": fecha_str,
+                "calificacion": calificacion,
+                "evaluadores": evaluadores
+            }
+
+            if 'Especial' in type_name:
+                base_data["curso"] = "Curso de Especialización" 
+                especial_reports.append(base_data)
+                
+            elif 'Comprensiva' in type_name:
+                if eval_obj.studentid:
+                    try:
+                        # NUEVA RELACIÓN: Usamos StudyGroupStudent para llegar al nombre del grupo
+                        grupos_rel = StudyGroupStudent.objects.filter(student=eval_obj.studentid).select_related('studygroup')
+                        base_data["gruposEstudio"] = [g.studygroup.group for g in grupos_rel if g.studygroup] if grupos_rel.exists() else ["Sin grupo asignado"]
+                    except Exception:
+                        base_data["gruposEstudio"] = ["Sin grupo asignado"]
+                else:
+                    base_data["gruposEstudio"] = ["Sin grupo asignado"]
+                comprensiva_reports.append(base_data)
+
+        return Response({
+            "especial": especial_reports,
+            "comprensiva": comprensiva_reports
+        })
+
+class SendEmailView(APIView):
+    def post(self, request):
+        subject = request.data.get('subject', '')
+        body = request.data.get('body', '')
+        correo_destino = request.data.get('to') 
+
+        if not subject or not body or not correo_destino:
+            return Response({"error": "Faltan datos de asunto, cuerpo o destino"}, status=status.HTTP_400_BAD_REQUEST)
+
+        api_key = os.getenv('SENDGRID_API_KEY')
+        from_email = os.getenv('DEFAULT_FROM_EMAIL')
+
+        url = "https://api.sendgrid.com/v3/mail/send"
+        
+        payload = {
+            "personalizations": [{"to": [{"email": correo_destino}]}],
+            "from": {"email": from_email},
+            "subject": subject,
+            "content": [{"type": "text/plain", "value": body}]
+        }
+        
+        data = json.dumps(payload).encode('utf-8')
+        
+        req = urllib.request.Request(url, data=data, headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        })
+        
+        try:
+            with urllib.request.urlopen(req) as response:
+                return Response({"message": "Correo enviado con éxito por SendGrid API"}, status=status.HTTP_200_OK)
+                
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode('utf-8')
+            print("ERROR SENDGRID API:", error_body)
+            return Response({"error": error_body}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        except Exception as e:
+            print("ERROR GENERAL:", str(e))
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

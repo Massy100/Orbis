@@ -3,34 +3,30 @@ import "./result-reports.css";
 import { useState, useMemo, useEffect } from "react";
 import Pagination from "../components/pagination";
 import DashboardLayout from "../components/layout";
-
-
-
+import Toast from "../components/toast";
+import { X } from "lucide-react";
+import { fetchResultReports, sendReportEmail } from "../services/resultReportService.js";
 
 type Option = "especial" | "comprensiva";
 
-// Base type for the reports, containing the common properties for both "especial" and "comprensiva" evaluation types.
 type BaseReport = {
     id: number;
     nombre: string;
     idEstudiante: string;
     fecha: string;
-    calificacion: "Aprobado" | "No Aprobado" | "No se Presento";
+    calificacion: string;
     evaluadores: string[];
 };
 
-// Type for the "especial" evaluation report, extending the BaseReport with a specific property for the course name.
 type EspecialReport = BaseReport & {
     curso: string;
 };
 
-// Type for the "comprensiva" evaluation report, extending the BaseReport with a specific property for the study groups.
 type ComprensivaReport = BaseReport & {
     gruposEstudio: string[];
 };
 
 export default function ResultReports() {
-
     const [activeOption, setActiveOption] = useState<Option>("especial");
     const [studentQuery, setStudentQuery] = useState("");
     const [courseQuery, setCourseQuery] = useState("");
@@ -41,179 +37,99 @@ export default function ResultReports() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
-    // Function to format the month value from "YYYY-MM" to "Month YYYY" in Spanish
+    // Datos desde la BD
+    const [especialReports, setEspecialReports] = useState<EspecialReport[]>([]);
+    const [comprensivaReports, setComprensivaReports] = useState<ComprensivaReport[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Modal de Correo
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedReport, setSelectedReport] = useState<BaseReport | null>(null);
+    const [emailSubject, setEmailSubject] = useState("");
+    const [emailBody, setEmailBody] = useState("");
+
+    // Toast
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' | 'info' });
+
+    useEffect(() => {
+        const loadData = async () => {
+            const result = await fetchResultReports();
+            if (result.success) {
+                setEspecialReports(result.data.especial);
+                setComprensivaReports(result.data.comprensiva);
+            }
+            setIsLoading(false);
+        };
+        loadData();
+    }, []);
+
     const formatMonth = (value: string) => {
         if (!value) return "";
         const [year, month] = value.split("-");
-        const months = [
-            "enero", "febrero", "marzo", "abril", "mayo", "junio",
-            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-        ];
+        const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
         return `${months[Number(month) - 1]} ${year}`;
     };
 
-    // Create a display text for the selected date range (example: enero 2026 - marzo 2026)
-    const rangeText =
-        startMonth && endMonth
-            ? `${formatMonth(startMonth)} - ${formatMonth(endMonth)}`
-            : "Seleccionar rango";
+    const rangeText = startMonth && endMonth ? `${formatMonth(startMonth)} - ${formatMonth(endMonth)}` : "Seleccionar rango";
 
-    // Function to apply the selected date filters to the reports and update the applied date range state
     const handleApplyFilters = () => {
         setAppliedStartMonth(startMonth);
         setAppliedEndMonth(endMonth);
     };
 
-    // Function to parse a date string in the format "DD/MM/YYYY" into a Date object for comparison purposes when filtering the reports by date range
     const parseDate = (value: string): Date => {
+        if (!value || value === "Sin fecha") return new Date();
         const [day, month, year] = value.split("/").map(Number);
         return new Date(year, month - 1, day);
     };
 
-    // Function to format a date string from "DD/MM/YYYY" to "D de Month YYYY" in Spanish for display purposes in the table
     const formatDateToSpanish = (value: string): string => {
+        if (!value || value === "Sin fecha") return value;
         const [day, month, year] = value.split("/");
-        const months = [
-            "enero", "febrero", "marzo", "abril", "mayo", "junio",
-            "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-        ];
+        const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
         return `${Number(day)} de ${months[Number(month) - 1]} ${year}`;
     };
 
-    // Function to get the start or end date of a month based on a "YYYY-MM" value, used for filtering the reports by date range. If isEnd is true, it returns the last moment of the month; otherwise, it returns the first moment of the month.
     const getMonthRange = (monthValue: string, isEnd = false) => {
         if (!monthValue) return null;
-
         const [year, month] = monthValue.split("-").map(Number);
-
-        if (isEnd) {
-            return new Date(year, month, 0, 23, 59, 59, 999);
-        }
-
+        if (isEnd) return new Date(year, month, 0, 23, 59, 59, 999);
         return new Date(year, month - 1, 1, 0, 0, 0, 0);
     };
 
-    // Mocks data for the reports of both evaluation types. 
-    // Space to implement the logic to fetch the especialReports from the backend when the activeOption is "especial" and the comprensivaReports when the activeOption is "comprensiva".
-    const especialReports: EspecialReport[] = [
-        {
-            id: 1,
-            nombre: "Pedro Perez",
-            idEstudiante: "1458745",
-            curso: "Calculo I",
-            fecha: "14/01/2023",
-            calificacion: "Aprobado",
-            evaluadores: ["Dr. Aris Thorne", "Profe. Elena Moretti"],
-        },
-        {
-            id: 2,
-            nombre: "David Bautista",
-            idEstudiante: "1458723",
-            curso: "Programacion Avanzada",
-            fecha: "12/07/2023",
-            calificacion: "No Aprobado",
-            evaluadores: ["Profe. David Chen", "Dr. Sara Jenkins"],
-        },
-        {
-            id: 3,
-            nombre: "Bruce Castillo",
-            idEstudiante: "1458741",
-            curso: "Fisica II",
-            fecha: "11/10/2023",
-            calificacion: "No se Presento",
-            evaluadores: ["Dr. Aris Thorne", "Profe. Roberto Smith"],
-        },
-    ];
-
-    const comprensivaReports: ComprensivaReport[] = [
-        {
-            id: 1,
-            nombre: "Francisco Perez",
-            idEstudiante: "1623487",
-            gruposEstudio: ["Sistemas: Grupo A", "Informatica: Grupo B", "Gestión: Grupo C"],
-            fecha: "14/01/2026",
-            calificacion: "Aprobado",
-            evaluadores: ["Dr. Aris Thorne", "Profe. Elena Moretti"],
-        },
-        {
-            id: 2,
-            nombre: "Marlon Bautista",
-            idEstudiante: "8462698",
-            gruposEstudio: ["Sistemas: Grupo A", "Informatica: Grupo B", "Gestión: Grupo C"],
-            fecha: "12/02/2026",
-            calificacion: "No Aprobado",
-            evaluadores: ["Profe. David Chen", "Dr. Sara Jenkins"],
-        },
-        {
-            id: 3,
-            nombre: "Carolina Castillo",
-            idEstudiante: "7845321",
-            gruposEstudio: ["Sistemas: Grupo A", "Informatica: Grupo B", "Gestión: Grupo C"],
-            fecha: "11/04/2026",
-            calificacion: "No se Presento",
-            evaluadores: ["Dr. Aris Thorne", "Profe. Roberto Smith"],
-        },
-    ];
-
     const currentReports = activeOption === "especial" ? especialReports : comprensivaReports;
 
-    // Memoized value for the filtered reports based on the search queries and selected date range. 
-    // It normalizes the student and course queries to lowercase and trims them for more flexible searching. 
-    // It also parses the report dates and compares them with the selected date range to filter the reports accordingly.
     const filteredReports = useMemo(() => {
         const normalizedStudentQuery = studentQuery.trim().toLowerCase();
         const normalizedCourseQuery = courseQuery.trim().toLowerCase();
-
         const startDate = getMonthRange(appliedStartMonth, false);
         const endDate = getMonthRange(appliedEndMonth, true);
 
         return currentReports.filter((report) => {
-            const matchesStudent =
-                normalizedStudentQuery === "" ||
-                report.nombre.toLowerCase().includes(normalizedStudentQuery) ||
-                report.idEstudiante.includes(normalizedStudentQuery);
-
-            // For "especial" option, it checks if the course name includes the course query. 
-            // For "comprensiva" option, it checks if any of the study groups include the course query.
-            const matchesCourse =
-                activeOption === "especial"
-                    ? normalizedCourseQuery === "" ||
-                    (report as EspecialReport).curso.toLowerCase().includes(normalizedCourseQuery)
-                    : normalizedCourseQuery === "" ||
-                    (report as ComprensivaReport).gruposEstudio.some((grupo) =>
-                        grupo.toLowerCase().includes(normalizedCourseQuery)
-                    );
+            const matchesStudent = normalizedStudentQuery === "" || report.nombre.toLowerCase().includes(normalizedStudentQuery) || report.idEstudiante.includes(normalizedStudentQuery);
+            
+            const matchesCourse = activeOption === "especial"
+                ? normalizedCourseQuery === "" || (report as EspecialReport).curso.toLowerCase().includes(normalizedCourseQuery)
+                : normalizedCourseQuery === "" || (report as ComprensivaReport).gruposEstudio.some((g) => g.toLowerCase().includes(normalizedCourseQuery));
 
             const reportDate = parseDate(report.fecha);
-
             const matchesStartDate = !startDate || reportDate >= startDate;
             const matchesEndDate = !endDate || reportDate <= endDate;
 
-            return (
-                matchesStudent &&
-                matchesCourse &&
-                matchesStartDate &&
-                matchesEndDate
-            );
+            return matchesStudent && matchesCourse && matchesStartDate && matchesEndDate;
         });
     }, [currentReports, studentQuery, courseQuery, appliedStartMonth, appliedEndMonth, activeOption]);
 
     const totalItems = filteredReports.length;
 
-    // Memoized value for the paginated reports based on the current page and page size. 
-    // It calculates the start and end indices for slicing the filtered reports array to get only the reports that should be displayed on the current page.
     const paginatedReports = useMemo(() => {
         const start = (page - 1) * pageSize;
         const end = start + pageSize;
         return filteredReports.slice(start, end);
     }, [filteredReports, page, pageSize]);
 
-    // Whenever the student query, course query, or applied date range changes, it resets the page to 1 to ensure that the user sees the first page of results for the new filters.
-    useEffect(() => {
-        setPage(1);
-    }, [studentQuery, courseQuery, appliedStartMonth, appliedEndMonth]);
+    useEffect(() => { setPage(1); }, [studentQuery, courseQuery, appliedStartMonth, appliedEndMonth]);
 
-    // Whenever the active option changes between "especial" and "comprensiva", it resets all filters, search queries, and pagination to their initial states to provide a clean slate for the user to start filtering the new set of reports.
     useEffect(() => {
         setPage(1);
         setPageSize(10);
@@ -225,51 +141,77 @@ export default function ResultReports() {
         setCourseQuery("");
     }, [activeOption]);
 
-    // Function to handle the export of the document for the selected report.
-    const handleExportDocument = () => {
-        // Here would implement the logic to export the document for the selected report. For now, we will just log a message to the console.
-        console.log("Exportar documento para el reporte seleccionado");
+    // ===== LÓGICA DEL MODAL DE CORREO =====
+    const openEmailModal = (report: BaseReport) => {
+        setSelectedReport(report);
+        
+        const fechaEval = formatDateToSpanish(report.fecha);
+        const evaluadoresList = report.evaluadores;
+        
+        // Asignación segura de la terna para el formato
+        const prof1 = evaluadoresList[0] || "[Pendiente asignar]";
+        const prof2 = evaluadoresList[1] || "[Pendiente asignar]";
+        const prof3 = evaluadoresList[2] || "[Pendiente asignar]";
+
+        if (activeOption === "especial") {
+            const espReport = report as EspecialReport;
+            setEmailSubject(`Aprobación de terna de Evaluación Especial - ${espReport.nombre}`);
+            
+            // Plantilla extraída del Documento de Word
+            setEmailBody(`Estimada Mgtr. Alejandra,\nBuenas tardes. Deseo que se encuentre bien.\n\nQueremos solicitar amablemente la aprobación de la terna de evaluación de Ingeniería, por favor:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${espReport.nombre}\nCarné: ${espReport.idEstudiante}\nCarrera: Ingeniería en Sistemas\n\n--- TERNA EVALUADORA ---\nÁrea Informática: ${prof1}\nÁrea Sistemas: ${prof2}\nÁrea Gestión: ${prof3}\n\nAgradecidos de antemano por su apoyo, quedamos a la espera de su respuesta.\n\nCordialmente,\nCoordinación Académica`);
+        
+        } else {
+            const compReport = report as ComprensivaReport;
+            const grupos = compReport.gruposEstudio.join(", ");
+            
+            setEmailSubject(`Informe de Evaluación Comprensiva - ${compReport.nombre}`);
+            
+            // Plantilla adaptada para Comprensiva
+            setEmailBody(`Estimada Mgtr. Alejandra,\nBuenas tardes. Deseo que se encuentre bien.\n\nPor este medio compartimos los resultados correspondientes a la Evaluación Comprensiva de Ingeniería:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${compReport.nombre}\nCarné: ${compReport.idEstudiante}\nGrupos de Estudio: ${grupos}\nResultado Final: ${compReport.calificacion}\n\n--- COMITÉ EVALUADOR ---\nDocente 1: ${prof1}\nDocente 2: ${prof2}\n\nAgradecidos de antemano por su apoyo y gestión.\n\nCordialmente,\nCoordinación Académica`);
+        }
+        
+        setIsModalOpen(true);
     };
+
+    const handleSendEmail = async () => {
+        setIsModalOpen(false);
+        // Toast temporal de "Enviando" para que el usuario sepa que está procesando
+        setToast({ show: true, message: `Enviando correo al servidor...`, type: 'info' });
+
+        const result = await sendReportEmail({
+            subject: emailSubject,
+            body: emailBody,
+            to: "allanperezajanel@gmail.com" // <- Correo de prueba
+        });
+
+        if (result.success) {
+            setToast({ show: true, message: `Correo enviado exitosamente para ${selectedReport?.nombre}`, type: 'success' });
+        } else {
+            // AQUÍ mostramos el error exacto que nos devolvió SendGrid/Django
+            setToast({ show: true, message: `Falló: ${result.errorMessage}`, type: 'error' });
+        }
+        setTimeout(() => setToast(prev => ({ ...prev, show: false })), 4000);
+    };
+
+    if (isLoading) return <DashboardLayout><div className="flex h-full items-center justify-center text-gray-500">Cargando reportes...</div></DashboardLayout>;
 
     return (
         <>
             <DashboardLayout>
-
                 <div className="result-reports-general-content">
-                    {/* <header className="result-reports-header">
-                            <h1>Resultados e informes</h1>
-                            <div className="system-administrator">
-                                <h2>Administrador del sistema</h2>
-                                <div className="icon">
-                                    <svg stroke="currentColor" fill="none" strokeWidth="0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                </div>
-                            </div>
-                        </header> */}
-
                     <div className="options-evaluation">
                         <div className="evaluation-switch">
                             <div className={`switch-thumb ${activeOption === "comprensiva" ? "right" : "left"}`} />
-
-                            <button
-                                type="button"
-                                className={`switch-option ${activeOption === "especial" ? "active" : ""}`}
-                                onClick={() => setActiveOption("especial")}
-                            >
+                            <button type="button" className={`switch-option ${activeOption === "especial" ? "active" : ""}`} onClick={() => setActiveOption("especial")}>
                                 Evaluación Especial
                             </button>
-
-                            <button
-                                type="button"
-                                className={`switch-option ${activeOption === "comprensiva" ? "active" : ""}`}
-                                onClick={() => setActiveOption("comprensiva")}
-                            >
+                            <button type="button" className={`switch-option ${activeOption === "comprensiva" ? "active" : ""}`} onClick={() => setActiveOption("comprensiva")}>
                                 Evaluación Comprensiva
                             </button>
                         </div>
                     </div>
 
                     <div className="filters-searchers">
-
                         <div className="searcher">
                             <h1>IDENTIDAD ESTUDIANTIL</h1>
                             <div className="input-search-icon">
@@ -291,34 +233,19 @@ export default function ResultReports() {
                         <div className="date-section">
                             <div className="searcher">
                                 <h1>RANGO DE FECHAS DE EVALUACIÓN</h1>
-
                                 <div className="input-search-icon date-range-box">
                                     <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 1024 1024" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M880 184H712v-64c0-4.4-3.6-8-8-8h-56c-4.4 0-8 3.6-8 8v64H384v-64c0-4.4-3.6-8-8-8h-56c-4.4 0-8 3.6-8 8v64H144c-17.7 0-32 14.3-32 32v664c0 17.7 14.3 32 32 32h736c17.7 0 32-14.3 32-32V216c0-17.7-14.3-32-32-32zm-40 656H184V460h656v380zM184 392V256h128v48c0 4.4 3.6 8 8 8h56c4.4 0 8-3.6 8-8v-48h256v48c0 4.4 3.6 8 8 8h56c4.4 0 8-3.6 8-8v-48h128v136H184z"></path></svg>
-
                                     <div className="date-range-content">
                                         <p>{rangeText}</p>
-
                                         <div className="hidden-date-inputs">
-                                            <input
-                                                type="month"
-                                                value={startMonth}
-                                                onChange={(e) => setStartMonth(e.target.value)}
-                                            />
-                                            <input
-                                                type="month"
-                                                value={endMonth}
-                                                onChange={(e) => setEndMonth(e.target.value)}
-                                            />
+                                            <input type="month" value={startMonth} onChange={(e) => setStartMonth(e.target.value)} />
+                                            <input type="month" value={endMonth} onChange={(e) => setEndMonth(e.target.value)} />
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <button className="apply-filters-btn" onClick={handleApplyFilters}>
-                                Aplicar filtros
-                            </button>
+                            <button className="apply-filters-btn" onClick={handleApplyFilters}>Aplicar filtros</button>
                         </div>
-
                     </div>
 
                     <div className="data-table">
@@ -336,11 +263,7 @@ export default function ResultReports() {
                             </thead>
                             <tbody>
                                 {paginatedReports.length === 0 && (
-                                    <tr>
-                                        <td colSpan={8} className="no-results">
-                                            No se encontraron resultados para los filtros aplicados.
-                                        </td>
-                                    </tr>
+                                    <tr><td colSpan={7} className="text-center p-4 text-gray-500 font-semibold">No se encontraron resultados en la base de datos.</td></tr>
                                 )}
                                 {paginatedReports.map((report) => (
                                     <tr key={report.id}>
@@ -352,33 +275,36 @@ export default function ResultReports() {
                                             ) : (
                                                 <div className="report-subject-list">
                                                     {(report as ComprensivaReport).gruposEstudio.map((grupo, index) => (
-                                                        <p key={index}>{grupo}</p>
+                                                        <p key={index} className="text-xs">{grupo}</p>
                                                     ))}
                                                 </div>
                                             )}
                                         </td>
                                         <td className="report-date">{formatDateToSpanish(report.fecha)}</td>
                                         <td>
-                                            <p className={`status-badge ${report.calificacion.toLowerCase().replace(/\s+/g, "-")}`}>
+                                            {/* Ajuste de colores dinámicos basado en la calificación */}
+                                            <p className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                                                report.calificacion === 'Aprobado' ? 'bg-green-100 text-green-700' :
+                                                report.calificacion === 'No Aprobado' ? 'bg-red-100 text-red-700' :
+                                                report.calificacion === 'No se Presento' ? 'bg-yellow-100 text-yellow-700' :
+                                                'bg-gray-100 text-gray-700'
+                                            }`}>
                                                 {report.calificacion}
                                             </p>
                                         </td>
                                         <td>
                                             <div className="evaluadores-list">
-                                                {report.evaluadores.map((evaluador, index) => (
-                                                    <p key={index}>{evaluador}</p>
-                                                ))}
+                                                {report.evaluadores.length > 0 ? report.evaluadores.map((ev, i) => <p key={i} className="text-xs">{ev}</p>) : <p className="text-xs text-gray-400">Sin evaluadores</p>}
                                             </div>
                                         </td>
                                         <td>
-                                            <button className="export-btn" onClick={handleExportDocument}>
+                                            <button className="export-btn" onClick={() => openEmailModal(report)}>
                                                 <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><g><path fill="none" d="M0 0h24v24H0z"></path><path d="M22 20.007a1 1 0 0 1-.992.993H2.992A.993.993 0 0 1 2 20.007V19h18V7.3l-8 7.2-10-9V4a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v16.007zM4.434 5L12 11.81 19.566 5H4.434zM0 15h8v2H0v-2zm0-5h5v2H0v-2z"></path></g></svg>
                                                 Enviar correo
                                             </button>
                                         </td>
                                     </tr>
                                 ))}
-
                             </tbody>
                         </table>
                     </div>
@@ -394,16 +320,78 @@ export default function ResultReports() {
                                     setPage(newPage);
                                 }}
                                 onPageSizeChange={(size) => {
-                                    const safeSize = size > 0 ? size : 10;
-                                    setPageSize(safeSize);
+                                    setPageSize(size > 0 ? size : 10);
                                     setPage(1);
                                 }}
                             />
                         )}
                     </div>
-
                 </div>
 
+                {/* ===== MODAL DE ENVÍO DE CORREO ===== */}
+                {isModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col">
+                            {/* Header */}
+                            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-blue-50">
+                                <div>
+                                    <h3 className="text-lg font-bold text-blue-900">Redactar Correo</h3>
+                                    <p className="text-xs text-blue-600 font-medium mt-1">Previsualización del correo a enviar</p>
+                                </div>
+                                <button onClick={() => setIsModalOpen(false)} className="p-1 hover:bg-blue-100 rounded-full transition-colors text-blue-800">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            
+                            {/* Body */}
+                            <div className="p-6 flex flex-col gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Asunto del Correo</label>
+                                    <input 
+                                        type="text" 
+                                        value={emailSubject}
+                                        onChange={(e) => setEmailSubject(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Cuerpo del Mensaje</label>
+                                    <textarea 
+                                        rows={16}
+                                        value={emailBody}
+                                        onChange={(e) => setEmailBody(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg p-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                                <button 
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    onClick={handleSendEmail}
+                                    className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+                                    Enviar Correo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                {/* TOAST DE CONFIRMACIÓN */}
+                <Toast 
+                    show={toast.show} 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(prev => ({ ...prev, show: false }))} 
+                />
             </DashboardLayout>
         </>
     );

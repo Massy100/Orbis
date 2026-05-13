@@ -12,7 +12,7 @@ export const getSystemUsers = async () => {
   }
 };
 
-export const toggleUserStatus = async (userId: number) => {
+export const toggleUserStatus = async (userId) => {
   try {
     const response = await fetch(`${API_URL}/system-users/${userId}/toggle-active/`, {
       method: 'PATCH',
