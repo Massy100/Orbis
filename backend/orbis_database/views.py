@@ -287,19 +287,191 @@ class TeacherScheduleDetailView(APIView):
         })
 
 class StudentViewSet(viewsets.ModelViewSet):
-    queryset = Student.objects.select_related('faculty', 'career').all()
+    queryset = Student.objects.select_related(
+        'faculty',
+        'career'
+    ).all()
+
     serializer_class = StudentSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
+
     filterset_fields = ['isactive', 'faculty', 'career']
     search_fields = ['name', 'est']
     ordering_fields = ['name']
 
+    @action(detail=False, methods=['get'])
+    def search_by_est(self, request):
+        est = request.query_params.get("est")
+
+        if not est:
+            return Response(
+                {"error": "Debe proporcionar un carnet"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            student = Student.objects.get(est=est)
+
+            return Response({
+                "id": student.id,
+                "name": student.name,
+                "est": student.est
+            })
+
+        except Student.DoesNotExist:
+            return Response(
+                {"error": "Estudiante no encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 class StudyGroupViewSet(viewsets.ModelViewSet):
-    queryset = StudyGroup.objects.all()
     serializer_class = StudyGroupSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['approvedgroup']
     search_fields = ['group']
+    def get_queryset(self):
+        return StudyGroup.objects.filter(isactive=True)
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+
+        teachers = request.data.get('teachers', [])
+        students = request.data.get('students', [])
+
+        if len(teachers) != 3:
+            return Response(
+                {'error': 'El grupo debe tener exactamente 3 tutores.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if len(students) < 1 or len(students) > 6:
+            return Response(
+                {'error': 'El grupo debe tener entre 1 y 6 estudiantes.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        group = StudyGroup.objects.create(
+            group=request.data.get('group')
+        )
+
+        for teacher_data in teachers:
+
+            StudyGroupTeacher.objects.create(
+                studygroup=group,
+                teacher_id=teacher_data['teacher'],
+                hasaccepted=teacher_data['hasaccepted']
+            )
+
+        for student_data in students:
+
+            StudyGroupStudent.objects.create(
+                studygroup=group,
+                student_id=student_data['student'],
+                haspayment=student_data['haspayment']
+            )
+
+        all_teachers_accepted = all(
+            teacher['hasaccepted']
+            for teacher in teachers
+        )
+
+        all_students_paid = all(
+            student['haspayment']
+            for student in students
+        )
+
+        approved = (
+            all_teachers_accepted and
+            all_students_paid
+        )
+
+        group.approvedgroup = approved
+        group.save()
+
+        serializer = self.get_serializer(group)
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        group = self.get_object()
+
+        teachers = request.data.get("teachers", [])
+        students = request.data.get("students", [])
+
+        if len(teachers) != 3:
+            return Response(
+                {"error": "El grupo debe tener exactamente 3 tutores."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if len(students) < 1 or len(students) > 6:
+            return Response(
+                {"error": "El grupo debe tener entre 1 y 6 estudiantes."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        group.group = request.data.get("group")
+        
+        StudyGroupTeacher.objects.filter(
+            studygroup=group
+        ).delete()
+
+        StudyGroupStudent.objects.filter(
+            studygroup=group
+        ).delete()
+
+        for teacher_data in teachers:
+            StudyGroupTeacher.objects.create(
+                studygroup=group,
+                teacher_id=teacher_data["teacher"],
+                hasaccepted=teacher_data["hasaccepted"]
+            )
+
+        for student_data in students:
+            StudyGroupStudent.objects.create(
+                studygroup=group,
+                student_id=student_data["student"],
+                haspayment=student_data["haspayment"]
+            )
+
+        all_teachers_accepted = all(
+            teacher["hasaccepted"]
+            for teacher in teachers
+        )
+
+        all_students_paid = all(
+            student["haspayment"]
+            for student in students
+        )
+
+        group.approvedgroup = (
+            all_teachers_accepted and all_students_paid
+        )
+
+        group.save()
+
+        serializer = self.get_serializer(group)
+
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"])
+    def soft_delete(self, request, pk=None):
+        group = self.get_object()
+        group.isactive = False
+        group.save()
+
+        return Response(
+            {"message": "Grupo desactivado correctamente"},
+            status=status.HTTP_200_OK
+        )
 
 class StudyGroupStudentViewSet(viewsets.ModelViewSet):
     queryset = StudyGroupStudent.objects.select_related('studygroup', 'student').all()

@@ -1,13 +1,13 @@
-import { EstudianteGrupo } from "../app/types";
+import { EstudianteGrupo, SelectedTeacher } from "../app/types";
 
 export const canCreateGroup = (
   groupName: string,
-  tutors: string[],
+  tutors: (SelectedTeacher | null)[],
   students: EstudianteGrupo[]
 ) => {
   return (
     groupName.trim() !== "" &&
-    tutors.every(t => t !== "No Seleccionado") &&
+    tutors.every(t => t !== null) &&
     students.length >= 1 &&
     students.length <= 6
   );

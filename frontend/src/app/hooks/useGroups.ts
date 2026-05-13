@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { StudyGroup, GroupDetail, GroupStatus } from "../types";
 import { groupsService } from "../services/groupService";
-import { isGroupApproved } from "@/src/lib/groupRules";
 
 export const useGroups = () => {
 
@@ -19,33 +18,13 @@ export const useGroups = () => {
         return detail;
     };
 
-    const addGroup = async (group: GroupDetail) => {
-        const status: GroupStatus = isGroupApproved(
-            group.estudiantes,
-            group.tutores
-        ) ? "Aprobado" : "Pendiente";
-
-        const finalGroup = {
-            ...group,
-            estado: status
-        };
-
-        await groupsService.create(finalGroup);
+    const addGroup = async (group: any) => {
+        await groupsService.create(group);
         await loadGroups();
     };
 
-    const updateGroup = async (group: GroupDetail) => {
-        const status: GroupStatus = isGroupApproved(
-            group.estudiantes,
-            group.tutores
-        ) ? "Aprobado" : "Pendiente";
-
-        const finalGroup = {
-            ...group,
-            estado: status
-        };
-
-        await groupsService.update(finalGroup);
+    const updateGroup = async (id: number, group: any) => {
+        await groupsService.update(id, group);
         await loadGroups();
     };
 
@@ -55,8 +34,23 @@ export const useGroups = () => {
     };
 
     const filteredGroups = useMemo(() => {
-        if (filter === "Todos") return groups;
-        return groups.filter(g => g.estado === filter);
+        if (filter === "Todos") {
+            return groups;
+        }
+
+        if (filter === "Aprobado") {
+            return groups.filter(
+                (g) => g.approvedgroup === true
+            );
+        }
+
+        if (filter === "Pendiente") {
+            return groups.filter(
+                (g) => g.approvedgroup === false
+            );
+        }
+
+        return groups;
     }, [groups, filter]);
 
     useEffect(() => {
@@ -70,6 +64,7 @@ export const useGroups = () => {
         addGroup,
         updateGroup,
         deleteGroup,
+        loadGroups,
         getGroupDetail
     };
 };

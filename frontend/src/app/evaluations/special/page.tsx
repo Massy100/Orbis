@@ -9,7 +9,7 @@ import AvailabilityPicker from "../../components/AvailabilityPicker";
 import Pagination from "../../components/pagination";
 import { EvaluationRow } from "../../components/evaluationRow";
 import { useEvaluations } from "../../hooks/useEvaluations";
-import { Evaluation } from "../../types";
+import { Evaluation, SelectedTeacher } from "../../types";
 import { mockData, CURSOS_DISPONIBLES } from "@/src/app/data/special-evaluation-mocks";
 
 import "./special-evaluation.css";
@@ -35,7 +35,7 @@ export default function EvaluacionEspecialPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form, setForm] = useState({ carnet: "", nombre: "", curso: "", tutor: "No Seleccionado" });
+  const [form, setForm] = useState({ carnet: "", nombre: "", curso: "", tutor: ""});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showAvailability, setShowAvailability] = useState(false);
@@ -58,15 +58,16 @@ export default function EvaluacionEspecialPage() {
   // --------------------- Handlers --------------------------
 
   const handleOpenEdit = (item: Evaluation) => {
-    setForm({
-      carnet: item.carnet,
-      nombre: item.nombre,
-      curso: item.curso,
-      tutor: item.tutor.nombre
-    });
-    setEditingId(item.id);
-    setIsModalOpen(true);
-  };
+  setForm({
+    carnet: item.carnet,
+    nombre: item.nombre,
+    curso: item.curso,
+    tutor: item.tutor.nombre
+  });
+
+  setEditingId(item.id);
+  setIsModalOpen(true);
+};
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,14 +101,32 @@ export default function EvaluacionEspecialPage() {
       tutor: item.tutor.nombre
     });
 
-    setEditingId(null); // importante: es nuevo, no edición
+    setEditingId(null);
     setIsModalOpen(true);
   };
 
   return (
     <DashboardLayout>
       <div className="eval-container">
+        <div className="eval-header">
+          <button
+            className="btn-add"
+            onClick={() => {
+              setForm({
+                carnet: "",
+                nombre: "",
+                curso: "",
+                tutor: ""
+              });
 
+              setEditingId(null);
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus size={18} />
+            Agregar Evaluación
+          </button>
+        </div>
         <div className="table-wrapper">
           <table className="eval-table">
 
@@ -240,11 +259,15 @@ export default function EvaluacionEspecialPage() {
 
         {showAvailability && (
           <AvailabilityPicker
-            maxSelections={1} 
+            maxSelections={1}
             onCancel={() => setShowAvailability(false)}
-            onSave={(names) => { 
-              setForm({ ...form, tutor: names[0] }); 
-              setShowAvailability(false); 
+            onSave={(teachers) => {
+              setForm({
+                ...form,
+                tutor: teachers[0]?.name ?? ""
+              });
+
+              setShowAvailability(false);
             }}
           />
         )}

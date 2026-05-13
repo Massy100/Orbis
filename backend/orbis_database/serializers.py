@@ -119,9 +119,38 @@ class StudentSerializer(serializers.ModelSerializer):
 # StudyGroup 
 
 class StudyGroupSerializer(serializers.ModelSerializer):
+
+    teachers = serializers.SerializerMethodField()
+    students = serializers.SerializerMethodField()
+
     class Meta:
-        model  = StudyGroup
+        model = StudyGroup
         fields = '__all__'
+
+    def get_teachers(self, obj):
+        return [
+            {
+                "id": item.teacher.id,
+                "name": item.teacher.name,
+                "hasaccepted": item.hasaccepted,
+            }
+            for item in StudyGroupTeacher.objects.filter(
+                studygroup=obj
+            ).select_related('teacher')
+        ]
+
+    def get_students(self, obj):
+        return [
+            {
+                "id": item.student.id,
+                "name": item.student.name,
+                "est": item.student.est,
+                "haspayment": item.haspayment,
+            }
+            for item in StudyGroupStudent.objects.filter(
+                studygroup=obj
+            ).select_related('student')
+        ]
 
 
 class StudyGroupStudentSerializer(serializers.ModelSerializer):

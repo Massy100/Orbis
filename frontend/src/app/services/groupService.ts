@@ -1,31 +1,57 @@
-import { GroupDetail, StudyGroup } from "../types";
+import GLOBAL_API_URL from './global-api-url';
 
-let mockDB: GroupDetail[] = [];
+const API = GLOBAL_API_URL;
 
 export const groupsService = {
-    async getAll(): Promise<StudyGroup[]> {
-        return mockDB.map(g => ({
-            id: g.id,
-            nombre: g.nombre,
-            estado: g.estado
-        }));
-    },
 
-    async getById(id: number): Promise<GroupDetail | null> {
-        return mockDB.find(g => g.id === id) || null;
-    },
+  async getAll() {
+    const res = await fetch(`${API}studygroups/`);
+    return res.json();
+  },
 
-    async create(group: GroupDetail): Promise<void> {
-        mockDB.unshift(group);
-    },
+  async getById(id: number) {
+    const res = await fetch(`${API}studygroups/${id}/`);
+    if (!res.ok) return null;
+    return res.json();
+  },
 
-    async update(group: GroupDetail): Promise<void> {
-        mockDB = mockDB.map(g =>
-            g.id === group.id ? group : g
-        );
-    },
+  async create(group: any) {
+    const res = await fetch(`${API}studygroups/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(group),
+    });
 
-    async remove(id: number): Promise<void> {
-        mockDB = mockDB.filter(g => g.id !== id);
+    if (!res.ok) {
+      const error = await res.json();
+      throw error;
     }
+
+    return res.json();
+  },
+
+  async update(id: number, group: any) {
+    const res = await fetch(`${API}studygroups/${id}/`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(group),
+    });
+
+    if (!res.ok) throw await res.json();
+    return res.json();
+    },
+
+  async remove(id: number) {
+    const res = await fetch(`${API}studygroups/${id}/soft_delete/`, {
+      method: 'POST',
+    });
+
+    if (!res.ok) {
+      throw new Error('Error en soft delete');
+    }
+
+    return res.json();
+  }
 };
