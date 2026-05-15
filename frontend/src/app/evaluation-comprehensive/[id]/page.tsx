@@ -8,9 +8,6 @@ import Toast from "../../components/toast";
 import AvailabilityPicker from "../../components/AvailabilityPicker";
 import { availabilityService } from "../../services/availability-service";
 
-
-
-
 type AreaType = "informatica" | "sistemas" | "gestion";
 
 type Evaluator = {
@@ -577,16 +574,28 @@ export default function EvaluationComprehensivePage() {
                         filterOptions={{ mode: 'group-evaluator', ...(studygroupId !== null && { studygroupId }) }}
                         maxSelections={3}
                         onCancel={() => setShowAvailability(false)}
-                        onSave={(names) => {
+                        onSave={(teachers) => {
                             setEvaluadoresComprensiva({
-                                informatica: names[0]
-                                    ? [{ ...evaluadoresComprensivaBase.informatica[0], nombre: names[0] }]
+                                informatica: teachers[0]
+                                    ? [{
+                                          ...evaluadoresComprensivaBase.informatica[0],
+                                          id: teachers[0].id,
+                                          nombre: teachers[0].name,
+                                      }]
                                     : [],
-                                sistemas: names[1]
-                                    ? [{ ...evaluadoresComprensivaBase.sistemas[0], nombre: names[1] }]
+                                sistemas: teachers[1]
+                                    ? [{
+                                          ...evaluadoresComprensivaBase.sistemas[0],
+                                          id: teachers[1].id,
+                                          nombre: teachers[1].name,
+                                      }]
                                     : [],
-                                gestion: names[2]
-                                    ? [{ ...evaluadoresComprensivaBase.gestion[0], nombre: names[2] }]
+                                gestion: teachers[2]
+                                    ? [{
+                                          ...evaluadoresComprensivaBase.gestion[0],
+                                          id: teachers[2].id,
+                                          nombre: teachers[2].name,
+                                      }]
                                     : [],
                             });
 

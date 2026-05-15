@@ -24,17 +24,6 @@ interface AvailabilityEvent {
   fin: number;
 }
 
-/**
- * Modes that drive filtering logic:
- *
- * FLUJO 1 — Privados:
- *   'group-mentor'    → Grupos: docentes con evaluationcount < 15
- *   'group-evaluator' → Evaluaciones privadas: evaluationcount < 15 + excluye studygroup-teachers
- *
- * FLUJO 2 — Terna:
- *   'tutorial-tutor'     → Asignación de tutor: docentes con evaluationcount < 15
- *   'tutorial-evaluator' → Evaluaciones terna: evaluationcount < 15 + excluye course-tutorials
- */
 type AvailabilityMode =
   | 'group-mentor'
   | 'group-evaluator'
@@ -88,14 +77,8 @@ export default function AvailabilityPicker({
     ])
   );
 
-  // ─── Labels ────────────────────────────────────────────────────────────────
+  // Labels 
 
-  /**
-   * Returns the confirm-button label based on mode and maxSelections.
-   *
-   * group-mentor / tutorial-tutor  → singular/plural tutor label
-   * group-evaluator / tutorial-evaluator → evaluator label
-   */
   const getLabel = () => {
     const { mode } = filterOptions;
     if (mode === 'group-evaluator' || mode === 'tutorial-evaluator') {
@@ -105,15 +88,6 @@ export default function AvailabilityPicker({
     return maxSelections > 1 ? 'Asignar Tutores' : 'Asignar Catedrático';
   };
 
-  /**
-   * Returns the picker title based on mode.
-   *
-   * group-mentor       → Disponibilidad — Mentores (Privados)
-   * group-evaluator    → Disponibilidad — Evaluadores (Privados)
-   * tutorial-tutor     → Disponibilidad — Tutores (Terna)
-   * tutorial-evaluator → Disponibilidad — Evaluadores (Terna)
-   * (none)             → Disponibilidad de Catedráticos / Tutores
-   */
   const getTitle = () => {
     const { mode } = filterOptions;
     switch (mode) {
@@ -126,7 +100,7 @@ export default function AvailabilityPicker({
     }
   };
 
-  // ─── Handlers ──────────────────────────────────────────────────────────────
+  // Handlers 
 
   const handleTeacherChange = (index: number, newId: string) => {
     const updated = [...selectedTeacherIds];
@@ -173,7 +147,7 @@ export default function AvailabilityPicker({
     return d;
   });
 
-  // ─── Loading ───────────────────────────────────────────────────────────────
+  // Loading 
 
   if (loading) {
     return (
@@ -185,7 +159,7 @@ export default function AvailabilityPicker({
     );
   }
 
-  // ─── Render ────────────────────────────────────────────────────────────────
+  // Render 
 
   return (
     <div className="availability-overlay">
