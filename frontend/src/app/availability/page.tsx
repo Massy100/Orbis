@@ -24,6 +24,18 @@ const PALETAS = [
   { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' }, // NARANJA (Slot 3)
 ];
 
+const DAY_NAME_MAP: Record<string, number> = {
+  domingo: 0, lunes: 1, martes: 2, miercoles: 3, miércoles: 3,
+  jueves: 4, viernes: 5, sabado: 6, sábado: 6,
+};
+
+const parseDay = (day: string | number): number => {
+  if (typeof day === 'number') return day === 7 ? 0 : day;
+  const num = parseInt(day, 10);
+  if (!isNaN(num)) return num === 7 ? 0 : num;
+  return DAY_NAME_MAP[day?.toLowerCase()] ?? -1;
+};
+
 export default function AvailabilityPage() {
   const { teachers, loading } = useAvailability();
 
@@ -35,13 +47,12 @@ export default function AvailabilityPage() {
   const [hoveredEvent, setHoveredEvent]     = useState<string | null>(null);
   const [activeEvent, setActiveEvent]       = useState<string | null>(null);
 
-  // PUENTE DIRECTO A LA BASE DE DATOS
+  // accesspoint to database for events, teachers and careers
   useEffect(() => {
     const fetchDirectEvents = async () => {
       try {
         const url = 'http://localhost:8001/api';
         
-        // Consultamos horarios, docentes y carreras simultáneamente
         const [tpRes, pRes, tRes, cRes] = await Promise.all([
           fetch(`${url}/teachers-periods/`),
           fetch(`${url}/periods/`),
@@ -54,19 +65,16 @@ export default function AvailabilityPage() {
         const tpData = await tpRes.json();
         const pData = await pRes.json();
         
-        // Manejo seguro por si Django devuelve arrays directos o paginación (.results)
         const tRaw = tRes.ok ? await tRes.json() : [];
         const cRaw = cRes.ok ? await cRes.json() : [];
         const tData = Array.isArray(tRaw) ? tRaw : (tRaw.results || []);
         const cData = Array.isArray(cRaw) ? cRaw : (cRaw.results || []);
 
-        // 1. Mapear Carreras y limpiar texto (Ej. "Ingeniería en Sistemas" -> "Sistemas")
         const careersMap: Record<string, string> = {};
         cData.forEach((c: any) => {
           careersMap[c.id] = c.name.replace('Ingeniería en ', '').replace('Ingeniería ', '');
         });
 
-        // 2. Asignar la carrera limpia a cada docente
         const areasMap: Record<string, string> = {};
         tData.forEach((t: any) => {
           const careerId = typeof t.career === 'object' ? t.career?.id : t.career;
@@ -74,7 +82,6 @@ export default function AvailabilityPage() {
         });
         setTeacherAreas(areasMap);
 
-        // 3. Mapear Horarios
         const periodsMap: Record<string, any> = {};
         pData.forEach((p: any) => {
           periodsMap[p.id] = p;
@@ -85,7 +92,7 @@ export default function AvailabilityPage() {
           if (!period) return null;
           return {
             docenteId: String(tp.teacher),
-            diaSemana: Number(period.day),
+            diaSemana: parseDay(period.day),
             inicio: period.starttime,
             fin: period.endtime
           };
@@ -99,12 +106,6 @@ export default function AvailabilityPage() {
 
     fetchDirectEvents();
   }, []);
-
-  useEffect(() => {
-    if (teachers.length) {
-      setSlots(teachers.slice(0, 3).map(t => String(t.id)));
-    }
-  }, [teachers]);
 
   const nombresMeses      = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];

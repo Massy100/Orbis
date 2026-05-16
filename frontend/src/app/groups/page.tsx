@@ -941,6 +941,7 @@ export default function GroupsPage() {
 
                {showAvailability && (
                     <AvailabilityPicker
+                        filterOptions={{mode: 'group-evaluator'}}
                         maxSelections={3}
                         onCancel={() => setShowAvailability(false)}
                         onSave={(teachers) => {

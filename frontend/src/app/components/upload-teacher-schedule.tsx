@@ -57,7 +57,7 @@ export default function UploadTeacherSchedule({
                 </div>
 
                 <h4 className="upload-schedule-title">Subir horario</h4>
-                <p className="upload-schedule-subtitle">Formato permitido: Excel, CSV</p>
+                <p className="upload-schedule-subtitle">Formato permitido: Excel (.xls, .xlsx)</p>
 
                 <button
                     type="button"

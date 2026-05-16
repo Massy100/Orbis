@@ -25,6 +25,8 @@ router.register(r'speciality-teachers',  views.SpecialityTeacherViewSet,basename
 router.register(r'students',           views.StudentViewSet,          basename='student')
 router.register(r'studygroups',        views.StudyGroupViewSet,       basename='studygroup')
 router.register(r'studygroup-teachers',views.StudyGroupTeacherViewSet,basename='studygroup-teacher')
+router.register(r'studygroup-students',views.StudyGroupStudentViewSet,basename='studygroup-student')
+router.register(r'student-courses',   views.CourseTutorialViewSet,    basename='course-tutorial')
 
 # Routes for Evaluation
 router.register(r'evaluations',         views.EvaluationViewSet,       basename='evaluation')

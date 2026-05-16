@@ -259,7 +259,8 @@ export default function EvaluacionEspecialPage() {
 
         {showAvailability && (
           <AvailabilityPicker
-            maxSelections={1}
+            filterOptions={{mode: 'tutorial-tutor'}}
+            maxSelections={1} 
             onCancel={() => setShowAvailability(false)}
             onSave={(teachers) => {
               setForm({

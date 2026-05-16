@@ -24,10 +24,22 @@ interface AvailabilityEvent {
   fin: number;
 }
 
+type AvailabilityMode =
+  | 'group-mentor'
+  | 'group-evaluator'
+  | 'tutorial-tutor'
+  | 'tutorial-evaluator';
+
+interface FilterOptions {
+  mode?: AvailabilityMode;
+  studygroupId?: number;
+}
+
 interface AvailabilityPickerProps {
   onSave: (teachers: SelectedTeacher[]) => void;
   onCancel: () => void;
   maxSelections?: number;
+  filterOptions?: FilterOptions;
 }
 
 const PALETAS = [
@@ -38,8 +50,14 @@ const PALETAS = [
   { bg: '#fff1f2', border: '#f43f5e', text: '#9f1239' },
 ];
 
-export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1 }: AvailabilityPickerProps) {
-  const { teachers, events, loading } = useAvailability();
+export default function AvailabilityPicker({
+  onSave,
+  onCancel,
+  maxSelections = 1,
+  filterOptions = {},
+}: AvailabilityPickerProps) {
+
+  const { teachers, events, loading } = useAvailability([], filterOptions);
 
   const [selectedTeacherIds, setSelectedTeacherIds] = useState<string[]>(
     Array(maxSelections).fill('')
@@ -52,7 +70,6 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const horasDelDia       = ['7am', '8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm', '7pm', '8pm', '9pm'];
 
-  // Genera config de colores por docente dinámicamente
   const configDocentes: Record<string, { nombre: string; theme: typeof PALETAS[0] }> = Object.fromEntries(
     teachers.map((t: Teacher, i: number) => [
       String(t.id),
@@ -60,7 +77,30 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
     ])
   );
 
-  // ─── Handlers ──────────────────────────────────────────────────────────────
+  // Labels 
+
+  const getLabel = () => {
+    const { mode } = filterOptions;
+    if (mode === 'group-evaluator' || mode === 'tutorial-evaluator') {
+      return maxSelections > 1 ? 'Asignar Evaluadores' : 'Asignar Evaluador';
+    }
+    // group-mentor, tutorial-tutor, or no mode
+    return maxSelections > 1 ? 'Asignar Tutores' : 'Asignar Catedrático';
+  };
+
+  const getTitle = () => {
+    const { mode } = filterOptions;
+    switch (mode) {
+      case 'group-mentor':       return 'Disponibilidad — Mentores (Privados)';
+      case 'group-evaluator':    return 'Disponibilidad — Evaluadores (Privados)';
+      case 'tutorial-tutor':     return 'Disponibilidad — Tutores (Terna)';
+      case 'tutorial-evaluator': return 'Disponibilidad — Evaluadores (Terna)';
+      default:
+        return maxSelections > 1 ? 'Disponibilidad de Tutores' : 'Disponibilidad de Catedráticos';
+    }
+  };
+
+  // Handlers 
 
   const handleTeacherChange = (index: number, newId: string) => {
     const updated = [...selectedTeacherIds];
@@ -99,7 +139,6 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
     setCurrentDate(d);
   };
 
-  // Días de la semana actual
   const inicioDeSemana = new Date(currentDate);
   inicioDeSemana.setDate(currentDate.getDate() - currentDate.getDay());
   const diasDeLaSemana = Array.from({ length: 7 }).map((_, i) => {
@@ -108,7 +147,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
     return d;
   });
 
-  // ─── Loading ───────────────────────────────────────────────────────────────
+  // Loading 
 
   if (loading) {
     return (
@@ -120,7 +159,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
     );
   }
 
-  // ─── Render ────────────────────────────────────────────────────────────────
+  // Render 
 
   return (
     <div className="availability-overlay">
@@ -131,7 +170,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
             <button className="btn-close-picker" onClick={onCancel}>
               <X size={20} />
             </button>
-            <h2>{maxSelections > 1 ? 'Disponibilidad de Tutores' : 'Disponibilidad de Catedráticos'}</h2>
+            <h2>{getTitle()}</h2>
           </div>
 
           <div className="header-actions">
@@ -158,7 +197,6 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                       <option
                         key={t.id}
                         value={String(t.id)}
-                        // Evita seleccionar el mismo docente dos veces
                         disabled={selectedTeacherIds.includes(String(t.id)) && String(t.id) !== id}
                       >
                         {t.name}
@@ -171,7 +209,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
 
             <button className="btn-confirm-main" onClick={handleConfirm}>
               <CheckCircle size={18} />
-              {maxSelections > 1 ? 'Asignar Tutores' : 'Asignar Catedrático'}
+              {getLabel()}
             </button>
           </div>
         </div>
@@ -190,7 +228,6 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
           <div className="nav-right">
             <span className="badge">Vista Semanal</span>
           </div>
-
         </div>
 
         {/* CALENDARIO */}
@@ -213,7 +250,6 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                 const esHoy =
                   diaObj.toDateString() === new Date().toDateString();
 
-                // Eventos del día que pertenecen a los docentes seleccionados
                 const eventosDia = events.filter((e: AvailabilityEvent) =>
                   e.diaSemana === diaObj.getDay() &&
                   selectedTeacherIds.includes(e.docenteId)
@@ -221,7 +257,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
 
                 return (
                   <div key={index} className="day-column">
-                    
+
                     {/* HEADER DÍA */}
                     <div className={`day-header ${esHoy ? 'today' : 'normal'}`}>
                       <span>{nombresDiasCortos[diaObj.getDay()]}</span>
@@ -237,19 +273,16 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                       ))}
 
                       {eventosDia.map((evento: AvailabilityEvent, idx: number) => {
-                        const config   = configDocentes[evento.docenteId];
+                        const config = configDocentes[evento.docenteId];
                         if (!config) return null;
 
-                        const solapados = eventosDia.filter(e => 
+                        const solapados = eventosDia.filter(e =>
                           (evento.inicio < e.fin && evento.fin > e.inicio)
-                        );                        
+                        );
                         const numSolapados = solapados.length;
                         const orden = solapados.findIndex(e => e.docenteId === evento.docenteId);
                         const offsetX = 8;
                         const offsetY = 8;
-                        
-                        const width = 100 / numSolapados;
-                        const left = width * orden;
 
                         const eventKey = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
                         const isLifted = hoveredEvent === eventKey || activeEvent === eventKey;
@@ -290,7 +323,7 @@ export default function AvailabilityPicker({ onSave, onCancel, maxSelections = 1
                       })}
                     </div>
                   </div>
-                  );
+                );
               })}
             </div>
           </div>
