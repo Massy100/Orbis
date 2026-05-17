@@ -82,7 +82,6 @@ export default function CustomSignInPage() {
                 <Mail size={18} className="input-icon" />
                 <input
                   type="email"
-                  placeholder="ejemplo@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -96,7 +95,6 @@ export default function CustomSignInPage() {
 
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
