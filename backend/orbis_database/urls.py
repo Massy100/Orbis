@@ -51,4 +51,5 @@ urlpatterns = [
     path('api/dashboard-metrics/', views.DashboardMetricsView.as_view(), name='dashboard-metrics'),
     path('api/result-reports/', views.ResultReportsView.as_view(), name='result-reports'),
     path('api/send-email/', views.SendEmailView.as_view(), name='send-email'),
+    path('api/result-reports/<int:evaluation_id>/calificacion/", views.UpdateResultCalificacionView.as_view(), name="update-result-calificacion'),
 ]

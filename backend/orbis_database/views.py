@@ -654,12 +654,13 @@ class ResultReportsView(APIView):
 
         for eval_obj in evaluations:
             result_obj = Result.objects.filter(evaluationid=eval_obj).first()
-            calificacion = result_obj.state if result_obj else "Pendiente"
+            calificacion = result_obj.state if result_obj else "Sin Calificación"
             et_list = EvaluationTeacher.objects.filter(evaluation=eval_obj)
             evaluadores = [et.teacher.name for et in et_list if et.teacher]
             
             est_name = eval_obj.studentid.name if eval_obj.studentid else "Sin asignar"
             est_id = str(eval_obj.studentid.id) if eval_obj.studentid else "N/A"
+            est = eval_obj.studentid.est if eval_obj.studentid else "N/A"
             fecha_str = "Sin fecha"
             
             if eval_obj.date:
@@ -677,6 +678,7 @@ class ResultReportsView(APIView):
                 "id": eval_obj.id,
                 "nombre": est_name,
                 "idEstudiante": est_id,
+                "est": est,
                 "fecha": fecha_str,
                 "calificacion": calificacion,
                 "evaluadores": evaluadores
@@ -701,6 +703,42 @@ class ResultReportsView(APIView):
         return Response({
             "especial": especial_reports,
             "comprensiva": comprensiva_reports
+        })
+
+class UpdateResultCalificacionView(APIView):
+    def patch(self, request, evaluation_id):
+        state = request.data.get("state")
+
+        valid_states = ["Aprobado", "No Aprobado", "No se Presento"]
+
+        if state not in valid_states:
+            return Response(
+                {"error": "Calificación no válida"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            evaluation = Evaluation.objects.get(id=evaluation_id)
+        except Evaluation.DoesNotExist:
+            return Response(
+                {"error": "Evaluación no encontrada"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        result_obj, created = Result.objects.get_or_create(
+            evaluationid=evaluation,
+            defaults={"state": state}
+        )
+
+        if not created:
+            result_obj.state = state
+            result_obj.save()
+
+        return Response({
+            "message": "Calificación actualizada correctamente",
+            "created": created,
+            "evaluationId": evaluation.id,
+            "state": result_obj.state
         })
 
 class SendEmailView(APIView):

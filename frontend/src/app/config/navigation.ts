@@ -25,6 +25,6 @@ export const NAV_ITEMS: NavItem[] = [
   { name: "Especial", href: "/evaluations/special", icon: Pencil, },
   { name: "Grupos", href: "/groups", icon: FileText },
   { name: "Carga de Datos", href: "/data-upload", icon: FileText },
-  { name: "Resultados e informes", href: "/result-reports", icon: BarChart },
+  { name: "Gestión de evaluaciones", href: "/result-reports", icon: BarChart },
   { name: "Ajustes", href: "/settings", icon: Settings },
 ];
