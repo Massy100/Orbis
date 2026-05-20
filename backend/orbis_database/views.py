@@ -97,10 +97,8 @@ class TeacherViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Teacher.objects.select_related('career', 'faculty').all()
         show_inactive = self.request.query_params.get('show_inactive')
-
         if show_inactive == 'true':
             return qs
-
         return qs.filter(isactive=True)
 
     @action(detail=True, methods=['patch'], url_path='toggle-active')
@@ -109,7 +107,6 @@ class TeacherViewSet(viewsets.ModelViewSet):
         teacher.isactive = not teacher.isactive
         teacher.save()
         estado_texto = 'Activo' if teacher.isactive else 'Inactivo'
-        
         return Response({
             'message': 'Estado actualizado correctamente',
             'isactive': teacher.isactive,
@@ -160,10 +157,8 @@ class TeachersPeriodViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = TeachersPeriod.objects.select_related('teacher', 'schedule').all()
         teacher_ids = self.request.query_params.getlist('teacher')
-
         if teacher_ids:
             qs = qs.filter(teacher__id__in=teacher_ids)
-
         return qs
 
 class SpecialityTeacherViewSet(viewsets.ModelViewSet):
@@ -182,7 +177,6 @@ class TeacherScheduleUploadView(APIView):
 
         if not file:
             return Response({'error': 'No se envió ningún archivo.'}, status=status.HTTP_400_BAD_REQUEST)
-
         if not teacher_code:
             return Response({'error': 'Debe enviar teacher_code.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -232,7 +226,6 @@ class TeacherScheduleUploadView(APIView):
                 teacher=teacher,
                 schedule=period,
             )
-
             if relation_created:
                 created_relations += 1
             else:
@@ -252,18 +245,9 @@ class TeacherScheduleUploadView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 class StudentViewSet(viewsets.ModelViewSet):
-    queryset = Student.objects.select_related(
-        'faculty',
-        'career'
-    ).all()
-
+    queryset = Student.objects.select_related('faculty', 'career').all()
     serializer_class = StudentSerializer
-    filter_backends = [
-        DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter
-    ]
-
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['isactive', 'faculty', 'career']
     search_fields = ['name', 'est']
     ordering_fields = ['name']
@@ -271,127 +255,70 @@ class StudentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def search_by_est(self, request):
         est = request.query_params.get("est")
-
         if not est:
-            return Response(
-                {"error": "Debe proporcionar un carnet"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+            return Response({"error": "Debe proporcionar un carnet"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             student = Student.objects.get(est=est)
-
-            return Response({
-                "id": student.id,
-                "name": student.name,
-                "est": student.est
-            })
-
+            return Response({"id": student.id, "name": student.name, "est": student.est})
         except Student.DoesNotExist:
-            return Response(
-                {"error": "Estudiante no encontrado"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Estudiante no encontrado"}, status=status.HTTP_404_NOT_FOUND)
 
 class StudyGroupViewSet(viewsets.ModelViewSet):
     serializer_class = StudyGroupSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['approvedgroup']
     search_fields = ['group']
+
     def get_queryset(self):
         return StudyGroup.objects.filter(isactive=True)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-
         teachers = request.data.get('teachers', [])
         students = request.data.get('students', [])
 
         if len(teachers) != 3:
-            return Response(
-                {'error': 'El grupo debe tener exactamente 3 tutores.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+            return Response({'error': 'El grupo debe tener exactamente 3 tutores.'}, status=status.HTTP_400_BAD_REQUEST)
         if len(students) < 1 or len(students) > 6:
-            return Response(
-                {'error': 'El grupo debe tener entre 1 y 6 estudiantes.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'error': 'El grupo debe tener entre 1 y 6 estudiantes.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        group = StudyGroup.objects.create(
-            group=request.data.get('group')
-        )
+        group = StudyGroup.objects.create(group=request.data.get('group'))
 
         for teacher_data in teachers:
-
             StudyGroupTeacher.objects.create(
                 studygroup=group,
                 teacher_id=teacher_data['teacher'],
                 hasaccepted=teacher_data['hasaccepted']
             )
-
         for student_data in students:
-
             StudyGroupStudent.objects.create(
                 studygroup=group,
                 student_id=student_data['student'],
                 haspayment=student_data['haspayment']
             )
 
-        all_teachers_accepted = all(
-            teacher['hasaccepted']
-            for teacher in teachers
-        )
-
-        all_students_paid = all(
-            student['haspayment']
-            for student in students
-        )
-
-        approved = (
-            all_teachers_accepted and
-            all_students_paid
-        )
-
-        group.approvedgroup = approved
+        all_teachers_accepted = all(t['hasaccepted'] for t in teachers)
+        all_students_paid = all(s['haspayment'] for s in students)
+        group.approvedgroup = all_teachers_accepted and all_students_paid
         group.save()
 
         serializer = self.get_serializer(group)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED
-        )
-    
     @transaction.atomic
     def update(self, request, *args, **kwargs):
         group = self.get_object()
-
         teachers = request.data.get("teachers", [])
         students = request.data.get("students", [])
 
         if len(teachers) != 3:
-            return Response(
-                {"error": "El grupo debe tener exactamente 3 tutores."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
+            return Response({"error": "El grupo debe tener exactamente 3 tutores."}, status=status.HTTP_400_BAD_REQUEST)
         if len(students) < 1 or len(students) > 6:
-            return Response(
-                {"error": "El grupo debe tener entre 1 y 6 estudiantes."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "El grupo debe tener entre 1 y 6 estudiantes."}, status=status.HTTP_400_BAD_REQUEST)
 
         group.group = request.data.get("group")
-        
-        StudyGroupTeacher.objects.filter(
-            studygroup=group
-        ).delete()
-
-        StudyGroupStudent.objects.filter(
-            studygroup=group
-        ).delete()
+        StudyGroupTeacher.objects.filter(studygroup=group).delete()
+        StudyGroupStudent.objects.filter(studygroup=group).delete()
 
         for teacher_data in teachers:
             StudyGroupTeacher.objects.create(
@@ -399,7 +326,6 @@ class StudyGroupViewSet(viewsets.ModelViewSet):
                 teacher_id=teacher_data["teacher"],
                 hasaccepted=teacher_data["hasaccepted"]
             )
-
         for student_data in students:
             StudyGroupStudent.objects.create(
                 studygroup=group,
@@ -407,24 +333,12 @@ class StudyGroupViewSet(viewsets.ModelViewSet):
                 haspayment=student_data["haspayment"]
             )
 
-        all_teachers_accepted = all(
-            teacher["hasaccepted"]
-            for teacher in teachers
-        )
-
-        all_students_paid = all(
-            student["haspayment"]
-            for student in students
-        )
-
-        group.approvedgroup = (
-            all_teachers_accepted and all_students_paid
-        )
-
+        all_teachers_accepted = all(t["hasaccepted"] for t in teachers)
+        all_students_paid = all(s["haspayment"] for s in students)
+        group.approvedgroup = all_teachers_accepted and all_students_paid
         group.save()
 
         serializer = self.get_serializer(group)
-
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"])
@@ -432,11 +346,7 @@ class StudyGroupViewSet(viewsets.ModelViewSet):
         group = self.get_object()
         group.isactive = False
         group.save()
-
-        return Response(
-            {"message": "Grupo desactivado correctamente"},
-            status=status.HTTP_200_OK
-        )
+        return Response({"message": "Grupo desactivado correctamente"}, status=status.HTTP_200_OK)
 
 class StudyGroupStudentViewSet(viewsets.ModelViewSet):
     queryset = StudyGroupStudent.objects.select_related('studygroup', 'student').all()
@@ -450,6 +360,7 @@ class StudyGroupTeacherViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['studygroup', 'teacher', 'hasaccepted']
 
+# ✅ Una sola definición, la completa con select_related
 class CourseTutorialViewSet(viewsets.ModelViewSet):
     queryset = CourseTutorial.objects.select_related('studygroup', 'teacher', 'course').all()
     serializer_class = CourseTutorialSerializer
@@ -487,7 +398,6 @@ class SystemUserViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         user.is_active = not user.is_active
         user.save()
-
         return Response({
             'message': 'Estado actualizado',
             'is_active': user.is_active,
@@ -503,18 +413,13 @@ class PensumUploadView(APIView):
             return Response({'error': 'No file was provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
         allowed_types = ('especial', 'comprensiva')
-
         if upload_type not in allowed_types:
-            return Response({
-                'error': f"'type' must be one of {allowed_types}."
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': f"'type' must be one of {allowed_types}."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             stats = parse_pensum(file)
         except Exception as exc:
-            return Response({
-                'error': f'Failed to parse the pensum file: {str(exc)}'
-            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return Response({'error': f'Failed to parse the pensum file: {str(exc)}'}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         return Response({
             'message': 'Pensum uploaded successfully.',
@@ -530,7 +435,7 @@ class DashboardStatsView(APIView):
         total_courses = Course.objects.count()
         total_evals = Evaluation.objects.count()
 
-        response_data = {
+        return Response({
             'overview': {
                 'total_teachers': total_teachers,
                 'active_teachers': active_teachers,
@@ -538,15 +443,8 @@ class DashboardStatsView(APIView):
                 'total_courses': total_courses,
                 'total_evaluations': total_evals,
             },
-        }
-
-        # NOTA: Como la tabla Rol fue eliminada del modelo, 
-        # enviamos una lista vacía para que el frontend no falle
-        response_data['charts'] = {
-            'roles_distribution': []
-        }
-
-        return Response(response_data)
+            'charts': {'roles_distribution': []}
+        })
 
 class DashboardMetricsView(APIView):
     def get(self, request):
@@ -562,21 +460,18 @@ class DashboardMetricsView(APIView):
         ).order_by('-year', '-month')[:3]
 
         stats_mes_list = list(stats_mes)[::-1]
-        meses_map = {1:'ENE', 2:'FEB', 3:'MAR', 4:'ABR', 5:'MAY', 6:'JUN', 7:'JUL', 8:'AGO', 9:'SEP', 10:'OCT', 11:'NOV', 12:'DIC'}
-        
+        meses_map = {1:'ENE', 2:'FEB', 3:'MAR', 4:'ABR', 5:'MAY', 6:'JUN',
+                     7:'JUL', 8:'AGO', 9:'SEP', 10:'OCT', 11:'NOV', 12:'DIC'}
+
         chart_data = [
-            {
-                "mes": meses_map.get(item['month'], 'S/M'), 
-                "especial": item['especial'], 
-                "comprensiva": item['comprensiva']
-            }
+            {"mes": meses_map.get(item['month'], 'S/M'), "especial": item['especial'], "comprensiva": item['comprensiva']}
             for item in stats_mes_list
         ]
 
         top_comprensiva = Teacher.objects.filter(
             evaluationteacher__evaluation__type__name__icontains='Comprensiva'
         ).annotate(total=Count('evaluationteacher')).order_by('-total')[:4]
-        
+
         top_especial = Teacher.objects.filter(
             evaluationteacher__evaluation__type__name__icontains='Especial'
         ).annotate(total=Count('evaluationteacher')).order_by('-total')[:4]
@@ -591,25 +486,22 @@ class DashboardMetricsView(APIView):
             }
 
         conf_eval_comp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Evaluación Comprensiva').count()
-        conf_tut_comp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Tutoría Comprensiva').count()
-        conf_eval_esp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Evaluación Especial').count()
-        conf_tut_esp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Tutoría Especial').count()
+        conf_tut_comp  = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Tutoría Comprensiva').count()
+        conf_eval_esp  = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Evaluación Especial').count()
+        conf_tut_esp   = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Tutoría Especial').count()
 
         return Response({
-            "cards_totals": {
-                "comprensivas": total_comprensivas,
-                "especiales": total_especiales
-            },
+            "cards_totals": {"comprensivas": total_comprensivas, "especiales": total_especiales},
             "monthly_chart": chart_data,
             "top_teachers": {
                 "comprensivas": [format_teacher(t) for t in top_comprensiva],
                 "especiales": [format_teacher(t) for t in top_especial]
             },
             "confirmations": [
-                {"label": "Tutoría Comprensiva", "value": conf_tut_comp, "max": total_comprensivas, "color": "#2563EB"},
+                {"label": "Tutoría Comprensiva",    "value": conf_tut_comp,  "max": total_comprensivas, "color": "#2563EB"},
                 {"label": "Evaluación Comprensiva", "value": conf_eval_comp, "max": total_comprensivas, "color": "#3B82F6"},
-                {"label": "Tutoría Especial", "value": conf_tut_esp, "max": total_especiales, "color": "#93C5FD"},
-                {"label": "Evaluación Especial", "value": conf_eval_esp, "max": total_especiales, "color": "#DBEAFE"},
+                {"label": "Tutoría Especial",       "value": conf_tut_esp,   "max": total_especiales,   "color": "#93C5FD"},
+                {"label": "Evaluación Especial",    "value": conf_eval_esp,  "max": total_especiales,   "color": "#DBEAFE"},
             ]
         })
 
@@ -618,9 +510,7 @@ class TeacherScheduleDetailView(APIView):
         try:
             teacher = Teacher.objects.get(cat=str(teacher_code).strip())
         except Teacher.DoesNotExist:
-            return Response({
-                'error': f'No existe un docente con código {teacher_code}.'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': f'No existe un docente con código {teacher_code}.'}, status=status.HTTP_404_NOT_FOUND)
 
         schedules = (
             TeachersPeriod.objects
@@ -630,11 +520,7 @@ class TeacherScheduleDetailView(APIView):
         )
 
         data = [
-            {
-                'day': item.schedule.day,
-                'starttime': item.schedule.starttime,
-                'endtime': item.schedule.endtime,
-            }
+            {'day': item.schedule.day, 'starttime': item.schedule.starttime, 'endtime': item.schedule.endtime}
             for item in schedules
         ]
 
@@ -657,20 +543,17 @@ class ResultReportsView(APIView):
             calificacion = result_obj.state if result_obj else "Pendiente"
             et_list = EvaluationTeacher.objects.filter(evaluation=eval_obj)
             evaluadores = [et.teacher.name for et in et_list if et.teacher]
-            
+
             est_name = eval_obj.studentid.name if eval_obj.studentid else "Sin asignar"
             est_id = str(eval_obj.studentid.id) if eval_obj.studentid else "N/A"
             fecha_str = "Sin fecha"
-            
+
             if eval_obj.date:
                 try:
                     fecha_str = eval_obj.date.strftime("%d/%m/%Y")
                 except AttributeError:
                     parts = str(eval_obj.date).split("-")
-                    if len(parts) == 3:
-                        fecha_str = f"{parts[2]}/{parts[1]}/{parts[0]}"
-                    else:
-                        fecha_str = str(eval_obj.date)
+                    fecha_str = f"{parts[2]}/{parts[1]}/{parts[0]}" if len(parts) == 3 else str(eval_obj.date)
 
             type_name = eval_obj.type.name if eval_obj.type else ""
             base_data = {
@@ -683,13 +566,11 @@ class ResultReportsView(APIView):
             }
 
             if 'Especial' in type_name:
-                base_data["curso"] = "Curso de Especialización" 
+                base_data["curso"] = "Curso de Especialización"
                 especial_reports.append(base_data)
-                
             elif 'Comprensiva' in type_name:
                 if eval_obj.studentid:
                     try:
-                        # NUEVA RELACIÓN: Usamos StudyGroupStudent para llegar al nombre del grupo
                         grupos_rel = StudyGroupStudent.objects.filter(student=eval_obj.studentid).select_related('studygroup')
                         base_data["gruposEstudio"] = [g.studygroup.group for g in grupos_rel if g.studygroup] if grupos_rel.exists() else ["Sin grupo asignado"]
                     except Exception:
@@ -698,16 +579,13 @@ class ResultReportsView(APIView):
                     base_data["gruposEstudio"] = ["Sin grupo asignado"]
                 comprensiva_reports.append(base_data)
 
-        return Response({
-            "especial": especial_reports,
-            "comprensiva": comprensiva_reports
-        })
+        return Response({"especial": especial_reports, "comprensiva": comprensiva_reports})
 
 class SendEmailView(APIView):
     def post(self, request):
         subject = request.data.get('subject', '')
         body = request.data.get('body', '')
-        correo_destino = request.data.get('to') 
+        correo_destino = request.data.get('to')
 
         if not subject or not body or not correo_destino:
             return Response({"error": "Faltan datos de asunto, cuerpo o destino"}, status=status.HTTP_400_BAD_REQUEST)
@@ -716,48 +594,26 @@ class SendEmailView(APIView):
         from_email = os.getenv('DEFAULT_FROM_EMAIL')
 
         url = "https://api.sendgrid.com/v3/mail/send"
-        
         payload = {
             "personalizations": [{"to": [{"email": correo_destino}]}],
             "from": {"email": from_email},
             "subject": subject,
             "content": [{"type": "text/plain", "value": body}]
         }
-        
+
         data = json.dumps(payload).encode('utf-8')
-        
         req = urllib.request.Request(url, data=data, headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         })
-        
+
         try:
             with urllib.request.urlopen(req) as response:
                 return Response({"message": "Correo enviado con éxito por SendGrid API"}, status=status.HTTP_200_OK)
-                
         except urllib.error.HTTPError as e:
             error_body = e.read().decode('utf-8')
             print("ERROR SENDGRID API:", error_body)
             return Response({"error": error_body}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
         except Exception as e:
             print("ERROR GENERAL:", str(e))
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-class CourseTutorialViewSet(viewsets.ModelViewSet):
-    queryset = CourseTutorial.objects.all()
-    serializer_class = CourseTutorialSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['studygroup', 'teacher', 'course', 'hasaccepted', 'haspayment']
-
-class StudyGroupViewSet(viewsets.ModelViewSet):
-    queryset = StudyGroup.objects.all()
-    serializer_class = StudyGroupSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['group', 'approvedgroup', 'isactive']
-
-class StudyGroupStudentViewSet(viewsets.ModelViewSet):
-    queryset = StudyGroupStudent.objects.all()
-    serializer_class = StudyGroupStudentSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['studygroup', 'student', 'haspayment']

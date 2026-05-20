@@ -78,12 +78,12 @@ export default function EvaluacionEspecialPage() {
       }
   };
 
+  // Si el carnet existe, redirige a la página de evaluación especial para ese estudiante
   const handleApprove = (carnet: string) => {
-    const evalData = data.find(d => d.carnet === carnet);
-    if (evalData && evalData.studentId) {
-        router.push(`/evaluation-special/${evalData.studentId}`);
+    if (carnet) {
+      router.push(`/evaluation-special/${carnet}`);
     } else {
-        setToast({ show: true, message: "Error al intentar crear evaluación.", type: "error" });
+      setToast({ show: true, message: "Error al intentar crear evaluación.", type: "error" });
     }
   };
 
@@ -119,17 +119,13 @@ export default function EvaluacionEspecialPage() {
       }
   };
 
-  // --- ARREGLO DE LOS TOGGLES ---
-
   const togglePago = async (id: number, _currentPago: any) => {
-      // Ignoramos el string visual del hijo y buscamos el estado REAL
       const targetItem = data.find(item => item.id === id);
       if (!targetItem) return;
 
       const isPaidNow = targetItem.pago === "pagado";
-      const willBePaid = !isPaidNow; // Lo invertimos forzosamente
+      const willBePaid = !isPaidNow;
       
-      // Actualización optimista de UI
       setData(prev => prev.map(item => {
         if (item.id === id) {
            const newPagoStr = willBePaid ? "pagado" : "pendiente";
@@ -139,26 +135,26 @@ export default function EvaluacionEspecialPage() {
         return item;
       }));
 
-      // Llamada al servidor
       await specialEvaluationService.togglePayment(id, willBePaid);
   };
 
-  const toggleTutor = async (id: number, currentAcuerdo: "acuerdo" | "no_acuerdo") => {
-      // Invertimos el estado
-      const nuevoAcuerdo = currentAcuerdo === "acuerdo" ? "no_acuerdo" : "acuerdo";
-      const isAcuerdoBoolean = nuevoAcuerdo === "acuerdo";
+  const toggleTutor = async (id: number, _currentAcuerdo: any) => {
+      const targetItem = data.find(item => item.id === id);
+      if (!targetItem) return;
+
+      const isAcordadoNow = targetItem.tutor.estado === "acordado";
+      const willBeAcordado = !isAcordadoNow;
       
-      // Actualizamos UI
       setData(prev => prev.map(item => {
         if (item.id === id) {
-           const newState = (nuevoAcuerdo === "acuerdo" && item.pago === "pagado") ? "Aprobado" : "No aprobado";
-           return { ...item, tutor: { ...item.tutor, estado: nuevoAcuerdo }, estado: newState };
+           const newAcuerdoStr = willBeAcordado ? "acordado" : "no_acuerdo";
+           const newState = (willBeAcordado && item.pago === "pagado") ? "Aprobado" : "No aprobado";
+           return { ...item, tutor: { ...item.tutor, estado: newAcuerdoStr }, estado: newState };
         }
         return item;
       }));
 
-      // Enviamos a BD
-      await specialEvaluationService.toggleTutorStatus(id, isAcuerdoBoolean);
+      await specialEvaluationService.toggleTutorStatus(id, willBeAcordado);
   };
 
   const closeModal = () => {

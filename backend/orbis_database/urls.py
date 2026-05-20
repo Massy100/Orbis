@@ -21,11 +21,13 @@ router.register(r'teachers-periods',     views.TeachersPeriodViewSet,   basename
 router.register(r'speciality-teachers',  views.SpecialityTeacherViewSet,basename='speciality-teacher')
 
 # Routes for Student 
-router.register(r'students',           views.StudentViewSet,          basename='student')
-router.register(r'studygroups',        views.StudyGroupViewSet,       basename='studygroup')
-router.register(r'studygroup-teachers',views.StudyGroupTeacherViewSet,basename='studygroup-teacher')
-router.register(r'studygroup-students',views.StudyGroupStudentViewSet,basename='studygroup-student')
-router.register(r'student-courses',   views.CourseTutorialViewSet,    basename='course-tutorial')
+router.register(r'students',            views.StudentViewSet,          basename='student')
+router.register(r'studygroups',         views.StudyGroupViewSet,       basename='studygroup')
+router.register(r'studygroup-teachers', views.StudyGroupTeacherViewSet,basename='studygroup-teacher')
+router.register(r'studygroup-students', views.StudyGroupStudentViewSet,basename='studygroup-student')
+
+# Routes for Course Tutorial
+router.register(r'course-tutorials', views.CourseTutorialViewSet, basename='course-tutorial')
 
 # Routes for Evaluation
 router.register(r'evaluations',         views.EvaluationViewSet,       basename='evaluation')
@@ -33,29 +35,16 @@ router.register(r'evaluation-teachers', views.EvaluationTeacherViewSet,basename=
 router.register(r'results',             views.ResultViewSet,           basename='result')
 
 # Route for System Users
-router.register(r'system-users',       views.SystemUserViewSet,       basename='system-user')
-
-# Routes for Course Tutorial (AQUÍ ESTÁ LA CORRECCIÓN)
-router.register(r'course-tutorials', views.CourseTutorialViewSet, basename='course-tutorial')
-router.register(r'studygroup-students', views.StudyGroupStudentViewSet, basename='studygroup-student')
-# (Eliminamos studygroups porque ya estaba registrado arriba)
+router.register(r'system-users', views.SystemUserViewSet, basename='system-user')
 
 urlpatterns = [
     path('api/', include(router.urls)),
-    
-    # Route for pensum upload
     path('api/pensum/upload/', views.PensumUploadView.as_view(), name='pensum-upload'),
-
-    # Route for teacher schedule upload
-    path( 'api/teacher-schedules/upload/', views.TeacherScheduleUploadView.as_view(), name='teacher-schedule-upload' ),
-
-    # Route to get the schedule of a teacher by their code 
-    path( 'api/teacher-schedules/<str:teacher_code>/', views.TeacherScheduleDetailView.as_view(), name='teacher-schedule-detail' ),
-
-    path('api/dashboard-stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
+    path('api/teacher-schedules/upload/', views.TeacherScheduleUploadView.as_view(), name='teacher-schedule-upload'),
+    path('api/teacher-schedules/<str:teacher_code>/', views.TeacherScheduleDetailView.as_view(), name='teacher-schedule-detail'),
+    path('api/dashboard-stats/',   views.DashboardStatsView.as_view(),   name='dashboard-stats'),
     path('api/dashboard-metrics/', views.DashboardMetricsView.as_view(), name='dashboard-metrics'),
-    path('api/result-reports/', views.ResultReportsView.as_view(), name='result-reports'),
-    path('api/send-email/', views.SendEmailView.as_view(), name='send-email'),
-
+    path('api/result-reports/',    views.ResultReportsView.as_view(),    name='result-reports'),
+    path('api/send-email/',        views.SendEmailView.as_view(),        name='send-email'),
     path('', include(router.urls)),
 ]
