@@ -31,7 +31,7 @@ export const specialEvaluationService = {
         const courseObj = coursesData.find(c => c.id === ct.course);
 
         // AQUÍ ESTÁ LA CORRECCIÓN: Leemos directamente el true/false de CourseTutorial
-        const statusAcuerdo = ct.hasaccepted ? "acuerdo" : "no_acuerdo";
+        const statusAcuerdo = ct.hasaccepted ? "acordado" : "no_acuerdo";
         const estadoFinal = (ct.hasaccepted && ct.haspayment) ? "Aprobado" : "No aprobado";
 
         return {

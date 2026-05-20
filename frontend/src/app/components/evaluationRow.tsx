@@ -8,7 +8,7 @@ interface EvaluationRowProps {
   onDelete: (id: number) => void;
   // Ajustamos las firmas para enviar el estado actual
   onTogglePago: (id: number, currentState: "pagado" | "pendiente") => void;
-  onToggleTutor: (id: number, currentStatus: "acuerdo" | "no_acuerdo") => void;
+  onToggleTutor: (id: number, currentStatus: "acordado" | "no_acuerdo") => void;
   onApprove: (carnet: string) => void;
 }
 
@@ -22,7 +22,7 @@ export const EvaluationRow = ({
   onApprove 
 }: EvaluationRowProps) => { 
   // Evaluamos el estado: "acuerdo" (no "acordado") y "pagado"
-  const isReady = item.pago === "pagado" && item.tutor.estado === "acuerdo";
+  const isReady = item.pago === "pagado" && item.tutor.estado === "acordado";
 
   return (
     <tr>
@@ -53,10 +53,10 @@ export const EvaluationRow = ({
           <button 
             type="button"
             className="icon-btn" 
-            data-title={item.tutor.estado === "acuerdo" ? "De acuerdo" : "Sin acordar"}
-            onClick={() => onToggleTutor(item.id, item.tutor.estado as "acuerdo" | "no_acuerdo")}
+            data-title={item.tutor.estado === "acordado" ? "De acuerdo" : "Sin acordar"}
+            onClick={() => onToggleTutor(item.id, item.tutor.estado as "acordado" | "no_acordado")}
           >
-            {item.tutor.estado === "acuerdo" ? <UserCheck color="green" /> : <X color="red" />}
+            {item.tutor.estado === "acordado" ? <UserCheck color="green" /> : <X color="red" />}
           </button>
         </div>
       </td>
