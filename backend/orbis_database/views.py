@@ -17,7 +17,7 @@ from django.utils import timezone
 from parsers.pensum_parser import parse_pensum
 from parsers.teacher_schedule_parser import parse_teacher_schedule_excel
 
-from .serializers import SystemUserSerializer
+from .serializers import SystemUserSerializer, CourseTutorialSerializer, StudyGroupSerializer, StudyGroupStudentSerializer
 from .models import (
     Career, Faculty, Course, CourseTeacher,
     Speciality, SpecialityTeacher,
@@ -743,3 +743,21 @@ class SendEmailView(APIView):
         except Exception as e:
             print("ERROR GENERAL:", str(e))
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CourseTutorialViewSet(viewsets.ModelViewSet):
+    queryset = CourseTutorial.objects.all()
+    serializer_class = CourseTutorialSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['studygroup', 'teacher', 'course', 'hasaccepted', 'haspayment']
+
+class StudyGroupViewSet(viewsets.ModelViewSet):
+    queryset = StudyGroup.objects.all()
+    serializer_class = StudyGroupSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['group', 'approvedgroup', 'isactive']
+
+class StudyGroupStudentViewSet(viewsets.ModelViewSet):
+    queryset = StudyGroupStudent.objects.all()
+    serializer_class = StudyGroupStudentSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['studygroup', 'student', 'haspayment']

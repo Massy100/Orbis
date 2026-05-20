@@ -1,7 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views 
-from .views import SystemUserSerializer
 
 router = DefaultRouter()
 
@@ -36,8 +35,14 @@ router.register(r'results',             views.ResultViewSet,           basename=
 # Route for System Users
 router.register(r'system-users',       views.SystemUserViewSet,       basename='system-user')
 
+# Routes for Course Tutorial (AQUÍ ESTÁ LA CORRECCIÓN)
+router.register(r'course-tutorials', views.CourseTutorialViewSet, basename='course-tutorial')
+router.register(r'studygroup-students', views.StudyGroupStudentViewSet, basename='studygroup-student')
+# (Eliminamos studygroups porque ya estaba registrado arriba)
+
 urlpatterns = [
     path('api/', include(router.urls)),
+    
     # Route for pensum upload
     path('api/pensum/upload/', views.PensumUploadView.as_view(), name='pensum-upload'),
 
@@ -51,4 +56,6 @@ urlpatterns = [
     path('api/dashboard-metrics/', views.DashboardMetricsView.as_view(), name='dashboard-metrics'),
     path('api/result-reports/', views.ResultReportsView.as_view(), name='result-reports'),
     path('api/send-email/', views.SendEmailView.as_view(), name='send-email'),
+
+    path('', include(router.urls)),
 ]
