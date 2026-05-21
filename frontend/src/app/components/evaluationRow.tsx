@@ -1,4 +1,4 @@
-import { CircleCheckBig, Circle, UserCheck, X, Pencil, Trash2, Check, Plus } from "lucide-react";
+import { CircleCheckBig, Circle, UserCheck, X, Pencil, Trash2, Check } from "lucide-react";
 import { Evaluation } from "../types";
 
 interface EvaluationRowProps {
@@ -6,8 +6,9 @@ interface EvaluationRowProps {
   onCreate: (item: Evaluation) => void;
   onEdit: (item: Evaluation) => void;
   onDelete: (id: number) => void;
-  onTogglePago: (id: number) => void;
-  onToggleTutor: (id: number) => void;
+  // Ajustamos las firmas para enviar el estado actual
+  onTogglePago: (id: number, currentState: "pagado" | "pendiente") => void;
+  onToggleTutor: (id: number, currentStatus: "acordado" | "no_acuerdo") => void;
   onApprove: (carnet: string) => void;
 }
 
@@ -20,7 +21,8 @@ export const EvaluationRow = ({
   onToggleTutor, 
   onApprove 
 }: EvaluationRowProps) => { 
-  const isReady = item.pago === "pagado" && item.tutor.estado === "acuerdo";
+  // Evaluamos el estado: "acuerdo" (no "acordado") y "pagado"
+  const isReady = item.pago === "pagado" && item.tutor.estado === "acordado";
 
   return (
     <tr>
@@ -37,9 +39,10 @@ export const EvaluationRow = ({
       </td>
       <td>
         <button 
+          type="button"
           className="icon-btn" 
           data-title={item.pago === "pagado" ? "Pagado" : "Pendiente"}
-          onClick={() => onTogglePago(item.id)}
+          onClick={() => onTogglePago(item.id, item.pago as "pagado" | "pendiente")}
         >
           {item.pago === "pagado" ? <CircleCheckBig color="green" /> : <Circle color="orange" />}
         </button>
@@ -48,24 +51,31 @@ export const EvaluationRow = ({
         <div className="tutor-cell">
           <span>{item.tutor.nombre}</span>
           <button 
+            type="button"
             className="icon-btn" 
-            data-title={item.tutor.estado === "acuerdo" ? "De acuerdo" : "Sin acordar"}
-            onClick={() => onToggleTutor(item.id)}
+            data-title={item.tutor.estado === "acordado" ? "De acuerdo" : "Sin acordar"}
+            onClick={() => onToggleTutor(item.id, item.tutor.estado as "acordado" | "no_acordado")}
           >
-            {item.tutor.estado === "acuerdo" ? <UserCheck color="green" /> : <X color="red" />}
+            {item.tutor.estado === "acordado" ? <UserCheck color="green" /> : <X color="red" />}
           </button>
         </div>
       </td>
       <td>
         <span className={`status ${isReady ? 'ok' : 'bad'}`}>
-          {isReady ? "Listo" : "No aprobado"}
+          {isReady ? "Aprobado" : "No aprobado"}
         </span>
       </td>
       <td>
         <div className="actions">
-          <button data-title="Editar evaluación" onClick={() => onEdit(item)}><Pencil size={18} /></button>
-          <button data-title="Eliminar evaluación" onClick={() => onDelete(item.id)}><Trash2 size={18} /></button>
-          <button data-title={isReady ? "Crear Evaluación" : "Requisitos incompletos"} disabled={!isReady} className="btn-approve" onClick={() => onApprove(item.carnet)}>
+          <button type="button" data-title="Editar evaluación" onClick={() => onEdit(item)}><Pencil size={18} /></button>
+          <button type="button" data-title="Eliminar evaluación" onClick={() => onDelete(item.id)}><Trash2 size={18} /></button>
+          <button 
+            type="button"
+            data-title={isReady ? "Crear Evaluación" : "Requisitos incompletos"} 
+            disabled={!isReady} 
+            className="btn-approve" 
+            onClick={() => onApprove(item.carnet)}
+          >
             <Check size={18} />
           </button>
         </div>

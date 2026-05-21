@@ -3,52 +3,55 @@ import GLOBAL_API_URL from './global-api-url';
 const API = GLOBAL_API_URL;
 
 export const availabilityService = {
-  getTeachers: (params = {}) => {
+  getTeachers: async (params = {}) => {
     const qs = new URLSearchParams({ isactive: 'true', ...params });
-    return fetch(`${API}teachers/?${qs}`).then(r => r.json());
+    const res = await fetch(`${API}teachers/?${qs}`);
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
   },
 
-  getPeriods: () =>
-    fetch(`${API}periods/`).then(r => r.json()),
+  getPeriods: async () => {
+    const res = await fetch(`${API}periods/`);
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
+  },
 
-  getTeacherPeriods: (teacherIds = []) => {
+  getTeacherPeriods: async (teacherIds = []) => {
     const base = `${API}teachers-periods/`;
     const url = teacherIds.length
       ? `${base}?${teacherIds.map(id => `teacher=${id}`).join('&')}`
       : base;
-    return fetch(url).then(r => r.json());
+    const res = await fetch(url);
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
   },
 
-  /**
-   * @param {number} studygroupId
-   */
-  getStudyGroupTeachers: (studygroupId) =>
-    fetch(`${API}studygroup-teachers/?studygroup=${studygroupId}`).then(r => r.json()),
+  getStudyGroupTeachers: async (studygroupId) => {
+    const res = await fetch(`${API}studygroup-teachers/?studygroup=${studygroupId}`);
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
+  },
 
-  /**
-   * @param {number} studygroupId
-   */
-  getCourseTutorials: (studygroupId) =>
-    fetch(`${API}course-tutorials/?studygroup=${studygroupId}`).then(r => r.json()),
+  getCourseTutorials: async (studygroupId) => {
+    const res = await fetch(`${API}course-tutorials/?studygroup=${studygroupId}`);
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.results || []);
+  },
 
-  /**
-   * Given a student carnet (est), resolves the studygroup ID the student belongs to.
-   * Flow: est → students/?est=<est> → student.id → studygroup-students/?student=<id> → studygroup id
-   *
-   * @param {string} est  - The student carnet/code from the URL param
-   * @returns {Promise<number|null>} The studygroup ID, or null if not found
-   */
+  // CORREGIDO: Usando la ruta search_by_est para encontrar el ID exacto
   getStudyGroupIdByEst: async (est) => {
-    // Step 1: find the student record by carnet (est field)
-    const students = await fetch(`${API}students/?est=${encodeURIComponent(est)}`).then(r => r.json());
-    if (!students.length) return null;
+    const studentRes = await fetch(`${API}students/search_by_est/?est=${encodeURIComponent(est)}`);
+    if (!studentRes.ok) return null;
+    
+    const student = await studentRes.json();
+    const studentId = student.id;
 
-    const studentId = students[0].id;
+    // Buscar si está en un grupo de estudio
+    const sgRes = await fetch(`${API}studygroup-students/?student=${studentId}`);
+    const sgData = await sgRes.json();
+    const sgStudents = Array.isArray(sgData) ? sgData : (sgData.results || []);
 
-    // Step 2: find the studygroup-student record for this student
-    const sgStudents = await fetch(`${API}studygroup-students/?student=${studentId}`).then(r => r.json());
     if (!sgStudents.length) return null;
-
     return sgStudents[0].studygroup;
   },
 };

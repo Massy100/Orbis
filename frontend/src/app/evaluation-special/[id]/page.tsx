@@ -9,7 +9,6 @@ import AvailabilityPicker from "../../components/AvailabilityPicker";
 import { availabilityService } from "../../services/availability-service";
 import { evaluationService } from "../../services/evaluation-service";
 import { teacherService } from "../../services/teacher-service";
-import type { SelectedTeacher } from "../../types";
 
 interface StudentResponse {
     id: number;
@@ -50,7 +49,6 @@ type ScheduleForm = {
 };
 
 export default function EvaluationSpecialPage() {
-
     const router = useRouter();
     const params = useParams();
     const estudianteCarnet = params?.id as string;
@@ -59,7 +57,6 @@ export default function EvaluationSpecialPage() {
     const [studygroupId, setStudygroupId] = useState<number | null>(null);
     const [typeId, setTypeId] = useState<number | null>(null);
 
-    const [docenteSeleccionado, setDocenteSeleccionado] = useState<SelectedTeacher | null>(null);
     const [showAvailability, setShowAvailability] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -70,8 +67,8 @@ export default function EvaluationSpecialPage() {
     });
 
     const [studentData, setStudentData] = useState<StudentForm>({
-        nombreCompleto: "",
-        carnet: "",
+        nombreCompleto: "Cargando...",
+        carnet: "Cargando...",
     });
 
     const [scheduleData, setScheduleData] = useState<ScheduleForm>({
@@ -83,12 +80,13 @@ export default function EvaluationSpecialPage() {
         pagado: false,
     });
 
-    const [selectedEvaluatorEspecial, setSelectedEvaluatorEspecial] =
-        useState<Evaluator | null>(null);
+    const [selectedEvaluatorEspecial, setSelectedEvaluatorEspecial] = useState<Evaluator | null>(null);
 
+    // --- CARGAR DATOS DESDE LOS SERVICIOS ORIGINALES ---
     useEffect(() => {
         if (!estudianteCarnet) return;
 
+        // Cargar estudiante
         evaluationService.getStudentByEst(estudianteCarnet).then((student) => {
             const typedStudent = student as StudentResponse | null;
             if (!typedStudent) {
@@ -102,6 +100,16 @@ export default function EvaluationSpecialPage() {
             });
         });
 
+        // Buscar el curso asignado al estudiante en la tutoría
+        evaluationService.getCourseFromTutorial(estudianteCarnet).then((courseName) => {
+            // Guardamos el curso en el estado del evaluador si es que lo hay, sino lo preparamos
+            setSelectedEvaluatorEspecial(prev => prev ? { ...prev, curso: courseName } : null);
+            // También lo guardamos en una variable local por si seleccionan al maestro después
+            if (typeof window !== "undefined") {
+               (window as any).__specialCourseTemp = courseName;
+            }
+        });
+
         availabilityService.getStudyGroupIdByEst(estudianteCarnet).then(setStudygroupId);
 
         evaluationService.findTypeId("especial").then((id) => {
@@ -109,6 +117,7 @@ export default function EvaluationSpecialPage() {
         });
     }, [estudianteCarnet]);
 
+    // --- TOAST ---
     useEffect(() => {
         if (toast.show) {
             const timer = setTimeout(() => {
@@ -118,7 +127,7 @@ export default function EvaluationSpecialPage() {
         }
     }, [toast.show]);
 
-    // Helpers 
+    // --- Helpers de Horario ---
     const addMinutesToTime = (time: string, minutesToAdd: number) => {
         const [hours, minutes] = time.split(":").map(Number);
         const date = new Date();
@@ -146,7 +155,7 @@ export default function EvaluationSpecialPage() {
         return `${String(normalizedHour).padStart(2, "0")}:${minutes} ${suffix}`;
     };
 
-    // Handlers 
+    // --- Handlers ---
     const handleScheduleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
@@ -167,13 +176,13 @@ export default function EvaluationSpecialPage() {
         );
     };
 
-    // Guardar evaluación 
+    // --- GUARDAR EVALUACIÓN FINAL ---
     const handleSave = async () => {
         if (!studentId) return;
 
         setIsSaving(true);
         try {
-            const { evaluation } = await evaluationService.createEvaluation({
+            await evaluationService.createEvaluation({
                 studentId,
                 teacherId: selectedEvaluatorEspecial?.id ?? null,
                 typeId: typeId ?? null,
@@ -193,6 +202,8 @@ export default function EvaluationSpecialPage() {
             }
 
             setToast({ show: true, message: "Evaluación guardada exitosamente", type: "success" });
+            
+            // Volver a la tabla principal tras 1.5s
             setTimeout(() => router.back(), 1500);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Error al guardar la evaluación";
@@ -202,7 +213,7 @@ export default function EvaluationSpecialPage() {
         }
     };
 
-    // Derived display values 
+    // --- Derived display values ---
     const evaluationLabel = "Evaluación Especial";
     const studentDisplayName = studentData.nombreCompleto || "Sin nombre";
     const studentDisplayCarnet = studentData.carnet || "Sin carné";
@@ -218,16 +229,10 @@ export default function EvaluationSpecialPage() {
     const locationDisplay = `${scheduleData.lugar || "Sin lugar"}${scheduleData.salon ? `, Salón ${scheduleData.salon}` : ""}`;
 
     const evaluadorEspecialSeleccionado: Evaluator | null = selectedEvaluatorEspecial;
+    const isSelected = selectedEvaluatorEspecial?.id === evaluadorEspecialSeleccionado?.id;
 
-    const isSelected =
-        selectedEvaluatorEspecial?.id === evaluadorEspecialSeleccionado?.id;
+    const canSave = studentId !== null && studentData.carnet.trim() !== "" && !isSaving;
 
-    const canSave =
-        studentId !== null &&
-        studentData.carnet.trim() !== "" &&
-        !isSaving;
-
-    // Render 
     return (
         <DashboardLayout>
             <div className="evaluations-page">
@@ -245,11 +250,11 @@ export default function EvaluationSpecialPage() {
                             <div className="evaluations-form-grid evaluations-two-columns">
                                 <div className="evaluations-field">
                                     <label>Nombre Completo</label>
-                                    <input name="nombreCompleto" value={studentData.nombreCompleto} placeholder="Cargando..." readOnly />
+                                    <input name="nombreCompleto" value={studentData.nombreCompleto} readOnly className="bg-gray-50" />
                                 </div>
                                 <div className="evaluations-field">
                                     <label>Carné</label>
-                                    <input name="carnet" value={studentData.carnet} placeholder="Cargando..." readOnly />
+                                    <input name="carnet" value={studentData.carnet} readOnly className="bg-gray-50" />
                                 </div>
                             </div>
                         </section>
@@ -318,7 +323,7 @@ export default function EvaluationSpecialPage() {
                                             <tr>
                                                 <td>{evaluadorEspecialSeleccionado.nombre}</td>
                                                 <td>{evaluadorEspecialSeleccionado.curso ?? "—"}</td>
-                                                <td>{evaluadorEspecialSeleccionado.evaluaciones}</td>
+                                                <td>E{evaluadorEspecialSeleccionado.evaluaciones}</td>
                                                 <td className="evaluations-action-cell">
                                                     <div className="approval-check">
                                                         <input
@@ -418,14 +423,17 @@ export default function EvaluationSpecialPage() {
                             const selectedTeacher = teachers[0];
                             if (!selectedTeacher) return;
 
-                            setDocenteSeleccionado(selectedTeacher);
                             setShowAvailability(false);
 
                             const teacher = (await teacherService.getTeacherByName(selectedTeacher.name)) as TeacherResponse | null;
                             if (teacher) {
+                                // Recuperamos el curso que buscamos al inicio
+                                const cursoReal = typeof window !== "undefined" ? (window as any).__specialCourseTemp : "Especialización";
+                                
                                 setSelectedEvaluatorEspecial({
                                     id: teacher.id,
                                     nombre: teacher.name,
+                                    curso: cursoReal, // AQUÍ PINTAMOS EL CURSO REAL
                                     evaluaciones: teacher.evaluationcount ?? 0,
                                     facultad: teacher.faculty_name ?? "",
                                     codigo: teacher.cat ?? "",
@@ -435,7 +443,6 @@ export default function EvaluationSpecialPage() {
                     />
                 )}
             </div>
-
             <Toast
                 show={toast.show}
                 message={toast.message}
