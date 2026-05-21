@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -48,6 +48,16 @@ const PALETAS = [
   { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
   { bg: '#fdf4ff', border: '#a855f7', text: '#6b21a8' },
   { bg: '#fff1f2', border: '#f43f5e', text: '#9f1239' },
+  { bg: '#ecfccb', border: '#65a30d', text: '#365314' },
+  { bg: '#cffafe', border: '#06b6d4', text: '#155e75' },
+  { bg: '#ede9fe', border: '#7c3aed', text: '#4c1d95' },
+  { bg: '#fce7f3', border: '#db2777', text: '#831843' },
+  { bg: '#e0f2fe', border: '#0284c7', text: '#0c4a6e' },
+  { bg: '#dcfce7', border: '#16a34a', text: '#14532d' },
+  { bg: '#fef3c7', border: '#d97706', text: '#92400e' },
+  { bg: '#fee2e2', border: '#dc2626', text: '#7f1d1d' },
+  { bg: '#f3e8ff', border: '#9333ea', text: '#581c87' },
+  { bg: '#e5e7eb', border: '#4b5563', text: '#111827' },
 ];
 
 export default function AvailabilityPicker({
@@ -70,12 +80,43 @@ export default function AvailabilityPicker({
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const horasDelDia       = ['7am', '8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm', '7pm', '8pm', '9pm'];
 
-  const configDocentes: Record<string, { nombre: string; theme: typeof PALETAS[0] }> = Object.fromEntries(
-    teachers.map((t: Teacher, i: number) => [
-      String(t.id),
-      { nombre: t.name, theme: PALETAS[i % PALETAS.length] }
-    ])
-  );
+  const hslToHex = (h: number, s: number, l: number) => {
+    l /= 100;
+    const a = s * Math.min(l, 1 - l) / 100;
+
+    const f = (n: number) => {
+      const k = (n + h / 30) % 12;
+      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+      return Math.round(255 * color).toString(16).padStart(2, '0');
+    };
+
+    return `#${f(0)}${f(8)}${f(4)}`;
+  };
+
+  const configDocentes = useMemo(() => {
+    const total = teachers.length;
+
+    return Object.fromEntries(
+      teachers.map((t: Teacher) => {
+        const hue = (Number(t.id) * 137.508) % 360;
+
+        const border = hslToHex(hue, 70, 50);
+        const bg = hslToHex(hue, 70, 92);
+
+        return [
+          String(t.id),
+          {
+            nombre: t.name,
+            theme: {
+              border,
+              bg,
+              text: "#111827",
+            },
+          },
+        ];
+      })
+    );
+  }, [teachers]);
 
   // Labels 
 

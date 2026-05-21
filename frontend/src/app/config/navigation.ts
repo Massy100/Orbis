@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Users,
+  UserPen,
   Calendar,
   ClipboardCheck,
   FileText,
@@ -8,7 +9,8 @@ import {
   Pencil,
   Settings,
   BookOpenCheck,
-  Sparkles
+  Sparkles,
+  User
 } from "lucide-react";
 
 export interface NavItem {
@@ -21,6 +23,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { name: "Panel", href: "/dashboard", icon: LayoutDashboard },
   { name: "Maestros", href: "/teachers-management", icon: Users },
+  { name: "Estudiantes", href: "/students-management", icon: UserPen },
   { name: "Disponibilidad", href: "/availability", icon: Calendar },
   { name: "Especial", href: "/evaluations/special", icon: Pencil, },
   { name: "Grupos", href: "/groups", icon: FileText },

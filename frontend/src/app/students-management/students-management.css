@@ -1,0 +1,630 @@
+.container-students {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100%;
+    width: 100%;
+    color: black;
+    overflow: auto;
+}
+
+.students-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+    background-color: white;
+    padding: 20px;
+    align-items: center;
+    border-bottom: solid 0.5px #b5b9c2b0;
+}
+
+.students-header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    margin-left: 30px;
+}
+
+.system-administrator {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    align-items: center;
+    border-left: solid 1px #E5E7EB;
+    height: 95%;
+    margin-right: 20px;
+}
+
+.system-administrator h2 {
+    color: #B5B9C2;
+    margin-left: 25px;
+    max-width: 110px;
+}
+
+.system-administrator .icon {
+    background-color: #FBDEC0;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    border-radius: 999px;
+}
+
+.system-administrator .icon svg {
+    height: 2.5rem;
+    width: 2.5em;
+    color: #222;
+}
+
+
+.types-filters-add-student {
+    width: 95%;
+    margin-top: 50px;
+    padding: 14px 16px;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    background-color: white;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.types-filters {
+    display: flex;
+    gap: 12px;
+}
+
+.add-new-student button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background-color: #2563eb;
+    color: white;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.filter-box {
+    position: relative;
+    min-width: 180px;
+    align-items: center;
+    justify-content: center;
+}
+
+.filter-box label {
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    background-color: white;
+    padding: 0 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #A0A7B4;
+    z-index: 2;
+}
+
+.filter-box select {
+    width: 100%;
+    height: 50px;
+    padding: 0 12px;
+    border: 1px solid #E3E5E8;
+    border-radius: 10px;
+    background-color: white;
+    color: #4B5563;
+    font-size: 16px;
+    outline: none;
+    cursor: pointer;
+}
+
+
+.table-students {
+    width: 95%;
+    margin-top: 50px;
+    margin-bottom: 15px;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    background-color: white;
+    max-height: 780px;
+    overflow: auto;
+    display: block;
+}
+
+
+
+.table-students::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.table-students::-webkit-scrollbar-track {
+    background: #F0F5F9;
+    border-radius: 999px;
+    margin: 6px;
+}
+
+.table-students::-webkit-scrollbar-thumb {
+    background: #BFCFE8;
+    border-radius: 999px;
+    border: 2px solid #F0F5F9;
+    background-clip: padding-box;
+}
+
+.table-students::-webkit-scrollbar-thumb:hover {
+    background: #2563EB;
+    border-color: #EEF4FF;
+}
+
+.table-students::-webkit-scrollbar-thumb:active {
+    background: #1D4ED8;
+    border-color: #EEF4FF;
+}
+
+.table-students::-webkit-scrollbar-corner {
+    background: #F0F5F9;
+    border-radius: 999px;
+}
+
+.table-students::-webkit-scrollbar-button {
+    display: none;
+}
+
+
+
+.table-students thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: white;
+    color: #9FA6AE;
+}
+
+.table-students table {
+    width: 100%;
+}
+
+.table-students th,
+.table-students td {
+    color: #9FA6AE;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #E0E8F8;
+}
+
+.table-students td {
+    font-weight: 600;
+}
+
+.table-students th {
+    height: 80px;
+}
+
+.table-students tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-students .student-name {
+    color: #222;
+    font-weight: 600;
+}
+
+.table-students .student-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.table-students .student-status.active {
+    background-color: #DDF8E8;
+    color: #1A9B5F;
+}
+
+.table-students .student-status.inactive {
+    background-color: #FFF3D6;
+    color: #C58A11;
+}
+
+.table-students .student-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
+
+.student-actions button {
+    cursor: pointer;
+}
+
+.student-actions button svg {
+    height: 2.2rem !important;
+    width: 1.7rem !important;
+}
+
+.students-pagination-footer {
+    width: 100%;
+    padding: 10px 30px;
+    margin-top: auto;
+    border-top: 1px solid #E0E8F8;
+    background-color: white;
+}
+
+.table-students .no-data {
+    padding: 16;
+    text-align: center;
+}
+
+.btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-top-color: white;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin 0.7s linear infinite;
+}
+
+
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.modal-add-student-btn:disabled,
+.modal-btn:disabled,
+.sidebar-drop-down-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+    .students-header {
+        padding: 18px 20px;
+    }
+
+    .students-header h1 {
+        font-size: 22px;
+        margin-left: 12px;
+    }
+
+    .system-administrator {
+        gap: 10px;
+        margin-right: 10px;
+    }
+
+    .system-administrator h2 {
+        margin-left: 16px;
+        font-size: 14px;
+        max-width: 90px;
+    }
+
+    .filter-box {
+        flex: 1 1 calc(50% - 10px);
+        min-width: 220px;
+    }
+
+    .table-students {
+        margin-top: 32px;
+    }
+
+    .table-students table {
+        min-width: 1050px;
+    }
+
+    .table-students th,
+    .table-students td {
+        padding: 12px 14px;
+        font-size: 14px;
+    }
+
+    .student-actions button svg {
+        height: 2rem !important;
+        width: 1.5rem !important;
+    }
+
+    .students-pagination-footer {
+        padding: 10px 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .students-header {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 16px;
+    }
+
+    .students-header h1 {
+        margin-left: 0;
+        font-size: 22px;
+    }
+
+    .system-administrator {
+        width: auto;
+        margin-right: 0;
+        padding-top: 0;
+        border-top: none;
+        border-left: solid 1px #E5E7EB;
+        height: auto;
+    }
+
+    .system-administrator h2 {
+        margin-left: 16px;
+        max-width: 110px;
+    }
+
+    .types-filters-add-student {
+        flex-direction: column;
+        align-items: center;
+        margin-top: 24px;
+    }
+
+    .types-filters {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .add-new-student button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .filter-box {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+
+    .table-students {
+        width: 95%;
+        margin-top: 24px;
+        margin-bottom: 12px;
+    }
+
+    .table-students table {
+        min-width: 980px;
+    }
+
+    .table-students th,
+    .table-students td {
+        padding: 12px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .table-students th {
+        height: 64px;
+    }
+
+    .table-students .student-career {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    .table-students .student-status {
+        padding: 7px 12px;
+        font-size: 13px;
+    }
+
+    .table-students .student-actions {
+        gap: 12px;
+    }
+
+    .student-actions button svg {
+        height: 1.8rem !important;
+        width: 1.4rem !important;
+    }
+
+    .students-pagination-footer {
+        padding: 10px 14px;
+    }
+}
+
+@media (max-width: 912px) {
+
+    .types-filters-add-student {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .types-filters {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .add-new-student button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .students-header {
+        padding: 14px 12px;
+    }
+
+    .students-header h1 {
+        font-size: 20px;
+    }
+
+    .system-administrator {
+        gap: 10px;
+    }
+
+    .system-administrator h2 {
+        font-size: 13px;
+    }
+
+    .system-administrator .icon svg {
+        height: 2rem;
+        width: 2rem;
+    }
+
+    .types-filters-add-student {
+        margin-top: 20px;
+        padding: 12px;
+    }
+
+    .filter-box label {
+        font-size: 10px;
+    }
+
+    .filter-box select {
+        height: 46px;
+        font-size: 14px;
+    }
+
+    .add-new-student {
+        display: flex;
+        width: fit-content;
+        justify-content: flex-end;
+    }
+
+    .add-new-student button {
+        padding: 7px;
+        font-size: 15px;
+    }
+
+    .add-new-student button svg {
+        height: 20px;
+        width: 20px;
+    }
+
+    .table-students {
+        width: 95%;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+
+    .table-students table {
+        min-width: 920px;
+    }
+
+    .table-students th,
+    .table-students td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .table-students .student-career,
+    .table-students .student-status {
+        font-size: 12px;
+    }
+
+    .students-pagination-footer {
+        padding: 10px 8px;
+    }
+}
+
+/* =========================
+   MODAL AGREGAR/EDITAR ESTUDIANTE
+========================= */
+
+.modal-student-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+
+.modal-student-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modal-student-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #344054;
+}
+
+.modal-student-input {
+    width: 100%;
+    height: 50px;
+    padding: 0 14px;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    background-color: white;
+    font-size: 15px;
+    color: #222;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+.modal-student-input::placeholder {
+    color: #98A2B3;
+}
+
+.modal-student-input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+
+/* BOTONES */
+
+.modal-student-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.modal-student-btn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.modal-student-btn-ghost {
+    background: #F8FAFC;
+    color: #344054;
+    border: 1px solid #D0D5DD;
+}
+
+.modal-student-btn-ghost:hover {
+    background: #EEF2F6;
+}
+
+.modal-student-btn-primary {
+    background: #2563EB;
+    color: white;
+    border: none;
+}
+
+.modal-student-btn-primary:hover {
+    background: #1D4ED8;
+}
+
+.modal-student-btn-danger {
+    background: #DC2626;
+    color: white;
+    border: none;
+}
+
+.modal-student-btn-danger:hover {
+    background: #B91C1C;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+    .modal-student-actions {
+        flex-direction: column;
+    }
+
+    .modal-student-btn {
+        width: 100%;
+    }
+}
