@@ -1,11 +1,15 @@
 "use client";
 import "./result-reports.css";
+
+import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
+
 import Pagination from "../components/pagination";
 import DashboardLayout from "../components/layout";
 import Toast from "../components/toast";
+
 import { X } from "lucide-react";
-import { fetchResultReports, sendReportEmail } from "../services/resultReportService.js";
+import { fetchResultReports, sendReportEmail, updateResultCalificacion } from "../services/resultReportService.js";
 
 type Option = "especial" | "comprensiva";
 
@@ -13,6 +17,7 @@ type BaseReport = {
     id: number;
     nombre: string;
     idEstudiante: string;
+    est: string;
     fecha: string;
     calificacion: string;
     evaluadores: string[];
@@ -27,6 +32,17 @@ type ComprensivaReport = BaseReport & {
 };
 
 export default function ResultReports() {
+
+    const router = useRouter();
+
+    const handleApproveSpecial = (carnet: string) => {
+        router.push(`/evaluation-special/${carnet}`);
+    };
+
+    const handleApproveComprehensive = (carnet: string) => {
+        router.push(`/evaluation-comprehensive/${carnet}`);
+    };
+
     const [activeOption, setActiveOption] = useState<Option>("especial");
     const [studentQuery, setStudentQuery] = useState("");
     const [courseQuery, setCourseQuery] = useState("");
@@ -47,6 +63,19 @@ export default function ResultReports() {
     const [selectedReport, setSelectedReport] = useState<BaseReport | null>(null);
     const [emailSubject, setEmailSubject] = useState("");
     const [emailBody, setEmailBody] = useState("");
+
+    // Modal de edición de calificación
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingReport, setEditingReport] = useState<BaseReport | null>(null);
+    const [selectedCalificacion, setSelectedCalificacion] = useState("");
+
+    const calificacionOptions = ["Aprobado", "No Aprobado", "No se Presento"];
+
+    const hasCalificacion = (calificacion?: string) => {
+        return !!calificacion &&
+            calificacion.trim() !== "" &&
+            calificacion.trim().toLowerCase() !== "sin calificación";
+    };
 
     // Toast
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' | 'info' });
@@ -107,7 +136,7 @@ export default function ResultReports() {
 
         return currentReports.filter((report) => {
             const matchesStudent = normalizedStudentQuery === "" || report.nombre.toLowerCase().includes(normalizedStudentQuery) || report.idEstudiante.includes(normalizedStudentQuery);
-            
+
             const matchesCourse = activeOption === "especial"
                 ? normalizedCourseQuery === "" || (report as EspecialReport).curso.toLowerCase().includes(normalizedCourseQuery)
                 : normalizedCourseQuery === "" || (report as ComprensivaReport).gruposEstudio.some((g) => g.toLowerCase().includes(normalizedCourseQuery));
@@ -141,13 +170,26 @@ export default function ResultReports() {
         setCourseQuery("");
     }, [activeOption]);
 
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast((prev) => ({
+                    ...prev,
+                    show: false,
+                }));
+            }, 3000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
+
     // ===== LÓGICA DEL MODAL DE CORREO =====
     const openEmailModal = (report: BaseReport) => {
         setSelectedReport(report);
-        
+
         const fechaEval = formatDateToSpanish(report.fecha);
         const evaluadoresList = report.evaluadores;
-        
+
         // Asignación segura de la terna para el formato
         const prof1 = evaluadoresList[0] || "[Pendiente asignar]";
         const prof2 = evaluadoresList[1] || "[Pendiente asignar]";
@@ -156,20 +198,20 @@ export default function ResultReports() {
         if (activeOption === "especial") {
             const espReport = report as EspecialReport;
             setEmailSubject(`Aprobación de terna de Evaluación Especial - ${espReport.nombre}`);
-            
+
             // Plantilla extraída del Documento de Word
             setEmailBody(`Estimada Mgtr. Alejandra,\nBuenas tardes. Deseo que se encuentre bien.\n\nQueremos solicitar amablemente la aprobación de la terna de evaluación de Ingeniería, por favor:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${espReport.nombre}\nCarné: ${espReport.idEstudiante}\nCarrera: Ingeniería en Sistemas\n\n--- TERNA EVALUADORA ---\nÁrea Informática: ${prof1}\nÁrea Sistemas: ${prof2}\nÁrea Gestión: ${prof3}\n\nAgradecidos de antemano por su apoyo, quedamos a la espera de su respuesta.\n\nCordialmente,\nCoordinación Académica`);
-        
+
         } else {
             const compReport = report as ComprensivaReport;
             const grupos = compReport.gruposEstudio.join(", ");
-            
+
             setEmailSubject(`Informe de Evaluación Comprensiva - ${compReport.nombre}`);
-            
+
             // Plantilla adaptada para Comprensiva
             setEmailBody(`Estimada Mgtr. Alejandra,\nBuenas tardes. Deseo que se encuentre bien.\n\nPor este medio compartimos los resultados correspondientes a la Evaluación Comprensiva de Ingeniería:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${compReport.nombre}\nCarné: ${compReport.idEstudiante}\nGrupos de Estudio: ${grupos}\nResultado Final: ${compReport.calificacion}\n\n--- COMITÉ EVALUADOR ---\nDocente 1: ${prof1}\nDocente 2: ${prof2}\n\nAgradecidos de antemano por su apoyo y gestión.\n\nCordialmente,\nCoordinación Académica`);
         }
-        
+
         setIsModalOpen(true);
     };
 
@@ -191,6 +233,50 @@ export default function ResultReports() {
             setToast({ show: true, message: `Falló: ${result.errorMessage}`, type: 'error' });
         }
         setTimeout(() => setToast(prev => ({ ...prev, show: false })), 4000);
+    };
+
+    const openEditModal = (report: BaseReport) => {
+        setEditingReport(report);
+        setSelectedCalificacion(report.calificacion || "");
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveCalificacion = async () => {
+        if (!editingReport || !selectedCalificacion) return;
+
+        const result = await updateResultCalificacion(
+            editingReport.id,
+            selectedCalificacion
+        );
+
+        if (!result.success) {
+            setToast({
+                show: true,
+                message: result.errorMessage || "Error al actualizar la calificación",
+                type: "error",
+            });
+            return;
+        }
+
+        const updateReports = (reports) =>
+            reports.map((report) =>
+                report.id === editingReport.id
+                    ? { ...report, calificacion: selectedCalificacion }
+                    : report
+            );
+
+        setEspecialReports((prev) => updateReports(prev));
+        setComprensivaReports((prev) => updateReports(prev));
+
+        setIsEditModalOpen(false);
+        setEditingReport(null);
+        setSelectedCalificacion("");
+
+        setToast({
+            show: true,
+            message: "Calificación actualizada correctamente",
+            type: "success",
+        });
     };
 
     if (isLoading) return <DashboardLayout><div className="flex h-full items-center justify-center text-gray-500">Cargando reportes...</div></DashboardLayout>;
@@ -268,7 +354,7 @@ export default function ResultReports() {
                                 {paginatedReports.map((report) => (
                                     <tr key={report.id}>
                                         <td className="report-name">{report.nombre}</td>
-                                        <td className="report-id">{report.idEstudiante}</td>
+                                        <td className="report-id">{report.est}</td>
                                         <td className="report-course">
                                             {activeOption === "especial" ? (
                                                 (report as EspecialReport).curso
@@ -283,13 +369,12 @@ export default function ResultReports() {
                                         <td className="report-date">{formatDateToSpanish(report.fecha)}</td>
                                         <td>
                                             {/* Ajuste de colores dinámicos basado en la calificación */}
-                                            <p className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                                                report.calificacion === 'Aprobado' ? 'bg-green-100 text-green-700' :
+                                            <p className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${report.calificacion === 'Aprobado' ? 'bg-green-100 text-green-700' :
                                                 report.calificacion === 'No Aprobado' ? 'bg-red-100 text-red-700' :
-                                                report.calificacion === 'No se Presento' ? 'bg-yellow-100 text-yellow-700' :
-                                                'bg-gray-100 text-gray-700'
-                                            }`}>
-                                                {report.calificacion}
+                                                    report.calificacion === 'No se Presento' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                {hasCalificacion(report.calificacion) ? report.calificacion : "Sin calificación"}
                                             </p>
                                         </td>
                                         <td>
@@ -298,10 +383,45 @@ export default function ResultReports() {
                                             </div>
                                         </td>
                                         <td>
-                                            <button className="export-btn" onClick={() => openEmailModal(report)}>
-                                                <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><g><path fill="none" d="M0 0h24v24H0z"></path><path d="M22 20.007a1 1 0 0 1-.992.993H2.992A.993.993 0 0 1 2 20.007V19h18V7.3l-8 7.2-10-9V4a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v16.007zM4.434 5L12 11.81 19.566 5H4.434zM0 15h8v2H0v-2zm0-5h5v2H0v-2z"></path></g></svg>
-                                                Enviar correo
-                                            </button>
+                                            <div className="flex gap-2">
+                                                {activeOption === "especial" ? (
+                                                    <button
+                                                        className="export-btn"
+                                                        onClick={() => handleApproveSpecial(report.est)}
+                                                    >
+                                                        Editar Evaluación
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        className="export-btn"
+                                                        onClick={() => handleApproveComprehensive(report.est)}
+                                                    >
+                                                        Editar Evaluación
+                                                    </button>
+                                                )}
+                                                <button
+                                                    className="export-btn"
+                                                    onClick={() => openEditModal(report)}
+                                                >
+                                                    Editar Calificacion
+                                                </button>
+                                                {activeOption === "comprensiva" && (
+                                                    <button
+                                                        className={`export-btn ${!hasCalificacion(report.calificacion) ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                        onClick={() => openEmailModal(report)}
+                                                        disabled={!hasCalificacion(report.calificacion)}
+                                                        title={!hasCalificacion(report.calificacion) ? "Debe asignar una calificación antes de enviar correo" : ""}
+                                                    >
+                                                        <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                                                            <g>
+                                                                <path fill="none" d="M0 0h24v24H0z"></path>
+                                                                <path d="M22 20.007a1 1 0 0 1-.992.993H2.992A.993.993 0 0 1 2 20.007V19h18V7.3l-8 7.2-10-9V4a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v16.007zM4.434 5L12 11.81 19.566 5H4.434zM0 15h8v2H0v-2zm0-5h5v2H0v-2z"></path>
+                                                            </g>
+                                                        </svg>
+                                                        Enviar correo
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -342,13 +462,13 @@ export default function ResultReports() {
                                     <X size={20} />
                                 </button>
                             </div>
-                            
+
                             {/* Body */}
                             <div className="p-6 flex flex-col gap-4">
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Asunto del Correo</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         value={emailSubject}
                                         onChange={(e) => setEmailSubject(e.target.value)}
                                         className="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -356,7 +476,7 @@ export default function ResultReports() {
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Cuerpo del Mensaje</label>
-                                    <textarea 
+                                    <textarea
                                         rows={16}
                                         value={emailBody}
                                         onChange={(e) => setEmailBody(e.target.value)}
@@ -367,13 +487,13 @@ export default function ResultReports() {
 
                             {/* Footer */}
                             <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
-                                <button 
+                                <button
                                     onClick={() => setIsModalOpen(false)}
                                     className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
                                 >
                                     Cancelar
                                 </button>
-                                <button 
+                                <button
                                     onClick={handleSendEmail}
                                     className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
                                 >
@@ -384,13 +504,97 @@ export default function ResultReports() {
                         </div>
                     </div>
                 )}
-                
+
+                {isEditModalOpen && editingReport && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+
+                            {/* Header */}
+                            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-blue-50">
+                                <div>
+                                    <h3 className="text-lg font-bold text-blue-900">Editar Calificación</h3>
+                                    <p className="text-xs text-blue-600 font-medium mt-1">
+                                        Información del estudiante
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="p-1 hover:bg-blue-100 rounded-full transition-colors text-blue-800"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 flex flex-col gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">
+                                        Nombre del estudiante
+                                    </label>
+                                    <p className="text-sm font-semibold text-gray-800">
+                                        {editingReport.nombre}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">
+                                        Carné
+                                    </label>
+                                    <p className="text-sm font-semibold text-gray-800">
+                                        {editingReport.est}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">
+                                        Calificación
+                                    </label>
+
+                                    <select
+                                        value={selectedCalificacion}
+                                        onChange={(e) => setSelectedCalificacion(e.target.value)}
+                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="">Seleccione una calificación</option>
+
+                                        {calificacionOptions.map((option) => (
+                                            <option key={option} value={option}>
+                                                {option}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    onClick={handleSaveCalificacion}
+                                    disabled={!selectedCalificacion}
+                                    className={`px-6 py-2 text-sm font-bold text-white rounded-lg transition-colors ${selectedCalificacion
+                                        ? "bg-blue-600 hover:bg-blue-700"
+                                        : "bg-gray-400 cursor-not-allowed"
+                                        }`}
+                                >
+                                    Guardar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* TOAST DE CONFIRMACIÓN */}
-                <Toast 
-                    show={toast.show} 
-                    message={toast.message} 
-                    type={toast.type} 
-                    onClose={() => setToast(prev => ({ ...prev, show: false }))} 
+                <Toast
+                    show={toast.show}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
                 />
             </DashboardLayout>
         </>
