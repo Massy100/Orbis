@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_crontab',
 
     #third party
     'rest_framework',
@@ -165,3 +166,12 @@ EMAIL_USE_TLS = True
 import os
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'correo_del_proyecto@gmail.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'contraseña_de_aplicacion')
+
+# Configuration for cron jobs to reset evaluation counts annually
+CRONJOBS = [
+    ('0 0 1 1 *', 'api.cron.reset_evaluation_counts', '>> /var/log/cron.log 2>&1'),
+    # This executes the reset_evaluation_counts function on January 1st at midnight every year, and logs the output to /var/log/cron.log. Make sure to adjust the path to the log file as needed and ensure that the cron service has permission to write to it.
+]
+
+# Optional: Verify that the cron job is set up correctly by running `python manage.py crontab show` and checking the system's cron jobs with `crontab -l`.
+# ('0 0 1 * *', 'api.cron.check_evaluation_counts', '>> /var/log/cron.log 2>&1'),

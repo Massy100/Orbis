@@ -13,6 +13,9 @@ from django.db.models import Count, Q
 from django.db import transaction, connection
 from django.db.models.functions import ExtractMonth, ExtractYear
 from django.utils import timezone
+from datetime import date
+from django.db.models import Count
+from django.core.exceptions import ValidationError
 
 from parsers.pensum_parser import parse_pensum
 from parsers.teacher_schedule_parser import parse_teacher_schedule_excel
@@ -40,6 +43,25 @@ from .serializers import (
     SystemUserSerializer,
 )
 
+def validate_teacher_evaluation_limit(teacher_id, evaluation_date):
+    """
+    Validates that a teacher does not have more than 15 evaluations in the calendar year.
+    Returns True if within the limit, raises ValidationError if exceeded.
+    """
+    year = evaluation_date.year if evaluation_date else date.today().year
+    
+    evaluations_count = EvaluationTeacher.objects.filter(
+        teacher_id=teacher_id,
+        evaluation__date__year=year
+    ).count()
+    
+    if evaluations_count >= 15:
+        raise ValidationError(
+            f"El docente ya tiene {evaluations_count} evaluaciones en el año {year}. "
+            "El límite máximo es de 15 evaluaciones por año."
+        )
+    
+    return True
 class CareerViewSet(viewsets.ModelViewSet):
     queryset = Career.objects.all()
     serializer_class = CareerSerializer
@@ -257,11 +279,22 @@ class StudentViewSet(viewsets.ModelViewSet):
         est = request.query_params.get("est")
         if not est:
             return Response({"error": "Debe proporcionar un carnet"}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            student = Student.objects.get(est=est)
-            return Response({"id": student.id, "name": student.name, "est": student.est})
-        except Student.DoesNotExist:
-            return Response({"error": "Estudiante no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+            student = Student.objects.filter(est__iexact=est.strip()).first()
+            
+            if not student:
+                return Response({"error": f"No se encontró el estudiante con carnet {est}"}, status=status.HTTP_404_NOT_FOUND)
+            
+            return Response({
+                "id": student.id, 
+                "name": student.name, 
+                "est": student.est,
+                "faculty": student.faculty.name if student.faculty else None,
+                "career": student.career.name if student.career else None
+            })
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class StudyGroupViewSet(viewsets.ModelViewSet):
     serializer_class = StudyGroupSerializer
@@ -360,7 +393,6 @@ class StudyGroupTeacherViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['studygroup', 'teacher', 'hasaccepted']
 
-# ✅ Una sola definición, la completa con select_related
 class CourseTutorialViewSet(viewsets.ModelViewSet):
     queryset = CourseTutorial.objects.select_related('studygroup', 'teacher', 'course').all()
     serializer_class = CourseTutorialSerializer
@@ -374,11 +406,85 @@ class EvaluationViewSet(viewsets.ModelViewSet):
     filterset_fields = ['studentid', 'type', 'date', 'classroom', 'building', 'haspayment']
     ordering_fields = ['date', 'starthour']
 
+    def create(self, request, *args, **kwargs):
+        evaluation_data = request.data
+        
+        if not evaluation_data.get('date'):
+            return Response(
+                {"error": "La fecha de evaluación es requerida"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = self.get_serializer(data=evaluation_data)
+        serializer.is_valid(raise_exception=True)
+        
+        return super().create(request, *args, **kwargs)
+
 class EvaluationTeacherViewSet(viewsets.ModelViewSet):
     queryset = EvaluationTeacher.objects.select_related('evaluation', 'teacher').all()
     serializer_class = EvaluationTeacherSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['evaluation', 'teacher']
+
+    def create(self, request, *args, **kwargs):
+        teacher_id = request.data.get('teacher')
+        evaluation_id = request.data.get('evaluation')
+        
+        try:
+            evaluation = Evaluation.objects.get(id=evaluation_id)
+        except Evaluation.DoesNotExist:
+            return Response(
+                {"error": "La evaluación no existe"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            validate_teacher_evaluation_limit(teacher_id, evaluation.date)
+        except ValidationError as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if EvaluationTeacher.objects.filter(
+            evaluation_id=evaluation_id, 
+            teacher_id=teacher_id
+        ).exists():
+            return Response(
+                {"error": "El docente ya está asignado a esta evaluación"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        teacher = Teacher.objects.get(id=teacher_id)
+        teacher.evaluationcount = EvaluationTeacher.objects.filter(
+            teacher_id=teacher_id
+        ).count()
+        teacher.save()
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, 
+            status=status.HTTP_201_CREATED, 
+            headers=headers
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        teacher_id = instance.teacher.id
+        
+        response = super().destroy(request, *args, **kwargs)
+        
+        teacher = Teacher.objects.get(id=teacher_id)
+        teacher.evaluationcount = EvaluationTeacher.objects.filter(
+            teacher_id=teacher_id
+        ).count()
+        teacher.save()
+        
+        return response
 
 class ResultViewSet(viewsets.ModelViewSet):
     queryset = Result.objects.select_related('evaluationid').all()
@@ -655,3 +761,64 @@ class SendEmailView(APIView):
         except Exception as e:
             print("ERROR GENERAL:", str(e))
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    class StudentByCarnetView(APIView):
+        def get(self, request, carnet):
+            try:
+                student = Student.objects.filter(est__iexact=carnet.strip()).first()
+                if not student:
+                    return Response({"error": "Estudiante no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+                
+                study_groups = StudyGroupStudent.objects.filter(student=student).select_related('studygroup')
+                groups_info = [{
+                    "id": sg.studygroup.id,
+                    "name": sg.studygroup.group,
+                    "approved": sg.studygroup.approvedgroup,
+                    "haspayment": sg.haspayment
+                } for sg in study_groups]
+                
+                return Response({
+                    "id": student.id,
+                    "name": student.name,
+                    "est": student.est,
+                    "faculty": student.faculty.name if student.faculty else None,
+                    "career": student.career.name if student.career else None,
+                    "study_groups": groups_info
+                })
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+from django.utils import timezone
+
+class ResetYearlyEvaluationsView(APIView):
+    """
+    Endpoint to reset evaluation counts at the beginning of the year
+    This endpoint should be called by a cron job every January 1st
+    """
+    def post(self, request):
+        if not request.user.is_staff:
+            return Response(
+                {"error": "No autorizado"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        current_year = timezone.now().year
+        
+        teachers = Teacher.objects.all()
+        updated_count = 0
+        
+        for teacher in teachers:
+            current_evaluations = EvaluationTeacher.objects.filter(
+                teacher=teacher,
+                evaluation__date__year=current_year
+            ).count()
+            
+            if teacher.evaluationcount != current_evaluations:
+                teacher.evaluationcount = current_evaluations
+                teacher.save()
+                updated_count += 1
+        
+        return Response({
+            "message": f"Contadores reseteados. {updated_count} docentes actualizados.",
+            "year": current_year
+        })
