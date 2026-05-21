@@ -198,7 +198,7 @@ export default function EvaluacionEspecialPage() {
             }}
           >
             <Plus size={18} />
-            Agregar Evaluación
+            Preparar Evaluación
           </button>
         </div>
         

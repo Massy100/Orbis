@@ -381,8 +381,8 @@ export default function GroupsPage() {
                     </div>
                 </div>
 
-                <div className="groups-grid" key={`${filter}-${page}`}>
-                    {paginatedGroups.length === 0 ? (
+                {paginatedGroups.length === 0 ? (
+                    <div className="empty-state-wrapper">
                         <div className="empty-state">
                             <div className="empty-state-svg">
                                 <svg
@@ -390,8 +390,8 @@ export default function GroupsPage() {
                                     fill="none"
                                     strokeWidth="0"
                                     viewBox="0 0 24 24"
-                                    height="1em"
-                                    width="1em"
+                                    height="80"
+                                    width="80"
                                     xmlns="http://www.w3.org/2000/svg"
                                 >
                                     <path
@@ -406,13 +406,13 @@ export default function GroupsPage() {
                             <h3>No hay resultados</h3>
                             <p>No encontramos elementos para esta categoría.</p>
                         </div>
-                    ) : (
-                        paginatedGroups.map((group) => (
+                    </div>
+                ) : (
+                    <div className="groups-grid" key={`${filter}-${page}`}>
+                        {paginatedGroups.map((group) => (
                             <div key={group.id} className="group-card">
                                 <div className="card-header">
-                                    <h3 className="group-name">
-                                        {group.group}
-                                    </h3>
+                                    <h3 className="group-name">{group.group}</h3>
 
                                     <div className="card-actions">
                                         <button
@@ -439,15 +439,13 @@ export default function GroupsPage() {
                                                 : "status-pendiente"
                                         }`}
                                     >
-                                        {group.approvedgroup
-                                            ? "Aprobado"
-                                            : "Pendiente"}
+                                        {group.approvedgroup ? "Aprobado" : "Pendiente"}
                                     </span>
                                 </div>
                             </div>
-                        ))
-                    )}
-                </div>
+                        ))}
+                    </div>
+                )}
 
                 <footer className="groups-pagination-footer">
                     {totalItems > 0 && (

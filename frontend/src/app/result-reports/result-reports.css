@@ -374,9 +374,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
+    padding: 4px 6px;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 600;
     border: none;
     cursor: pointer;
@@ -387,6 +387,11 @@
 .data-table .export-btn svg {
     width: 16px;
     height: 16px;
+}
+
+.data-table .export-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .data-report-result-pagination {
