@@ -257,11 +257,22 @@ class StudentViewSet(viewsets.ModelViewSet):
         est = request.query_params.get("est")
         if not est:
             return Response({"error": "Debe proporcionar un carnet"}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            student = Student.objects.get(est=est)
-            return Response({"id": student.id, "name": student.name, "est": student.est})
-        except Student.DoesNotExist:
-            return Response({"error": "Estudiante no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+            student = Student.objects.filter(est__iexact=est.strip()).first()
+            
+            if not student:
+                return Response({"error": f"No se encontró el estudiante con carnet {est}"}, status=status.HTTP_404_NOT_FOUND)
+            
+            return Response({
+                "id": student.id, 
+                "name": student.name, 
+                "est": student.est,
+                "faculty": student.faculty.name if student.faculty else None,
+                "career": student.career.name if student.career else None
+            })
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class StudyGroupViewSet(viewsets.ModelViewSet):
     serializer_class = StudyGroupSerializer
@@ -655,3 +666,29 @@ class SendEmailView(APIView):
         except Exception as e:
             print("ERROR GENERAL:", str(e))
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    class StudentByCarnetView(APIView):
+        def get(self, request, carnet):
+            try:
+                student = Student.objects.filter(est__iexact=carnet.strip()).first()
+                if not student:
+                    return Response({"error": "Estudiante no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+                
+                study_groups = StudyGroupStudent.objects.filter(student=student).select_related('studygroup')
+                groups_info = [{
+                    "id": sg.studygroup.id,
+                    "name": sg.studygroup.group,
+                    "approved": sg.studygroup.approvedgroup,
+                    "haspayment": sg.haspayment
+                } for sg in study_groups]
+                
+                return Response({
+                    "id": student.id,
+                    "name": student.name,
+                    "est": student.est,
+                    "faculty": student.faculty.name if student.faculty else None,
+                    "career": student.career.name if student.career else None,
+                    "study_groups": groups_info
+                })
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

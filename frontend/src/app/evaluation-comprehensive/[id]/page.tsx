@@ -7,6 +7,9 @@ import DashboardLayout from "../../components/layout";
 import Toast from "../../components/toast";
 import AvailabilityPicker from "../../components/AvailabilityPicker";
 import { availabilityService } from "../../services/availability-service";
+import { studentService } from "../../services/student-service"; 
+import GLOBAL_API_URL from "../../services/global-api-url";
+const API_URL = GLOBAL_API_URL;
 
 type AreaType = "informatica" | "sistemas" | "gestion";
 
@@ -70,6 +73,7 @@ export default function EvaluationComprehensivePage() {
     const params = useParams();
     const estudianteCarnet = params?.id as string;
     const [studygroupId, setStudygroupId] = useState<number | null>(null);
+    const [loading, setLoading] = useState(true); 
 
     const [showAvailability, setShowAvailability] = useState(false);
 
@@ -79,9 +83,95 @@ export default function EvaluationComprehensivePage() {
         type: "success",
     });
 
-    const handleSave = () => {
-        setToast({ show: true, message: "Evaluación guardada exitosamente", type: "success" });
-    };
+    const handleSave = async () => {
+        if (!canSaveComprensiva) return;
+        
+        try {
+            const student = await studentService.findByCarnet(studentData.carnet);
+            
+            if (!student) {
+                setToast({
+                    show: true,
+                    message: "No se encontró el estudiante en el sistema",
+                    type: "error"
+                });
+                return;
+            }
+            
+            const tipoEvaluacionId = 1; 
+            
+            const evaluationResponse = await fetch(`${API_URL}evaluations/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    studentid: student.id,
+                    date: scheduleData.fecha,
+                    starthour: scheduleData.horaInicio,
+                    endhour: scheduleData.horaFin,
+                    haspayment: scheduleData.pagado,
+                    classroom: scheduleData.salon,
+                    building: scheduleData.lugar,
+                    type: tipoEvaluacionId
+                })
+            });
+            
+            if (!evaluationResponse.ok) {
+                const errorData = await evaluationResponse.json();
+                console.error("Error del backend:", errorData);
+                throw new Error(errorData.error || errorData.message || "Error al crear la evaluación");
+            }
+            
+            const evaluation = await evaluationResponse.json();
+            console.log("Evaluación creada:", evaluation);
+            
+            const teachersToAssign = [
+                selectedEvaluatorsComprensiva.informatica,
+                selectedEvaluatorsComprensiva.sistemas,
+                selectedEvaluatorsComprensiva.gestion
+            ].filter(teacher => teacher !== null);
+            
+            for (const teacher of teachersToAssign) {
+                await fetch(`${API_URL}evaluation-teachers/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        evaluation: evaluation.id,
+                        teacher: teacher?.id
+                    })
+                });
+            }
+            
+            await fetch(`${API_URL}results/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    evaluationid: evaluation.id,
+                    state: "Pendiente",
+                    observation: "Evaluación creada desde el sistema"
+                })
+            });
+        
+        setToast({
+            show: true,
+            message: "Evaluación guardada exitosamente",
+            type: "success"
+        });
+        
+    } catch (error) {
+        console.error("Error al guardar evaluación:", error);
+        setToast({
+            show: true,
+            message: "Error al guardar la evaluación",
+            type: "error"
+        });
+    }
+};
 
     const [studentData, setStudentData] = useState<StudentForm>({
         nombreCompleto: "",
@@ -224,12 +314,56 @@ export default function EvaluationComprehensivePage() {
     }, [toast.show]);
 
     useEffect(() => {
-    if (!estudianteCarnet) return;
-    availabilityService.getStudyGroupIdByEst(estudianteCarnet).then((id) => {
-        setStudygroupId(id);
-    });
-}, [estudianteCarnet]);
-
+        if (!estudianteCarnet) return;
+        
+        const loadStudentData = async () => {
+            setLoading(true);
+            try {
+                const student = await studentService.findByCarnet(estudianteCarnet);
+                
+                if (student) {
+                    setStudentData({
+                        nombreCompleto: student.name || "",
+                        carnet: student.est || "",
+                    });
+                    
+                    const groupId = await availabilityService.getStudyGroupIdByEst(estudianteCarnet);
+                    setStudygroupId(groupId);
+                } else {
+                    setToast({
+                        show: true,
+                        message: `No se encontró el estudiante con carnet ${estudianteCarnet}`,
+                        type: "error"
+                    });
+                }
+            } catch (error) {
+                console.error("Error al cargar datos del estudiante:", error);
+                setToast({
+                    show: true,
+                    message: "Error al cargar los datos del estudiante",
+                    type: "error"
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        loadStudentData();
+    }, [estudianteCarnet]);
+        if (loading) {
+        return (
+            <DashboardLayout>
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    height: '100vh' 
+                }}>
+                    <div>Cargando datos del estudiante...</div>
+                </div>
+            </DashboardLayout>
+        );
+    }
     return (
         <DashboardLayout>
             <div className="evaluations-page">
