@@ -47,4 +47,6 @@ urlpatterns = [
     path('api/result-reports/', views.ResultReportsView.as_view(), name='result-reports'),
     path('api/send-email/', views.SendEmailView.as_view(), name='send-email'),
     path('api/result-reports/<int:evaluation_id>/calificacion/',  views.UpdateResultCalificacionView.as_view(), name="update-result-calificacion"),
+    path('api/reset-yearly-evaluations/', views.ResetYearlyEvaluationsView.as_view(), name='reset-yearly-evaluations'),
+
 ]

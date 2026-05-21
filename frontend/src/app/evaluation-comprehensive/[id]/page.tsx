@@ -133,16 +133,26 @@ export default function EvaluationComprehensivePage() {
             ].filter(teacher => teacher !== null);
             
             for (const teacher of teachersToAssign) {
-                await fetch(`${API_URL}evaluation-teachers/`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        evaluation: evaluation.id,
-                        teacher: teacher?.id
-                    })
-                });
+                try {
+                    const teacherResponse = await fetch(`${API_URL}evaluation-teachers/`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            evaluation: evaluation.id,
+                            teacher: teacher?.id
+                        })
+                    });
+                    
+                    if (!teacherResponse.ok) {
+                        const errorData = await teacherResponse.json();
+                        throw new Error(errorData.error || `Error al asignar docente ${teacher?.nombre}`);
+                    }
+                } catch (teacherError) {
+                    console.error("Error al asignar docente:", teacherError);
+                    throw teacherError;
+                }
             }
             
             await fetch(`${API_URL}results/`, {
@@ -439,8 +449,8 @@ export default function EvaluationComprehensivePage() {
                                         onChange={handleScheduleChange}
                                     >
                                         <option value="Central">Central</option>
-                                        <option value="Extension Hermano Pedro">
-                                            Extension Hermano Pedro
+                                        <option value="Ext Hermano Pedro">
+                                            Ext Hermano Pedro
                                         </option>
                                     </select>
                                 </div>

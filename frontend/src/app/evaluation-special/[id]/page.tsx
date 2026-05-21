@@ -274,7 +274,7 @@ export default function EvaluationSpecialPage() {
                                     <label>Lugar</label>
                                     <select name="lugar" value={scheduleData.lugar} onChange={handleScheduleChange}>
                                         <option value="Central">Central</option>
-                                        <option value="Extension Hermano Pedro">Extension Hermano Pedro</option>
+                                        <option value="Ext Hermano Pedro">Ext Hermano Pedro</option>
                                     </select>
                                 </div>
                                 <div className="evaluations-field">
