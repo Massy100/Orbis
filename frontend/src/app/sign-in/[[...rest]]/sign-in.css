@@ -1,0 +1,166 @@
+.signin-page {
+  min-height: 100vh;
+  background: #f6f6f8;
+  display: flex;
+  flex-direction: column;
+  font-family: "Inter", sans-serif;
+}
+
+.signin-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.signin-card {
+  width: 100%;
+  max-width: 450px;
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0px 4px 20px rgba(0,0,0,0.08);
+}
+
+.signin-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.logo-box {
+  width: 45px;
+  height: 45px;
+  background: #1a57db;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.logo-text {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.signin-header h1 {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #0f172a;
+}
+
+.signin-header p {
+  color: #64748b;
+  margin-top: 8px;
+}
+
+.signin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #334155;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 14px 45px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  outline: none;
+}
+
+.input-wrapper input:focus {
+  border-color: #1a57db;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.login-btn {
+  width: 100%;
+  background: #1a57db;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: center;
+}
+
+.login-btn:hover {
+  background: #1747b8;
+}
+
+.error-message {
+  color: red;
+  font-size: 14px;
+}
+
+.signup-link {
+  text-align: center;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.signup-link a {
+  color: #1a57db;
+  font-weight: bold;
+  margin-left: 5px;
+  text-decoration: none;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}
+
+.signin-footer {
+  text-align: center;
+  padding: 20px;
+  border-top: 1px solid #e2e8f0;
+  background: white;
+  font-size: 14px;
+  color: #64748b;
+}
