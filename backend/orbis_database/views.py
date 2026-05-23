@@ -296,6 +296,22 @@ class StudentViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    # NUEVO: Función para Desactivar/Activar al estudiante
+    @action(detail=True, methods=['patch'], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        student = self.get_object()
+        # Si era nulo, lo tratamos como False y lo invertimos
+        current_status = student.isactive if student.isactive is not None else False
+        student.isactive = not current_status
+        student.save()
+        
+        estado_texto = 'Activo' if student.isactive else 'Inactivo'
+        return Response({
+            'message': 'Estado actualizado correctamente',
+            'isactive': student.isactive,
+            'status_text': estado_texto,
+        })
+
 class StudyGroupViewSet(viewsets.ModelViewSet):
     serializer_class = StudyGroupSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]

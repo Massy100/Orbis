@@ -21,11 +21,6 @@ type StudentDraft = {
     carne: string
 }
 
-type NewStudentDraft = {
-    name: string
-    carne: string
-}
-
 export default function Students() {
     const [page, setPage] = useState(1)
     const [pageSize, setPageSize] = useState(10)
@@ -45,28 +40,6 @@ export default function Students() {
     const [isSavingStudent, setIsSavingStudent] = useState(false)
     const [isEditingStudent, setIsEditingStudent] = useState(false)
     const [isDeletingStudent, setIsDeletingStudent] = useState(false)
-    const USE_MOCKS = true
-
-    const mockStudents: Student[] = [
-        {
-            id: 1,
-            carne: "9876543",
-            name: "Juan Pérez",
-            status: "Activo"
-        },
-        {
-            id: 2,
-            carne: "1234567",
-            name: "María López",
-            status: "Activo"
-        },
-        {
-            id: 3,
-            carne: "9764315",
-            name: "Carlos Ramírez",
-            status: "Inactivo"
-        }
-    ]
 
     const [toast, setToast] = useState({
         show: false,
@@ -79,18 +52,14 @@ export default function Students() {
         carne: "",
     })
 
-    const initialNewStudentDraft: NewStudentDraft = {
+    const initialNewStudentDraft: StudentDraft = {
         name: "",
         carne: ""
     }
 
-    const [newStudentDraft, setNewStudentDraft] =
-        useState<NewStudentDraft>(initialNewStudentDraft)
+    const [newStudentDraft, setNewStudentDraft] = useState<StudentDraft>(initialNewStudentDraft)
 
-    const showToast = (
-        message: string,
-        type: "success" | "error" | "info" = "info"
-    ) => {
+    const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
         setToast({ show: true, message, type })
         setTimeout(() => {
             setToast(prev => ({ ...prev, show: false }))
@@ -99,18 +68,13 @@ export default function Students() {
 
     const mapStudent = (student: any): Student => ({
         id: student.id,
-        carne: student.carne,
-        name: student.name,
+        carne: student.est || student.carne || "Sin carnet",
+        name: student.name || "Sin nombre",
         status: student.isactive ? "Activo" : "Inactivo"
     })
 
     const loadStudents = async () => {
         try {
-            if (USE_MOCKS) {
-                setStudents(mockStudents)
-                return
-            }
-
             const data = await studentService.getStudents()
             setStudents(data.map(mapStudent))
         } catch (error) {
@@ -123,15 +87,11 @@ export default function Students() {
         loadStudents()
     }, [])
 
-
     const filteredStudents = useMemo(() => {
         if (statusFilter === "Todos") {
             return students
         }
-
-        return students.filter(
-            student => student.status === statusFilter
-        )
+        return students.filter(student => student.status === statusFilter)
     }, [students, statusFilter])
 
     const totalItems = filteredStudents.length
@@ -153,17 +113,12 @@ export default function Students() {
     const closeDrawer = () => {
         setOpen(false)
         setSelectedStudentId(null)
-        setDraft({
-            name: "",
-            carne: ""
-        })
+        setDraft({ name: "", carne: "" })
     }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-
         if (selectedStudentId === null) return
-
         setEditModalOpen(true)
     }
 
@@ -173,56 +128,30 @@ export default function Students() {
 
     const handleConfirmEdit = async () => {
         if (selectedStudentId === null) return
-
         setIsEditingStudent(true)
 
         try {
-            if (USE_MOCKS) {
-                setStudents((prev) =>
-                    prev.map((student) =>
-                        student.id === selectedStudentId
-                            ? {
-                                ...student,
-                                name: draft.name.trim(),
-                                carne: draft.carne.trim(),
-                            }
-                            : student
-                    )
-                )
-            } else {
-                const res = await studentService.updateStudent(
-                    selectedStudentId,
-                    {
-                        name: draft.name.trim(),
-                        carne: draft.carne.trim()
-                    }
-                )
-
-                if (!res.ok) {
-                    showToast(
-                        "No se pudo actualizar el estudiante",
-                        "error"
-                    )
-                    return
+            const res = await studentService.updateStudent(
+                selectedStudentId,
+                {
+                    name: draft.name.trim(),
+                    carne: draft.carne.trim()
                 }
+            )
 
-                await loadStudents()
+            if (!res.ok) {
+                showToast("No se pudo actualizar el estudiante", "error")
+                return
             }
 
+            await loadStudents()
             closeDrawer()
             closeEditModal()
-
-            showToast(
-                "Estudiante actualizado correctamente",
-                "success"
-            )
+            showToast("Estudiante actualizado correctamente", "success")
 
         } catch (error) {
             console.error(error)
-            showToast(
-                "Error conectando con el servidor",
-                "error"
-            )
+            showToast("Error conectando con el servidor", "error")
         } finally {
             setIsEditingStudent(false)
         }
@@ -240,45 +169,23 @@ export default function Students() {
 
     const handleConfirmDelete = async () => {
         if (!studentToDelete) return
-
         setIsDeletingStudent(true)
 
         try {
-            if (USE_MOCKS) {
-                setStudents((prev) =>
-                    prev.filter(
-                        (student) => student.id !== studentToDelete.id
-                    )
-                )
-            } else {
-                const res = await studentService.deactivateStudent(
-                    studentToDelete.id
-                )
+            const res = await studentService.deactivateStudent(studentToDelete.id)
 
-                if (!res.ok) {
-                    showToast(
-                        "No se pudo eliminar el estudiante",
-                        "error"
-                    )
-                    return
-                }
-
-                await loadStudents()
+            if (!res.ok) {
+                showToast("No se pudo cambiar el estado del estudiante", "error")
+                return
             }
 
+            await loadStudents()
             closeDeleteModal()
-
-            showToast(
-                "Estudiante eliminado correctamente",
-                "success"
-            )
+            showToast("Estado del estudiante modificado", "success")
 
         } catch (error) {
             console.error(error)
-            showToast(
-                "Error conectando con el servidor",
-                "error"
-            )
+            showToast("Error conectando con el servidor", "error")
         } finally {
             setIsDeletingStudent(false)
         }
@@ -294,69 +201,35 @@ export default function Students() {
         setNewStudentDraft(initialNewStudentDraft)
     }
 
-    const handleAddStudent = async (
-        e: React.FormEvent
-    ) => {
+    const handleAddStudent = async (e: React.FormEvent) => {
         e.preventDefault()
-
         if (isSavingStudent) return
 
         const name = newStudentDraft.name.trim()
         const carne = newStudentDraft.carne.trim()
 
         if (!name || !carne) {
-            showToast(
-                "Completa todos los campos",
-                "error"
-            )
+            showToast("Completa todos los campos", "error")
             return
         }
 
         setIsSavingStudent(true)
 
         try {
-            if (USE_MOCKS) {
-                const newStudent: Student = {
-                    id: Date.now(),
-                    name,
-                    carne,
-                    status: "Activo"
-                }
+            const res = await studentService.createStudent({ name, carne })
 
-                setStudents((prev) => [
-                    ...prev,
-                    newStudent
-                ])
-            } else {
-                const res = await studentService.createStudent({
-                    name,
-                    carne
-                })
-
-                if (!res.ok) {
-                    showToast(
-                        "No se pudo crear el estudiante",
-                        "error"
-                    )
-                    return
-                }
-
-                await loadStudents()
+            if (!res.ok) {
+                showToast("No se pudo crear el estudiante", "error")
+                return
             }
 
+            await loadStudents()
             closeAddModal()
-
-            showToast(
-                "Estudiante creado correctamente",
-                "success"
-            )
+            showToast("Estudiante creado correctamente", "success")
 
         } catch (error) {
             console.error(error)
-            showToast(
-                "Error conectando con el servidor",
-                "error"
-            )
+            showToast("Error conectando con el servidor", "error")
         } finally {
             setIsSavingStudent(false)
         }
@@ -384,17 +257,9 @@ export default function Students() {
                                         setStatusFilter(e.target.value)
                                     }
                                 >
-                                    <option value="Todos">
-                                        Todos
-                                    </option>
-
-                                    <option value="Activo">
-                                        Activos
-                                    </option>
-
-                                    <option value="Inactivo">
-                                        Inactivos
-                                    </option>
+                                    <option value="Todos">Todos</option>
+                                    <option value="Activo">Activos</option>
+                                    <option value="Inactivo">Inactivos</option>
                                 </select>
                             </div>
                         </div>
@@ -428,7 +293,7 @@ export default function Students() {
                                             colSpan={4}
                                             className="no-data"
                                         >
-                                            No hay estudiantes
+                                            No hay estudiantes en el sistema.
                                         </td>
                                     </tr>
                                 ) : (
@@ -441,7 +306,7 @@ export default function Students() {
                                                     student.status === "Activo"
                                                         ? "active"
                                                         : "inactive"
-                                                }`}
+                                                    }`}
                                             >
                                                 {student.status}
                                             </span></td>
@@ -527,7 +392,6 @@ export default function Students() {
                                 }
                                 required
                             />
-
                             <span className="input-underline-border"></span>
                         </div>
                     </div>
@@ -560,7 +424,6 @@ export default function Students() {
                                     }
                                 }}
                             />
-
                             <span className="input-underline-border"></span>
                         </div>
                     </div>
@@ -584,15 +447,15 @@ export default function Students() {
                 </form>
             </SidebarDropDown>
 
-            {/* ELIMINAR */}
+            {/* ELIMINAR/DESACTIVAR */}
             <Modal
                 open={deleteModalOpen}
                 onClose={closeDeleteModal}
-                title="Eliminar estudiante"
+                title={studentToDelete?.status === "Activo" ? "Desactivar estudiante" : "Activar estudiante"}
             >
                 <div className="modal-student-form">
                     <p className="modal-text">
-                        ¿Estás seguro que deseas eliminar al estudiante{" "}
+                        ¿Estás seguro que deseas {studentToDelete?.status === "Activo" ? "desactivar" : "activar"} al estudiante{" "}
                         <strong>
                             {studentToDelete?.name}
                         </strong>?
@@ -609,17 +472,17 @@ export default function Students() {
 
                         <button
                             type="button"
-                            className="modal-student-btn modal-student-btn-danger"
+                            className={`modal-student-btn ${studentToDelete?.status === "Activo" ? "modal-student-btn-danger" : "modal-student-btn-primary"}`}
                             onClick={handleConfirmDelete}
                             disabled={isDeletingStudent}
                         >
                             {isDeletingStudent ? (
                                 <>
                                     <span className="btn-spinner" />
-                                    Eliminando...
+                                    Procesando...
                                 </>
                             ) : (
-                                "Confirmar eliminación"
+                                "Confirmar acción"
                             )}
                         </button>
                     </div>

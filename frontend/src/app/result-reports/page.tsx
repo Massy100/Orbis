@@ -78,7 +78,8 @@ export default function ResultReports() {
     const hasCalificacion = (calificacion?: string) => {
         return !!calificacion &&
             calificacion.trim() !== "" &&
-            calificacion.trim().toLowerCase() !== "sin calificación";
+            calificacion.trim().toLowerCase() !== "sin calificación" &&
+            calificacion.trim().toLowerCase() !== "pendiente";
     };
 
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' | 'info' });
