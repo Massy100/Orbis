@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
-  User as UserIcon,
   X,
   CheckCircle
 } from 'lucide-react';
@@ -42,22 +41,13 @@ interface AvailabilityPickerProps {
   filterOptions?: FilterOptions;
 }
 
+// ✅ Colores fijos por posición de slot, igual que la vista de disponibilidad
 const PALETAS = [
-  { bg: '#eff6ff', border: '#2563eb', text: '#1d4ed8' },
-  { bg: '#f0fdf4', border: '#10b981', text: '#065f46' },
-  { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
-  { bg: '#fdf4ff', border: '#a855f7', text: '#6b21a8' },
-  { bg: '#fff1f2', border: '#f43f5e', text: '#9f1239' },
-  { bg: '#ecfccb', border: '#65a30d', text: '#365314' },
-  { bg: '#cffafe', border: '#06b6d4', text: '#155e75' },
-  { bg: '#ede9fe', border: '#7c3aed', text: '#4c1d95' },
-  { bg: '#fce7f3', border: '#db2777', text: '#831843' },
-  { bg: '#e0f2fe', border: '#0284c7', text: '#0c4a6e' },
-  { bg: '#dcfce7', border: '#16a34a', text: '#14532d' },
-  { bg: '#fef3c7', border: '#d97706', text: '#92400e' },
-  { bg: '#fee2e2', border: '#dc2626', text: '#7f1d1d' },
-  { bg: '#f3e8ff', border: '#9333ea', text: '#581c87' },
-  { bg: '#e5e7eb', border: '#4b5563', text: '#111827' },
+  { bg: '#eff6ff', border: '#2563eb', text: '#1d4ed8' }, // Slot 1 — Azul
+  { bg: '#f0fdf4', border: '#10b981', text: '#065f46' }, // Slot 2 — Verde
+  { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' }, // Slot 3 — Naranja
+  { bg: '#fdf4ff', border: '#a855f7', text: '#6b21a8' }, // Slot 4 — Morado
+  { bg: '#fff1f2', border: '#f43f5e', text: '#9f1239' }, // Slot 5 — Rosa
 ];
 
 export default function AvailabilityPicker({
@@ -80,52 +70,32 @@ export default function AvailabilityPicker({
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const horasDelDia       = ['7am', '8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm', '7pm', '8pm', '9pm'];
 
-  const hslToHex = (h: number, s: number, l: number) => {
-    l /= 100;
-    const a = s * Math.min(l, 1 - l) / 100;
-
-    const f = (n: number) => {
-      const k = (n + h / 30) % 12;
-      const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-      return Math.round(255 * color).toString(16).padStart(2, '0');
-    };
-
-    return `#${f(0)}${f(8)}${f(4)}`;
-  };
-
+  // ✅ configDocentes ahora usa el índice del slot para el color, no el ID del docente
   const configDocentes = useMemo(() => {
-    const total = teachers.length;
-
     return Object.fromEntries(
       teachers.map((t: Teacher) => {
-        const hue = (Number(t.id) * 137.508) % 360;
-
-        const border = hslToHex(hue, 70, 50);
-        const bg = hslToHex(hue, 70, 92);
-
+        // El color se asignará dinámicamente según en qué slot esté seleccionado
         return [
           String(t.id),
-          {
-            nombre: t.name,
-            theme: {
-              border,
-              bg,
-              text: "#111827",
-            },
-          },
+          { nombre: t.name }
         ];
       })
     );
   }, [teachers]);
 
-  // Labels 
+  // ✅ Helper: dado un docenteId, obtener el tema del slot en que está seleccionado
+  const getThemeForDocente = (docenteId: string) => {
+    const slotIndex = selectedTeacherIds.indexOf(docenteId);
+    if (slotIndex === -1) return PALETAS[0]; // fallback
+    return PALETAS[slotIndex] ?? PALETAS[0];
+  };
 
+  // Labels
   const getLabel = () => {
     const { mode } = filterOptions;
     if (mode === 'group-evaluator' || mode === 'tutorial-evaluator') {
       return maxSelections > 1 ? 'Asignar Evaluadores' : 'Asignar Evaluador';
     }
-    // group-mentor, tutorial-tutor, or no mode
     return maxSelections > 1 ? 'Asignar Tutores' : 'Asignar Catedrático';
   };
 
@@ -141,8 +111,7 @@ export default function AvailabilityPicker({
     }
   };
 
-  // Handlers 
-
+  // Handlers
   const handleTeacherChange = (index: number, newId: string) => {
     const updated = [...selectedTeacherIds];
     updated[index] = newId;
@@ -156,7 +125,6 @@ export default function AvailabilityPicker({
         id: Number(id),
         name: configDocentes[id].nombre
       }));
-
     onSave(selectedTeachers);
   };
 
@@ -188,8 +156,6 @@ export default function AvailabilityPicker({
     return d;
   });
 
-  // Loading 
-
   if (loading) {
     return (
       <div className="availability-overlay">
@@ -199,8 +165,6 @@ export default function AvailabilityPicker({
       </div>
     );
   }
-
-  // Render 
 
   return (
     <div className="availability-overlay">
@@ -216,36 +180,37 @@ export default function AvailabilityPicker({
 
           <div className="header-actions">
             <div className="multi-teacher-selectors">
-              {selectedTeacherIds.map((id, index) => (
-                <div key={index} className="teacher-picker">
-                  <select
-                    value={id}
-                    onChange={(e) => handleTeacherChange(index, e.target.value)}
-                    className="select-teacher"
-                    style={{
-                      border: `2px solid ${
-                        id ? configDocentes[id]?.theme.border : '#e5e7eb'
-                      }`,
-                      backgroundColor: id
-                        ? `${configDocentes[id]?.theme.border}10`
-                        : '#ffffff'
-                    }}
-                  >
-                    <option className="select-option" value="">
-                      -- Seleccionar --
-                    </option>
-                    {teachers.map((t: Teacher) => (
-                      <option
-                        key={t.id}
-                        value={String(t.id)}
-                        disabled={selectedTeacherIds.includes(String(t.id)) && String(t.id) !== id}
-                      >
-                        {t.name}
+              {selectedTeacherIds.map((id, index) => {
+                // ✅ Color fijo por índice del slot, no por docente
+                const theme = PALETAS[index] ?? PALETAS[0];
+                return (
+                  <div key={index} className="teacher-picker">
+                    <select
+                      value={id}
+                      onChange={(e) => handleTeacherChange(index, e.target.value)}
+                      className="select-teacher"
+                      style={{
+                        border: `2px solid ${theme.border}`,
+                        backgroundColor: id ? `${theme.border}18` : '#ffffff',
+                        color: id ? theme.text : undefined,
+                      }}
+                    >
+                      <option className="select-option" value="">
+                        -- Seleccionar --
                       </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
+                      {teachers.map((t: Teacher) => (
+                        <option
+                          key={t.id}
+                          value={String(t.id)}
+                          disabled={selectedTeacherIds.includes(String(t.id)) && String(t.id) !== id}
+                        >
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
             </div>
 
             <button className="btn-confirm-main" onClick={handleConfirm}>
@@ -288,8 +253,7 @@ export default function AvailabilityPicker({
             {/* Columnas de días */}
             <div className="day-grid">
               {diasDeLaSemana.map((diaObj, index) => {
-                const esHoy =
-                  diaObj.toDateString() === new Date().toDateString();
+                const esHoy = diaObj.toDateString() === new Date().toDateString();
 
                 const eventosDia = events.filter((e: AvailabilityEvent) =>
                   e.diaSemana === diaObj.getDay() &&
@@ -298,7 +262,6 @@ export default function AvailabilityPicker({
 
                 return (
                   <div key={index} className="day-column">
-
                     {/* HEADER DÍA */}
                     <div className={`day-header ${esHoy ? 'today' : 'normal'}`}>
                       <span>{nombresDiasCortos[diaObj.getDay()]}</span>
@@ -314,6 +277,8 @@ export default function AvailabilityPicker({
                       ))}
 
                       {eventosDia.map((evento: AvailabilityEvent, idx: number) => {
+                        // ✅ Color basado en el slot en que está el docente
+                        const theme = getThemeForDocente(evento.docenteId);
                         const config = configDocentes[evento.docenteId];
                         if (!config) return null;
 
@@ -335,9 +300,9 @@ export default function AvailabilityPicker({
                             style={{
                               top: `calc(((${evento.inicio} - 7) * var(--cell-height)) + (${orden} * ${offsetY}px))`,
                               height: `calc((${evento.fin} - ${evento.inicio}) * var(--cell-height))`,
-                              backgroundColor: config.theme.bg,
-                              borderLeft: `4px solid ${config.theme.border}`,
-                              color: config.theme.text,
+                              backgroundColor: theme.bg,
+                              borderLeft: `4px solid ${theme.border}`,
+                              color: theme.text,
                               zIndex: isLifted ? 100 : (10 + orden),
                               width: '87%',
                               left: `calc(4% + (${orden} * ${offsetX}px))`,
@@ -369,7 +334,6 @@ export default function AvailabilityPicker({
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

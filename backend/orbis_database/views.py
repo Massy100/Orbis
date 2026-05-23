@@ -647,8 +647,21 @@ class ResultReportsView(APIView):
         for eval_obj in evaluations:
             result_obj = Result.objects.filter(evaluationid=eval_obj).first()
             calificacion = result_obj.state if result_obj else "Sin Calificación"
-            et_list = EvaluationTeacher.objects.filter(evaluation=eval_obj)
-            evaluadores = [et.teacher.name for et in et_list if et.teacher]
+            
+            # --- 1. BUSCAR EVALUADORES (TERNA) Y SUS ÁREAS ---
+            et_list = EvaluationTeacher.objects.filter(evaluation=eval_obj).select_related('teacher')
+            evaluadores_str = []
+            evaluadores_det = []
+            for idx, et in enumerate(et_list):
+                if et.teacher:
+                    # Buscamos la especialidad en la BD
+                    st = SpecialityTeacher.objects.filter(teacher=et.teacher).select_related('area').first()
+                    # Si no tiene especialidad guardada, aplicamos el orden por defecto de la UI
+                    fallback = ["Sistemas", "Gestión", "Informática"][idx] if idx < 3 else "Área"
+                    area = st.area.name if st and st.area else fallback
+                    
+                    evaluadores_str.append(et.teacher.name)
+                    evaluadores_det.append({"nombre": et.teacher.name, "area": area})
 
             est_name = eval_obj.studentid.name if eval_obj.studentid else "Sin asignar"
             est_id = str(eval_obj.studentid.id) if eval_obj.studentid else "N/A"
@@ -663,6 +676,7 @@ class ResultReportsView(APIView):
                     fecha_str = f"{parts[2]}/{parts[1]}/{parts[0]}" if len(parts) == 3 else str(eval_obj.date)
 
             type_name = eval_obj.type.name if eval_obj.type else ""
+            
             base_data = {
                 "id": eval_obj.id,
                 "nombre": est_name,
@@ -670,24 +684,44 @@ class ResultReportsView(APIView):
                 "est": est,
                 "fecha": fecha_str,
                 "calificacion": calificacion,
-                "evaluadores": evaluadores
+                "evaluadores": evaluadores_str,
+                "evaluadores_detallados": evaluadores_det, # Nueva lista enriquecida
+                "tutores_detallados": [] # Espacio para los tutores
             }
 
             if 'Especial' in type_name:
                 base_data["curso"] = "Curso de Especialización"
+                # Para especial, el tutor viene de CourseTutorial
+                if eval_obj.studentid:
+                    ct = CourseTutorial.objects.filter(studygroup__studygroupstudent__student=eval_obj.studentid).select_related('teacher').first()
+                    if ct and ct.teacher:
+                        st = SpecialityTeacher.objects.filter(teacher=ct.teacher).select_related('area').first()
+                        area = st.area.name if st and st.area else "Especialidad"
+                        base_data["tutores_detallados"].append({"nombre": ct.teacher.name, "area": area})
                 especial_reports.append(base_data)
+
             elif 'Comprensiva' in type_name:
                 if eval_obj.studentid:
-                    try:
-                        grupos_rel = StudyGroupStudent.objects.filter(student=eval_obj.studentid).select_related('studygroup')
-                        base_data["gruposEstudio"] = [g.studygroup.group for g in grupos_rel if g.studygroup] if grupos_rel.exists() else ["Sin grupo asignado"]
-                    except Exception:
-                        base_data["gruposEstudio"] = ["Sin grupo asignado"]
+                    grupos_rel = StudyGroupStudent.objects.filter(student=eval_obj.studentid).select_related('studygroup')
+                    base_data["gruposEstudio"] = [g.studygroup.group for g in grupos_rel if g.studygroup] if grupos_rel.exists() else ["Sin grupo asignado"]
+                    
+                    # --- 2. BUSCAR TUTORES DESDE EL GRUPO DE ESTUDIO ---
+                    if grupos_rel.exists():
+                        sg = grupos_rel.first().studygroup
+                        sg_teachers = StudyGroupTeacher.objects.filter(studygroup=sg).select_related('teacher')
+                        for idx, sgt in enumerate(sg_teachers):
+                            if sgt.teacher:
+                                st = SpecialityTeacher.objects.filter(teacher=sgt.teacher).select_related('area').first()
+                                fallback = ["Sistemas", "Gestión", "Informática"][idx] if idx < 3 else "Área"
+                                area = st.area.name if st and st.area else fallback
+                                base_data["tutores_detallados"].append({"nombre": sgt.teacher.name, "area": area})
                 else:
                     base_data["gruposEstudio"] = ["Sin grupo asignado"]
+                
                 comprensiva_reports.append(base_data)
 
         return Response({"especial": especial_reports, "comprensiva": comprensiva_reports})
+
 
 class UpdateResultCalificacionView(APIView):
     def patch(self, request, evaluation_id):
