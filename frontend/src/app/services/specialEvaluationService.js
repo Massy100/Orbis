@@ -30,7 +30,6 @@ export const specialEvaluationService = {
         const teacherObj = teachersData.find(t => t.id === ct.teacher);
         const courseObj = coursesData.find(c => c.id === ct.course);
 
-        // AQUÍ ESTÁ LA CORRECCIÓN: Leemos directamente el true/false de CourseTutorial
         const statusAcuerdo = ct.hasaccepted ? "acordado" : "no_acuerdo";
         const estadoFinal = (ct.hasaccepted && ct.haspayment) ? "Aprobado" : "No aprobado";
 
@@ -84,7 +83,6 @@ export const specialEvaluationService = {
       }
 
       if (editingId) {
-        // MODO EDICIÓN: Rastrear estudiante y actualizarlo
         const ctRes = await fetch(`${API_URL}/course-tutorials/${editingId}/`);
         const ct = await ctRes.json();
         
@@ -107,7 +105,6 @@ export const specialEvaluationService = {
             });
         }
       } else {
-        // MODO CREACIÓN
         let studentId;
         const existingStudent = await specialEvaluationService.searchStudentByCarnet(form.carnet);
         if (existingStudent) {
@@ -165,19 +162,16 @@ export const specialEvaluationService = {
       await fetch(`${API_URL}/course-tutorials/${id}/`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          // Convertimos a booleano explícito por seguridad
           body: JSON.stringify({ haspayment: isPaidNow === true || isPaidNow === "pagado" }) 
       });
     } catch (e) { console.error(e); }
   },
 
-  // 2. CORRECCIÓN DEL TOGGLE DE ACUERDO DEL TUTOR
   toggleTutorStatus: async (id, isAcceptedNow) => {
     try {
       await fetch(`${API_URL}/course-tutorials/${id}/`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          // Convertimos a booleano explícito por seguridad
           body: JSON.stringify({ hasaccepted: isAcceptedNow === true || isAcceptedNow === "acordado" })
       });
     } catch (e) { console.error(e); }

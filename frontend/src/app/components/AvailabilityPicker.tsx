@@ -41,7 +41,6 @@ interface AvailabilityPickerProps {
   filterOptions?: FilterOptions;
 }
 
-// ✅ Colores fijos por posición de slot, igual que la vista de disponibilidad
 const PALETAS = [
   { bg: '#eff6ff', border: '#2563eb', text: '#1d4ed8' }, // Slot 1 — Azul
   { bg: '#f0fdf4', border: '#10b981', text: '#065f46' }, // Slot 2 — Verde
@@ -70,11 +69,9 @@ export default function AvailabilityPicker({
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const horasDelDia       = ['7am', '8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm', '7pm', '8pm', '9pm'];
 
-  // ✅ configDocentes ahora usa el índice del slot para el color, no el ID del docente
   const configDocentes = useMemo(() => {
     return Object.fromEntries(
       teachers.map((t: Teacher) => {
-        // El color se asignará dinámicamente según en qué slot esté seleccionado
         return [
           String(t.id),
           { nombre: t.name }
@@ -83,7 +80,6 @@ export default function AvailabilityPicker({
     );
   }, [teachers]);
 
-  // ✅ Helper: dado un docenteId, obtener el tema del slot en que está seleccionado
   const getThemeForDocente = (docenteId: string) => {
     const slotIndex = selectedTeacherIds.indexOf(docenteId);
     if (slotIndex === -1) return PALETAS[0]; // fallback
@@ -181,7 +177,6 @@ export default function AvailabilityPicker({
           <div className="header-actions">
             <div className="multi-teacher-selectors">
               {selectedTeacherIds.map((id, index) => {
-                // ✅ Color fijo por índice del slot, no por docente
                 const theme = PALETAS[index] ?? PALETAS[0];
                 return (
                   <div key={index} className="teacher-picker">
@@ -277,7 +272,6 @@ export default function AvailabilityPicker({
                       ))}
 
                       {eventosDia.map((evento: AvailabilityEvent, idx: number) => {
-                        // ✅ Color basado en el slot en que está el docente
                         const theme = getThemeForDocente(evento.docenteId);
                         const config = configDocentes[evento.docenteId];
                         if (!config) return null;

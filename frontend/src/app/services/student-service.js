@@ -14,7 +14,6 @@ export const studentService = {
         if (!res.ok) throw new Error("Error obteniendo estudiantes");
         
         const data = await res.json();
-        // DRF a veces devuelve { results: [...] } si hay paginación global
         return Array.isArray(data) ? data : (data.results || []);
     },
 
@@ -26,9 +25,9 @@ export const studentService = {
             },
             body: JSON.stringify({
                 name: data.name,
-                est: data.carne, // En DB se llama 'est'
+                est: data.carne, 
                 isactive: true,
-                faculty: 1, // Valores por defecto obligatorios
+                faculty: 1, 
                 career: 1
             })
         });
@@ -41,13 +40,13 @@ export const studentService = {
 
     async updateStudent(id, data) {
         const res = await fetch(`${API}students/${id}/`, {
-            method: "PATCH", // Cambiado a PATCH para que solo actualice lo enviado
+            method: "PATCH", 
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
                 name: data.name,
-                est: data.carne // En DB se llama 'est'
+                est: data.carne 
             })
         });
 
@@ -58,7 +57,6 @@ export const studentService = {
     },
 
     async deactivateStudent(id) {
-        // Apunta al nuevo endpoint que creamos en views.py
         const res = await fetch(`${API}students/${id}/toggle-active/`, {
             method: "PATCH",
             headers: {
