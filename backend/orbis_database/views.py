@@ -570,9 +570,11 @@ class DashboardStatsView(APIView):
 
 class DashboardMetricsView(APIView):
     def get(self, request):
+        # Totales para las tarjetas superiores (Solo Evaluaciones)
         total_comprensivas = Evaluation.objects.filter(type__name__icontains='Comprensiva').count()
         total_especiales = Evaluation.objects.filter(type__name__icontains='Especial').count()
 
+        # Gráfica Mensual
         stats_mes = Evaluation.objects.annotate(
             month=ExtractMonth('date'),
             year=ExtractYear('date')
@@ -590,6 +592,7 @@ class DashboardMetricsView(APIView):
             for item in stats_mes_list
         ]
 
+        # Top Docentes
         top_comprensiva = Teacher.objects.filter(
             evaluationteacher__evaluation__type__name__icontains='Comprensiva'
         ).annotate(total=Count('evaluationteacher')).order_by('-total')[:4]
@@ -607,10 +610,32 @@ class DashboardMetricsView(APIView):
                 "total": t.total
             }
 
-        conf_eval_comp = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Evaluación Comprensiva').count()
-        conf_tut_comp  = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Tutoría Comprensiva').count()
-        conf_eval_esp  = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Evaluación Especial').count()
-        conf_tut_esp   = Result.objects.filter(state__icontains='Confirmado', evaluationid__type__name__icontains='Tutoría Especial').count()
+        # =========================================================
+        # NUEVA LÓGICA DE CONFIRMACIONES (CORREGIDA)
+        # =========================================================
+
+        # 1. Tutoría Comprensiva (StudyGroup & StudyGroupTeacher)
+        total_tut_comp = StudyGroup.objects.filter(isactive=True).count()
+        # Contamos cuántos grupos tienen exactamente 3 tutores con hasaccepted=True
+        conf_tut_comp = StudyGroup.objects.filter(isactive=True).annotate(
+            accepted_tutors=Count('studygroupteacher', filter=Q(studygroupteacher__hasaccepted=True))
+        ).filter(accepted_tutors=3).count()
+
+        # 2. Evaluación Comprensiva (Result & Evaluation)
+        conf_eval_comp = Result.objects.filter(
+            Q(state__icontains='Confirmado') | Q(state__icontains='Aprobado'), 
+            evaluationid__type__name__icontains='Comprensiva'
+        ).count()
+
+        # 3. Tutoría Especial (CourseTutorial)
+        total_tut_esp = CourseTutorial.objects.count()
+        conf_tut_esp = CourseTutorial.objects.filter(hasaccepted=True).count()
+
+        # 4. Evaluación Especial (Result & Evaluation)
+        conf_eval_esp = Result.objects.filter(
+            Q(state__icontains='Confirmado') | Q(state__icontains='Aprobado'), 
+            evaluationid__type__name__icontains='Especial'
+        ).count()
 
         return Response({
             "cards_totals": {"comprensivas": total_comprensivas, "especiales": total_especiales},
@@ -620,12 +645,13 @@ class DashboardMetricsView(APIView):
                 "especiales": [format_teacher(t) for t in top_especial]
             },
             "confirmations": [
-                {"label": "Tutoría Comprensiva",    "value": conf_tut_comp,  "max": total_comprensivas, "color": "#2563EB"},
+                {"label": "Tutoría Comprensiva",    "value": conf_tut_comp,  "max": total_tut_comp,     "color": "#2563EB"},
                 {"label": "Evaluación Comprensiva", "value": conf_eval_comp, "max": total_comprensivas, "color": "#3B82F6"},
-                {"label": "Tutoría Especial",       "value": conf_tut_esp,   "max": total_especiales,   "color": "#93C5FD"},
+                {"label": "Tutoría Especial",       "value": conf_tut_esp,   "max": total_tut_esp,      "color": "#93C5FD"},
                 {"label": "Evaluación Especial",    "value": conf_eval_esp,  "max": total_especiales,   "color": "#DBEAFE"},
             ]
         })
+
 
 class TeacherScheduleDetailView(APIView):
     def get(self, request, teacher_code):
