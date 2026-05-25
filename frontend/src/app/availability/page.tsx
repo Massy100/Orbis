@@ -5,7 +5,7 @@ import DashboardLayout from '../components/layout';
 import "./availability.css";
 import { ChevronLeft, ChevronRight, User as UserIcon, Clock } from 'lucide-react';
 import { useAvailability } from '@/src/app/hooks/use-availability';
-import GLOBAL_API_URL from '@/src/app/services/global-api-url'; // ✅ importar igual que los demás
+import GLOBAL_API_URL from '@/src/app/services/global-api-url';
 
 interface Teacher {
   id: number;
@@ -40,18 +40,17 @@ const parseDay = (day: string | number): number => {
 export default function AvailabilityPage() {
   const { teachers, loading } = useAvailability();
 
-  const [localEvents, setLocalEvents]   = useState<AvailabilityEvent[]>([]);
+  const [localEvents, setLocalEvents] = useState<AvailabilityEvent[]>([]);
   const [teacherAreas, setTeacherAreas] = useState<Record<string, string>>({});
-  const [slots, setSlots]               = useState<string[]>(['', '', '']);
-  const [currentDate, setCurrentDate]   = useState(new Date());
-  const [vistaCalendario, setVista]     = useState('week');
+  const [slots, setSlots] = useState<string[]>(['', '', '']);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [vistaCalendario, setVista] = useState('week');
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
-  const [activeEvent, setActiveEvent]   = useState<string | null>(null);
+  const [activeEvent, setActiveEvent] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDirectEvents = async () => {
       try {
-        // ✅ Usar GLOBAL_API_URL igual que todos los demás servicios
         const url = GLOBAL_API_URL.endsWith('/') ? GLOBAL_API_URL.slice(0, -1) : GLOBAL_API_URL;
 
         const [tpRes, pRes, tRes, cRes] = await Promise.all([
@@ -64,7 +63,7 @@ export default function AvailabilityPage() {
         if (!tpRes.ok || !pRes.ok) return;
 
         const tpData = await tpRes.json();
-        const pData  = await pRes.json();
+        const pData = await pRes.json();
 
         const tRaw = tRes.ok ? await tRes.json() : [];
         const cRaw = cRes.ok ? await cRes.json() : [];
@@ -101,16 +100,16 @@ export default function AvailabilityPage() {
 
         setLocalEvents(mappedEvents);
       } catch (error) {
-        console.error("Error al obtener datos directamente:", error);
+        console.error("Error al obtener datos:", error);
       }
     };
 
     fetchDirectEvents();
   }, []);
 
-  const nombresMeses      = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const nombresMeses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  const horasDelDia       = ['7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm'];
+  const horasDelDia = ['7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm'];
 
   const parseTimeToDecimal = (time: string | number): number => {
     if (typeof time === 'number') return time;
@@ -121,10 +120,10 @@ export default function AvailabilityPage() {
 
   const formatTime = (decimalHours: any) => {
     const hoursNum = typeof decimalHours === 'string' ? parseTimeToDecimal(decimalHours) : decimalHours;
-    const hours    = Math.floor(hoursNum);
-    const minutes  = Math.round((hoursNum - hours) * 60);
-    const ampm     = hours >= 12 ? 'pm' : 'am';
-    const display  = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+    const hours = Math.floor(hoursNum);
+    const minutes = Math.round((hoursNum - hours) * 60);
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    const display = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
     return `${display}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
 
@@ -167,7 +166,6 @@ export default function AvailabilityPage() {
   return (
     <DashboardLayout>
       <div className="container">
-
         <div className="teacher-section">
           <label className="teacher-label">
             <UserIcon size={16} />
@@ -215,7 +213,7 @@ export default function AvailabilityPage() {
               {nombresMeses[currentDate.getMonth()]} {currentDate.getFullYear()}
             </span>
             <div className="nav-buttons">
-              <button onClick={irAtras}    className="nav-btn border"><ChevronLeft size={18} /></button>
+              <button onClick={irAtras} className="nav-btn border"><ChevronLeft size={18} /></button>
               <button onClick={irAdelante} className="nav-btn"><ChevronRight size={18} /></button>
             </div>
           </div>
@@ -266,10 +264,10 @@ export default function AvailabilityPage() {
                           const theme = PALETAS[slotIndex];
 
                           const inicioDec = parseTimeToDecimal(evento.inicio);
-                          const finDec    = parseTimeToDecimal(evento.fin);
+                          const finDec = parseTimeToDecimal(evento.fin);
 
                           const docenteName = teachers.find(t => String(t.id) === String(evento.docenteId))?.name || 'Docente';
-                          const eventKey    = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
+                          const eventKey = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
 
                           const overlapping = arr.filter(o => {
                             const oIni = parseTimeToDecimal(o.inicio);
@@ -280,26 +278,26 @@ export default function AvailabilityPage() {
                           overlapping.sort((a, b) => parseTimeToDecimal(a.inicio) - parseTimeToDecimal(b.inicio));
                           const overlapIndex = overlapping.indexOf(evento);
 
-                          const leftOffset  = 2 + overlapIndex * 5;
+                          const leftOffset = 2 + overlapIndex * 5;
                           const topOffsetPx = overlapIndex * 6;
-                          const width       = 94 - overlapIndex * 4;
-                          const isLifted    = hoveredEvent === eventKey || activeEvent === eventKey;
+                          const width = 94 - overlapIndex * 4;
+                          const isLifted = hoveredEvent === eventKey || activeEvent === eventKey;
 
                           return (
                             <div
                               key={idx}
                               className={`event ${isLifted ? 'lifted' : 'normal'}`}
                               style={{
-                                top:             `calc(${(inicioDec - 7) * 3}rem + ${topOffsetPx}px)`,
-                                height:          `${(finDec - inicioDec) * 3}rem`,
-                                width:           isLifted ? '92%' : `${width}%`,
-                                left:            isLifted ? '2%' : `${leftOffset}%`,
-                                zIndex:          isLifted ? 100 : 10 + overlapIndex,
+                                top: `calc(${(inicioDec - 7) * 3}rem + ${topOffsetPx}px)`,
+                                height: `${(finDec - inicioDec) * 3}rem`,
+                                width: isLifted ? '92%' : `${width}%`,
+                                left: isLifted ? '2%' : `${leftOffset}%`,
+                                zIndex: isLifted ? 100 : 10 + overlapIndex,
                                 backgroundColor: theme.bg,
                                 borderLeftColor: theme.border,
-                                color:           theme.text,
-                                boxShadow:       isLifted ? `0 8px 24px -4px ${theme.border}66` : undefined,
-                                outline:         isLifted ? `2px solid ${theme.border}` : undefined,
+                                color: theme.text,
+                                boxShadow: isLifted ? `0 8px 24px -4px ${theme.border}66` : undefined,
+                                outline: isLifted ? `2px solid ${theme.border}` : undefined,
                               }}
                               onMouseEnter={() => setHoveredEvent(eventKey)}
                               onMouseLeave={() => setHoveredEvent(null)}
@@ -335,17 +333,42 @@ export default function AvailabilityPage() {
               <div className="month-grid">
                 {diasDelMes.map((diaObj, i) => {
                   const esEsteMes = diaObj.getMonth() === currentDate.getMonth();
-                  const esHoy     = diaObj.toDateString() === new Date().toDateString();
+                  const esHoy = diaObj.toDateString() === new Date().toDateString();
+                  
+                  const eventosDelDia = localEvents
+                    .filter(e => parseDay(e.diaSemana) === diaObj.getDay() && slots.includes(String(e.docenteId)))
+                    .sort((a, b) => parseTimeToDecimal(a.inicio) - parseTimeToDecimal(b.inicio));
+
                   return (
                     <div key={i} className={`month-cell ${esHoy ? 'today' : ''}`} style={{ opacity: esEsteMes ? 1 : 0.4 }}>
                       <span className="month-number">{diaObj.getDate()}</span>
-                      <div className="month-events-preview">
-                        {localEvents
-                          .filter(e => Number(e.diaSemana) === diaObj.getDay() && slots.includes(String(e.docenteId)))
-                          .slice(0, 2)
-                          .map((ev, idx) => (
-                            <div key={idx} className="month-event-dot" style={{ backgroundColor: PALETAS[slots.indexOf(String(ev.docenteId))]?.border }} />
-                          ))}
+                      <div className="month-events-preview" style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px', overflow: 'hidden' }}>
+                        {eventosDelDia.slice(0, 4).map((ev, idx) => {
+                          const slotIndex = slots.indexOf(String(ev.docenteId));
+                          const theme = PALETAS[slotIndex];
+                          const docenteName = teachers.find(t => String(t.id) === String(ev.docenteId))?.name?.split(' ')[0] || 'Docente';
+                          
+                          return (
+                            <div 
+                              key={idx} 
+                              style={{ 
+                                backgroundColor: theme?.bg || '#f3f4f6', 
+                                borderLeft: `2px solid ${theme?.border || '#d1d5db'}`, 
+                                color: theme?.text || '#374151',
+                                fontSize: '10px',
+                                padding: '2px 4px',
+                                borderRadius: '0 4px 4px 0',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                fontWeight: 600,
+                                lineHeight: '1.2'
+                              }} 
+                            >
+                              {formatTime(ev.inicio)} - {docenteName}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -353,10 +376,6 @@ export default function AvailabilityPage() {
               </div>
             </div>
           )}
-        </div>
-
-        <div className="export">
-          <button>Crear Excel</button>
         </div>
 
       </div>
