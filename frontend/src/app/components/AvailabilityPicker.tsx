@@ -42,11 +42,11 @@ interface AvailabilityPickerProps {
 }
 
 const PALETAS = [
-  { bg: '#eff6ff', border: '#2563eb', text: '#1d4ed8' }, // Slot 1 — Azul
-  { bg: '#f0fdf4', border: '#10b981', text: '#065f46' }, // Slot 2 — Verde
-  { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' }, // Slot 3 — Naranja
-  { bg: '#fdf4ff', border: '#a855f7', text: '#6b21a8' }, // Slot 4 — Morado
-  { bg: '#fff1f2', border: '#f43f5e', text: '#9f1239' }, // Slot 5 — Rosa
+  { bg: '#eff6ff', border: '#2563eb', text: '#1d4ed8' }, 
+  { bg: '#f0fdf4', border: '#10b981', text: '#065f46' }, 
+  { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' }, 
+  { bg: '#fdf4ff', border: '#a855f7', text: '#6b21a8' }, 
+  { bg: '#fff1f2', border: '#f43f5e', text: '#9f1239' },
 ];
 
 export default function AvailabilityPicker({
@@ -82,11 +82,11 @@ export default function AvailabilityPicker({
 
   const getThemeForDocente = (docenteId: string) => {
     const slotIndex = selectedTeacherIds.indexOf(docenteId);
-    if (slotIndex === -1) return PALETAS[0]; // fallback
+    if (slotIndex === -1) return PALETAS[0]; 
     return PALETAS[slotIndex] ?? PALETAS[0];
   };
 
-  // Labels
+ 
   const getLabel = () => {
     const { mode } = filterOptions;
     if (mode === 'group-evaluator' || mode === 'tutorial-evaluator') {
@@ -107,7 +107,7 @@ export default function AvailabilityPicker({
     }
   };
 
-  // Handlers
+ 
   const handleTeacherChange = (index: number, newId: string) => {
     const updated = [...selectedTeacherIds];
     updated[index] = newId;

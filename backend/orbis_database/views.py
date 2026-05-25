@@ -296,11 +296,9 @@ class StudentViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    # NUEVO: Función para Desactivar/Activar al estudiante
     @action(detail=True, methods=['patch'], url_path='toggle-active')
     def toggle_active(self, request, pk=None):
         student = self.get_object()
-        # Si era nulo, lo tratamos como False y lo invertimos
         current_status = student.isactive if student.isactive is not None else False
         student.isactive = not current_status
         student.save()
@@ -570,11 +568,9 @@ class DashboardStatsView(APIView):
 
 class DashboardMetricsView(APIView):
     def get(self, request):
-        # Totales para las tarjetas superiores (Solo Evaluaciones)
         total_comprensivas = Evaluation.objects.filter(type__name__icontains='Comprensiva').count()
         total_especiales = Evaluation.objects.filter(type__name__icontains='Especial').count()
 
-        # Gráfica Mensual
         stats_mes = Evaluation.objects.annotate(
             month=ExtractMonth('date'),
             year=ExtractYear('date')
@@ -592,7 +588,6 @@ class DashboardMetricsView(APIView):
             for item in stats_mes_list
         ]
 
-        # Top Docentes
         top_comprensiva = Teacher.objects.filter(
             evaluationteacher__evaluation__type__name__icontains='Comprensiva'
         ).annotate(total=Count('evaluationteacher')).order_by('-total')[:4]
@@ -610,28 +605,19 @@ class DashboardMetricsView(APIView):
                 "total": t.total
             }
 
-        # =========================================================
-        # NUEVA LÓGICA DE CONFIRMACIONES (CORREGIDA)
-        # =========================================================
-
-        # 1. Tutoría Comprensiva (StudyGroup & StudyGroupTeacher)
         total_tut_comp = StudyGroup.objects.filter(isactive=True).count()
-        # Contamos cuántos grupos tienen exactamente 3 tutores con hasaccepted=True
         conf_tut_comp = StudyGroup.objects.filter(isactive=True).annotate(
             accepted_tutors=Count('studygroupteacher', filter=Q(studygroupteacher__hasaccepted=True))
         ).filter(accepted_tutors=3).count()
 
-        # 2. Evaluación Comprensiva (Result & Evaluation)
         conf_eval_comp = Result.objects.filter(
             Q(state__icontains='Confirmado') | Q(state__icontains='Aprobado'), 
             evaluationid__type__name__icontains='Comprensiva'
         ).count()
 
-        # 3. Tutoría Especial (CourseTutorial)
         total_tut_esp = CourseTutorial.objects.count()
         conf_tut_esp = CourseTutorial.objects.filter(hasaccepted=True).count()
 
-        # 4. Evaluación Especial (Result & Evaluation)
         conf_eval_esp = Result.objects.filter(
             Q(state__icontains='Confirmado') | Q(state__icontains='Aprobado'), 
             evaluationid__type__name__icontains='Especial'
@@ -690,15 +676,13 @@ class ResultReportsView(APIView):
             result_obj = Result.objects.filter(evaluationid=eval_obj).first()
             calificacion = result_obj.state if result_obj else "Sin Calificación"
             
-            # --- 1. BUSCAR EVALUADORES (TERNA) Y SUS ÁREAS ---
+  
             et_list = EvaluationTeacher.objects.filter(evaluation=eval_obj).select_related('teacher')
             evaluadores_str = []
             evaluadores_det = []
             for idx, et in enumerate(et_list):
                 if et.teacher:
-                    # Buscamos la especialidad en la BD
                     st = SpecialityTeacher.objects.filter(teacher=et.teacher).select_related('area').first()
-                    # Si no tiene especialidad guardada, aplicamos el orden por defecto de la UI
                     fallback = ["Sistemas", "Gestión", "Informática"][idx] if idx < 3 else "Área"
                     area = st.area.name if st and st.area else fallback
                     
@@ -727,13 +711,12 @@ class ResultReportsView(APIView):
                 "fecha": fecha_str,
                 "calificacion": calificacion,
                 "evaluadores": evaluadores_str,
-                "evaluadores_detallados": evaluadores_det, # Nueva lista enriquecida
-                "tutores_detallados": [] # Espacio para los tutores
+                "evaluadores_detallados": evaluadores_det, 
+                "tutores_detallados": [] 
             }
 
             if 'Especial' in type_name:
                 base_data["curso"] = "Curso de Especialización"
-                # Para especial, el tutor viene de CourseTutorial
                 if eval_obj.studentid:
                     ct = CourseTutorial.objects.filter(studygroup__studygroupstudent__student=eval_obj.studentid).select_related('teacher').first()
                     if ct and ct.teacher:
@@ -746,8 +729,7 @@ class ResultReportsView(APIView):
                 if eval_obj.studentid:
                     grupos_rel = StudyGroupStudent.objects.filter(student=eval_obj.studentid).select_related('studygroup')
                     base_data["gruposEstudio"] = [g.studygroup.group for g in grupos_rel if g.studygroup] if grupos_rel.exists() else ["Sin grupo asignado"]
-                    
-                    # --- 2. BUSCAR TUTORES DESDE EL GRUPO DE ESTUDIO ---
+            
                     if grupos_rel.exists():
                         sg = grupos_rel.first().studygroup
                         sg_teachers = StudyGroupTeacher.objects.filter(studygroup=sg).select_related('teacher')
