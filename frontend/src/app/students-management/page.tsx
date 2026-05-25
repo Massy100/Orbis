@@ -35,6 +35,7 @@ export default function Students() {
 
     const [editModalOpen, setEditModalOpen] = useState(false)
     const [addModalOpen, setAddModalOpen] = useState(false)
+    const [searchTerm, setSearchTerm] = useState("")
 
     const [statusFilter, setStatusFilter] = useState("Todos")
     const [isSavingStudent, setIsSavingStudent] = useState(false)
@@ -88,11 +89,21 @@ export default function Students() {
     }, [])
 
     const filteredStudents = useMemo(() => {
-        if (statusFilter === "Todos") {
-            return students
-        }
-        return students.filter(student => student.status === statusFilter)
-    }, [students, statusFilter])
+        return students.filter(student => {
+            const matchesStatus =
+                statusFilter === "Todos" ||
+                student.status === statusFilter
+
+            const search = searchTerm.toLowerCase().trim()
+
+            const matchesSearch =
+                search === "" ||
+                student.name.toLowerCase().includes(search) ||
+                student.carne.includes(search)
+
+            return matchesStatus && matchesSearch
+        })
+    }, [students, statusFilter, searchTerm])
 
     const totalItems = filteredStudents.length
 
@@ -246,6 +257,19 @@ export default function Students() {
                     <div className="types-filters-add-student">
                         <div className="types-filters">
                             <div className="filter-box">
+                                <label htmlFor="search">
+                                    BUSCAR
+                                </label>
+
+                                <input
+                                    id="search"
+                                    type="text"
+                                    placeholder="Nombre o carnet"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <div className="filter-box">
                                 <label htmlFor="status">
                                     ESTADO
                                 </label>
@@ -253,9 +277,7 @@ export default function Students() {
                                 <select
                                     id="status"
                                     value={statusFilter}
-                                    onChange={(e) =>
-                                        setStatusFilter(e.target.value)
-                                    }
+                                    onChange={(e) => setStatusFilter(e.target.value)}
                                 >
                                     <option value="Todos">Todos</option>
                                     <option value="Activo">Activos</option>
