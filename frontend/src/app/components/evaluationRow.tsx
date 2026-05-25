@@ -20,7 +20,7 @@ export const EvaluationRow = ({
   onToggleTutor, 
   onApprove 
 }: EvaluationRowProps) => { 
-  const isReady = item.pago === "pagado" && item.tutor.estado === "acordado";
+  const isReady = item.pago === "pagado" && item.tutor.estado === "acuerdo";
 
   return (
     <tr>
