@@ -286,7 +286,40 @@
     animation: spin 0.7s linear infinite;
 }
 
+.student-status-toggle {
+    margin-top: 15px;
+    min-width: 120px;
+    height: 40px;
+    border: none;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
+.student-status-toggle.active {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.student-status-toggle.active:hover {
+    background: #bbf7d0;
+}
+
+.student-status-toggle.inactive {
+    background-color: #FFF3D6;
+    color: #C58A11;
+    border: 1px solid #F3D38A;
+}
+
+.student-status-toggle.inactive:hover {
+    background-color: #ffe6a8b4;
+}
 
 @keyframes spin {
     to {

@@ -19,6 +19,7 @@ type Student = {
 type StudentDraft = {
     name: string
     carne: string
+    status: "Activo" | "Inactivo"
 }
 
 export default function Students() {
@@ -31,6 +32,7 @@ export default function Students() {
     const [selectedStudentId, setSelectedStudentId] = useState<number | null>(null)
 
     const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const [originalStatus, setOriginalStatus] = useState<"Activo" | "Inactivo">("Activo")
     const [studentToDelete, setStudentToDelete] = useState<Student | null>(null)
 
     const [editModalOpen, setEditModalOpen] = useState(false)
@@ -51,11 +53,13 @@ export default function Students() {
     const [draft, setDraft] = useState<StudentDraft>({
         name: "",
         carne: "",
+        status: "Activo"
     })
 
     const initialNewStudentDraft: StudentDraft = {
         name: "",
-        carne: ""
+        carne: "",
+        status: "Activo"
     }
 
     const [newStudentDraft, setNewStudentDraft] = useState<StudentDraft>(initialNewStudentDraft)
@@ -114,9 +118,12 @@ export default function Students() {
 
     const handleEdit = (student: Student) => {
         setSelectedStudentId(student.id)
+        setOriginalStatus(student.status)
+
         setDraft({
             name: student.name,
-            carne: student.carne
+            carne: student.carne,
+            status: student.status
         })
         setOpen(true)
     }
@@ -124,7 +131,7 @@ export default function Students() {
     const closeDrawer = () => {
         setOpen(false)
         setSelectedStudentId(null)
-        setDraft({ name: "", carne: "" })
+        setDraft({ name: "", carne: "", status: "Activo"})
     }
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -149,6 +156,10 @@ export default function Students() {
                     carne: draft.carne.trim()
                 }
             )
+
+            if (draft.status !== originalStatus) {
+                await studentService.deactivateStudent(selectedStudentId)
+            }
 
             if (!res.ok) {
                 showToast("No se pudo actualizar el estudiante", "error")
@@ -448,6 +459,32 @@ export default function Students() {
                             />
                             <span className="input-underline-border"></span>
                         </div>
+                    </div>
+
+                    <div className="sidebar-drop-down-status">
+                        <label className="sidebar-drop-down-label">
+                            Estado:
+                        </label>
+
+                        <button
+                            type="button"
+                            className={`student-status-toggle ${
+                                draft.status === "Activo"
+                                    ? "active"
+                                    : "inactive"
+                            }`}
+                            onClick={() =>
+                                setDraft(prev => ({
+                                    ...prev,
+                                    status:
+                                        prev.status === "Activo"
+                                            ? "Inactivo"
+                                            : "Activo"
+                                }))
+                            }
+                        >
+                            {draft.status}
+                        </button>
                     </div>
 
                     <div className="sidebar-drop-down-actions">
