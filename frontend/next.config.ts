@@ -1,7 +1,17 @@
-import type { NextConfig } from "next";
+const nextConfig = {
+  output: 'standalone',  
+  images: {
+    unoptimized: true,  
+  },
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+    };
+    return config;
+  },
+}
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+module.exports = nextConfig
 
-export default nextConfig;
+module.exports = nextConfig
