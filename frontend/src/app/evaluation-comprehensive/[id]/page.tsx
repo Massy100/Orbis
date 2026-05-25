@@ -7,7 +7,7 @@ import DashboardLayout from "../../components/layout";
 import Toast from "../../components/toast";
 import AvailabilityPicker from "../../components/AvailabilityPicker";
 import { availabilityService } from "../../services/availability-service";
-import { studentService } from "../../services/student-service"; 
+import { studentService } from "../../services/student-service";
 import GLOBAL_API_URL from "../../services/global-api-url";
 const API_URL = GLOBAL_API_URL;
 
@@ -73,7 +73,7 @@ export default function EvaluationComprehensivePage() {
     const params = useParams();
     const estudianteCarnet = params?.id as string;
     const [studygroupId, setStudygroupId] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true); 
+    const [loading, setLoading] = useState(true);
 
     const [showAvailability, setShowAvailability] = useState(false);
 
@@ -85,10 +85,10 @@ export default function EvaluationComprehensivePage() {
 
     const handleSave = async () => {
         if (!canSaveComprensiva) return;
-        
+
         try {
             const student = await studentService.findByCarnet(studentData.carnet);
-            
+
             if (!student) {
                 setToast({
                     show: true,
@@ -97,9 +97,9 @@ export default function EvaluationComprehensivePage() {
                 });
                 return;
             }
-            
-            const tipoEvaluacionId = 1; 
-            
+
+            const tipoEvaluacionId = 1;
+
             const evaluationResponse = await fetch(`${API_URL}evaluations/`, {
                 method: "POST",
                 headers: {
@@ -116,22 +116,22 @@ export default function EvaluationComprehensivePage() {
                     type: tipoEvaluacionId
                 })
             });
-            
+
             if (!evaluationResponse.ok) {
                 const errorData = await evaluationResponse.json();
                 console.error("Error del backend:", errorData);
                 throw new Error(errorData.error || errorData.message || "Error al crear la evaluación");
             }
-            
+
             const evaluation = await evaluationResponse.json();
             console.log("Evaluación creada:", evaluation);
-            
+
             const teachersToAssign = [
                 selectedEvaluatorsComprensiva.informatica,
                 selectedEvaluatorsComprensiva.sistemas,
                 selectedEvaluatorsComprensiva.gestion
             ].filter(teacher => teacher !== null);
-            
+
             for (const teacher of teachersToAssign) {
                 try {
                     const teacherResponse = await fetch(`${API_URL}evaluation-teachers/`, {
@@ -144,7 +144,7 @@ export default function EvaluationComprehensivePage() {
                             teacher: teacher?.id
                         })
                     });
-                    
+
                     if (!teacherResponse.ok) {
                         const errorData = await teacherResponse.json();
                         throw new Error(errorData.error || `Error al asignar docente ${teacher?.nombre}`);
@@ -154,7 +154,7 @@ export default function EvaluationComprehensivePage() {
                     throw teacherError;
                 }
             }
-            
+
             await fetch(`${API_URL}results/`, {
                 method: "POST",
                 headers: {
@@ -166,22 +166,22 @@ export default function EvaluationComprehensivePage() {
                     observation: "Evaluación creada desde el sistema"
                 })
             });
-        
-        setToast({
-            show: true,
-            message: "Evaluación guardada exitosamente",
-            type: "success"
-        });
-        
-    } catch (error) {
-        console.error("Error al guardar evaluación:", error);
-        setToast({
-            show: true,
-            message: "Error al guardar la evaluación",
-            type: "error"
-        });
-    }
-};
+
+            setToast({
+                show: true,
+                message: "Evaluación guardada exitosamente",
+                type: "success"
+            });
+
+        } catch (error) {
+            console.error("Error al guardar evaluación:", error);
+            setToast({
+                show: true,
+                message: "Error al guardar la evaluación",
+                type: "error"
+            });
+        }
+    };
 
     const [studentData, setStudentData] = useState<StudentForm>({
         nombreCompleto: "",
@@ -325,18 +325,18 @@ export default function EvaluationComprehensivePage() {
 
     useEffect(() => {
         if (!estudianteCarnet) return;
-        
+
         const loadStudentData = async () => {
             setLoading(true);
             try {
                 const student = await studentService.findByCarnet(estudianteCarnet);
-                
+
                 if (student) {
                     setStudentData({
                         nombreCompleto: student.name || "",
                         carnet: student.est || "",
                     });
-                    
+
                     const groupId = await availabilityService.getStudyGroupIdByEst(estudianteCarnet);
                     setStudygroupId(groupId);
                 } else {
@@ -357,17 +357,17 @@ export default function EvaluationComprehensivePage() {
                 setLoading(false);
             }
         };
-        
+
         loadStudentData();
     }, [estudianteCarnet]);
-        if (loading) {
+    if (loading) {
         return (
             <DashboardLayout>
-                <div style={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center', 
-                    height: '100vh' 
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100vh'
                 }}>
                     <div>Cargando datos del estudiante...</div>
                 </div>
@@ -457,12 +457,16 @@ export default function EvaluationComprehensivePage() {
 
                                 <div className="evaluations-field">
                                     <label>Salón</label>
-                                    <input
-                                        name="salon"
-                                        value={scheduleData.salon}
-                                        onChange={handleScheduleChange}
-                                        placeholder="Ej. C-205"
-                                    />
+                                    <div className="class-evaluation">
+                                        <input
+                                            name="salon"
+                                            value={scheduleData.salon}
+                                            onChange={handleScheduleChange}
+                                            maxLength={4}
+                                            placeholder="Ej. C205"
+                                        />
+                                        <p>Formato admitido: <strong>C205</strong></p>
+                                    </div>
                                 </div>
 
                                 <div className="evaluations-field">
@@ -722,24 +726,24 @@ export default function EvaluationComprehensivePage() {
                             setEvaluadoresComprensiva({
                                 informatica: teachers[0]
                                     ? [{
-                                          ...evaluadoresComprensivaBase.informatica[0],
-                                          id: teachers[0].id,
-                                          nombre: teachers[0].name,
-                                      }]
+                                        ...evaluadoresComprensivaBase.informatica[0],
+                                        id: teachers[0].id,
+                                        nombre: teachers[0].name,
+                                    }]
                                     : [],
                                 sistemas: teachers[1]
                                     ? [{
-                                          ...evaluadoresComprensivaBase.sistemas[0],
-                                          id: teachers[1].id,
-                                          nombre: teachers[1].name,
-                                      }]
+                                        ...evaluadoresComprensivaBase.sistemas[0],
+                                        id: teachers[1].id,
+                                        nombre: teachers[1].name,
+                                    }]
                                     : [],
                                 gestion: teachers[2]
                                     ? [{
-                                          ...evaluadoresComprensivaBase.gestion[0],
-                                          id: teachers[2].id,
-                                          nombre: teachers[2].name,
-                                      }]
+                                        ...evaluadoresComprensivaBase.gestion[0],
+                                        id: teachers[2].id,
+                                        nombre: teachers[2].name,
+                                    }]
                                     : [],
                             });
 

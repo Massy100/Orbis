@@ -101,7 +101,7 @@ export default function EvaluationSpecialPage() {
         evaluationService.getCourseFromTutorial(estudianteCarnet).then((courseName) => {
             setSelectedEvaluatorEspecial(prev => prev ? { ...prev, curso: courseName } : null);
             if (typeof window !== "undefined") {
-               (window as any).__specialCourseTemp = courseName;
+                (window as any).__specialCourseTemp = courseName;
             }
         });
 
@@ -272,7 +272,10 @@ export default function EvaluationSpecialPage() {
                                 </div>
                                 <div className="evaluations-field">
                                     <label>Salón</label>
-                                    <input name="salon" value={scheduleData.salon} onChange={handleScheduleChange} placeholder="Ej. C-205" />
+                                    <div className="class-evaluation">
+                                        <input name="salon" value={scheduleData.salon} onChange={handleScheduleChange} maxLength={4} placeholder="Ej. C205" />
+                                        <p>Formato admitido: <strong>C205</strong></p>
+                                    </div>
                                 </div>
                                 <div className="evaluations-field">
                                     <label>Hora Fin</label>
@@ -421,7 +424,7 @@ export default function EvaluationSpecialPage() {
                             const teacher = (await teacherService.getTeacherByName(selectedTeacher.name)) as TeacherResponse | null;
                             if (teacher) {
                                 const cursoReal = typeof window !== "undefined" ? (window as any).__specialCourseTemp : "Especialización";
-                                
+
                                 setSelectedEvaluatorEspecial({
                                     id: teacher.id,
                                     nombre: teacher.name,
