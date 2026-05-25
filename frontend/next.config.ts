@@ -1,17 +1,8 @@
 const nextConfig = {
-  output: 'standalone',  
+  output: 'standalone',
   images: {
-    unoptimized: true,  
-  },
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-    };
-    return config;
+    unoptimized: true,
   },
 }
-
-module.exports = nextConfig
 
 module.exports = nextConfig
