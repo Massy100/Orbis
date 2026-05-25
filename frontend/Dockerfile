@@ -2,10 +2,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY frontend/package*.json ./
+COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
-COPY frontend/ ./
+COPY . .
 
 ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 ARG CLERK_SECRET_KEY  
@@ -30,6 +30,7 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
+RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 
