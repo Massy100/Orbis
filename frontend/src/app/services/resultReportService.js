@@ -57,7 +57,6 @@ export const sendReportEmail = async (emailData) => {
         return { success: true };
     } catch (error) {
         console.error("Email Service Error:", error);
-        // Devolvemos el mensaje de error exacto
         return { success: false, errorMessage: error.message };
     }
 };

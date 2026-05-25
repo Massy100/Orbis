@@ -5,6 +5,7 @@ import DashboardLayout from '../components/layout';
 import "./availability.css";
 import { ChevronLeft, ChevronRight, User as UserIcon, Clock } from 'lucide-react';
 import { useAvailability } from '@/src/app/hooks/use-availability';
+import GLOBAL_API_URL from '@/src/app/services/global-api-url'; // ✅ importar igual que los demás
 
 interface Teacher {
   id: number;
@@ -19,9 +20,9 @@ interface AvailabilityEvent {
 }
 
 const PALETAS = [
-  { bg: '#eff6ff', border: '#2563eb', text: '#1d4ed8' }, // AZUL (Slot 1)
-  { bg: '#f0fdf4', border: '#10b981', text: '#065f46' }, // VERDE (Slot 2)
-  { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' }, // NARANJA (Slot 3)
+  { bg: '#eff6ff', border: '#2563eb', text: '#1d4ed8' },
+  { bg: '#f0fdf4', border: '#10b981', text: '#065f46' },
+  { bg: '#fffbeb', border: '#f59e0b', text: '#92400e' },
 ];
 
 const DAY_NAME_MAP: Record<string, number> = {
@@ -39,20 +40,20 @@ const parseDay = (day: string | number): number => {
 export default function AvailabilityPage() {
   const { teachers, loading } = useAvailability();
 
-  const [localEvents, setLocalEvents]       = useState<AvailabilityEvent[]>([]);
-  const [teacherAreas, setTeacherAreas]     = useState<Record<string, string>>({});
-  const [slots, setSlots]                   = useState<string[]>(['', '', '']);
-  const [currentDate, setCurrentDate]       = useState(new Date());
-  const [vistaCalendario, setVista]         = useState('week');
-  const [hoveredEvent, setHoveredEvent]     = useState<string | null>(null);
-  const [activeEvent, setActiveEvent]       = useState<string | null>(null);
+  const [localEvents, setLocalEvents]   = useState<AvailabilityEvent[]>([]);
+  const [teacherAreas, setTeacherAreas] = useState<Record<string, string>>({});
+  const [slots, setSlots]               = useState<string[]>(['', '', '']);
+  const [currentDate, setCurrentDate]   = useState(new Date());
+  const [vistaCalendario, setVista]     = useState('week');
+  const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
+  const [activeEvent, setActiveEvent]   = useState<string | null>(null);
 
-  // accesspoint to database for events, teachers and careers
   useEffect(() => {
     const fetchDirectEvents = async () => {
       try {
-        const url = 'http://localhost:8001/api';
-        
+        // ✅ Usar GLOBAL_API_URL igual que todos los demás servicios
+        const url = GLOBAL_API_URL.endsWith('/') ? GLOBAL_API_URL.slice(0, -1) : GLOBAL_API_URL;
+
         const [tpRes, pRes, tRes, cRes] = await Promise.all([
           fetch(`${url}/teachers-periods/`),
           fetch(`${url}/periods/`),
@@ -63,8 +64,8 @@ export default function AvailabilityPage() {
         if (!tpRes.ok || !pRes.ok) return;
 
         const tpData = await tpRes.json();
-        const pData = await pRes.json();
-        
+        const pData  = await pRes.json();
+
         const tRaw = tRes.ok ? await tRes.json() : [];
         const cRaw = cRes.ok ? await cRes.json() : [];
         const tData = Array.isArray(tRaw) ? tRaw : (tRaw.results || []);
@@ -96,7 +97,7 @@ export default function AvailabilityPage() {
             inicio: period.starttime,
             fin: period.endtime
           };
-        }).filter(Boolean);
+        }).filter(Boolean) as AvailabilityEvent[];
 
         setLocalEvents(mappedEvents);
       } catch (error) {
@@ -109,7 +110,7 @@ export default function AvailabilityPage() {
 
   const nombresMeses      = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const nombresDiasCortos = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  const horasDelDia       = ['7am', '8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm', '7pm', '8pm', '9pm'];
+  const horasDelDia       = ['7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm'];
 
   const parseTimeToDecimal = (time: string | number): number => {
     if (typeof time === 'number') return time;
@@ -120,10 +121,10 @@ export default function AvailabilityPage() {
 
   const formatTime = (decimalHours: any) => {
     const hoursNum = typeof decimalHours === 'string' ? parseTimeToDecimal(decimalHours) : decimalHours;
-    const hours   = Math.floor(hoursNum);
-    const minutes = Math.round((hoursNum - hours) * 60);
-    const ampm    = hours >= 12 ? 'pm' : 'am';
-    const display = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+    const hours    = Math.floor(hoursNum);
+    const minutes  = Math.round((hoursNum - hours) * 60);
+    const ampm     = hours >= 12 ? 'pm' : 'am';
+    const display  = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
     return `${display}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   };
 
@@ -243,7 +244,6 @@ export default function AvailabilityPage() {
               <div className="day-grid">
                 {diasDeLaSemana.map((diaObj, index) => {
                   const esHoy = diaObj.toDateString() === new Date().toDateString();
-                  
                   const eventosDia = localEvents.filter(e =>
                     Number(e.diaSemana) === diaObj.getDay() && slots.includes(String(e.docenteId))
                   );
@@ -266,17 +266,17 @@ export default function AvailabilityPage() {
                           const theme = PALETAS[slotIndex];
 
                           const inicioDec = parseTimeToDecimal(evento.inicio);
-                          const finDec = parseTimeToDecimal(evento.fin);
+                          const finDec    = parseTimeToDecimal(evento.fin);
 
                           const docenteName = teachers.find(t => String(t.id) === String(evento.docenteId))?.name || 'Docente';
-                          const eventKey = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
+                          const eventKey    = `${diaObj.toDateString()}-${evento.docenteId}-${evento.inicio}`;
 
                           const overlapping = arr.filter(o => {
                             const oIni = parseTimeToDecimal(o.inicio);
                             const oFin = parseTimeToDecimal(o.fin);
                             return inicioDec < oFin && finDec > oIni;
                           });
-                          
+
                           overlapping.sort((a, b) => parseTimeToDecimal(a.inicio) - parseTimeToDecimal(b.inicio));
                           const overlapIndex = overlapping.indexOf(evento);
 
@@ -299,7 +299,7 @@ export default function AvailabilityPage() {
                                 borderLeftColor: theme.border,
                                 color:           theme.text,
                                 boxShadow:       isLifted ? `0 8px 24px -4px ${theme.border}66` : undefined,
-                                outline: isLifted ? `2px solid ${theme.border}` : undefined,
+                                outline:         isLifted ? `2px solid ${theme.border}` : undefined,
                               }}
                               onMouseEnter={() => setHoveredEvent(eventKey)}
                               onMouseLeave={() => setHoveredEvent(null)}
@@ -329,19 +329,21 @@ export default function AvailabilityPage() {
             </div>
           ) : (
             <div className="month-grid-container">
-               <div className="month-header">
+              <div className="month-header">
                 {nombresDiasCortos.map(dia => <div key={dia} className="month-day-name">{dia}</div>)}
               </div>
               <div className="month-grid">
                 {diasDelMes.map((diaObj, i) => {
                   const esEsteMes = diaObj.getMonth() === currentDate.getMonth();
-                  const esHoy = diaObj.toDateString() === new Date().toDateString();
+                  const esHoy     = diaObj.toDateString() === new Date().toDateString();
                   return (
                     <div key={i} className={`month-cell ${esHoy ? 'today' : ''}`} style={{ opacity: esEsteMes ? 1 : 0.4 }}>
                       <span className="month-number">{diaObj.getDate()}</span>
                       <div className="month-events-preview">
-                        {localEvents.filter(e => Number(e.diaSemana) === diaObj.getDay() && slots.includes(String(e.docenteId)))
-                          .slice(0, 2).map((ev, idx) => (
+                        {localEvents
+                          .filter(e => Number(e.diaSemana) === diaObj.getDay() && slots.includes(String(e.docenteId)))
+                          .slice(0, 2)
+                          .map((ev, idx) => (
                             <div key={idx} className="month-event-dot" style={{ backgroundColor: PALETAS[slots.indexOf(String(ev.docenteId))]?.border }} />
                           ))}
                       </div>

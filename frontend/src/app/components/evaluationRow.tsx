@@ -6,7 +6,6 @@ interface EvaluationRowProps {
   onCreate: (item: Evaluation) => void;
   onEdit: (item: Evaluation) => void;
   onDelete: (id: number) => void;
-  // Ajustamos las firmas para enviar el estado actual
   onTogglePago: (id: number, currentState: "pagado" | "pendiente") => void;
   onToggleTutor: (id: number, currentStatus: "acordado" | "no_acuerdo") => void;
   onApprove: (carnet: string) => void;
@@ -21,7 +20,6 @@ export const EvaluationRow = ({
   onToggleTutor, 
   onApprove 
 }: EvaluationRowProps) => { 
-  // Evaluamos el estado: "acuerdo" (no "acordado") y "pagado"
   const isReady = item.pago === "pagado" && item.tutor.estado === "acordado";
 
   return (

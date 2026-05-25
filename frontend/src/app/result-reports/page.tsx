@@ -9,9 +9,14 @@ import DashboardLayout from "../components/layout";
 import Toast from "../components/toast";
 
 import { X } from "lucide-react";
-import { fetchResultReports, sendReportEmail, updateResultCalificacion } from "../services/resultReportService.js";
+import { fetchResultReports, updateResultCalificacion } from "../services/resultReportService.js";
 
 type Option = "especial" | "comprensiva";
+
+type EvaluadorDetalle = {
+    nombre: string;
+    area: string;
+};
 
 type BaseReport = {
     id: number;
@@ -21,6 +26,8 @@ type BaseReport = {
     fecha: string;
     calificacion: string;
     evaluadores: string[];
+    evaluadores_detallados: EvaluadorDetalle[];
+    tutores_detallados: EvaluadorDetalle[];
 };
 
 type EspecialReport = BaseReport & {
@@ -53,18 +60,15 @@ export default function ResultReports() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
-    // Datos desde la BD
     const [especialReports, setEspecialReports] = useState<EspecialReport[]>([]);
     const [comprensivaReports, setComprensivaReports] = useState<ComprensivaReport[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Modal de Correo
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedReport, setSelectedReport] = useState<BaseReport | null>(null);
     const [emailSubject, setEmailSubject] = useState("");
-    const [emailBody, setEmailBody] = useState("");
+    const [emailHtml, setEmailHtml] = useState("");
+    const [emailPlain, setEmailPlain] = useState("");
 
-    // Modal de edición de calificación
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingReport, setEditingReport] = useState<BaseReport | null>(null);
     const [selectedCalificacion, setSelectedCalificacion] = useState("");
@@ -74,10 +78,10 @@ export default function ResultReports() {
     const hasCalificacion = (calificacion?: string) => {
         return !!calificacion &&
             calificacion.trim() !== "" &&
-            calificacion.trim().toLowerCase() !== "sin calificación";
+            calificacion.trim().toLowerCase() !== "sin calificación" &&
+            calificacion.trim().toLowerCase() !== "pendiente";
     };
 
-    // Toast
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' | 'info' });
 
     useEffect(() => {
@@ -173,34 +177,86 @@ export default function ResultReports() {
     useEffect(() => {
         if (toast.show) {
             const timer = setTimeout(() => {
-                setToast((prev) => ({
-                    ...prev,
-                    show: false,
-                }));
+                setToast((prev) => ({ ...prev, show: false }));
             }, 3000);
-
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
 
-    // ===== LÓGICA DEL MODAL DE CORREO =====
+    // ===== LÓGICA DE PLANTILLA DE CORREO DINÁMICA =====
     const openEmailModal = (report: BaseReport) => {
-        setSelectedReport(report);
-
         const fechaEval = formatDateToSpanish(report.fecha);
-        const evaluadoresList = report.evaluadores;
+        const hora = new Date().getHours();
+        const saludo = hora < 12 ? "Buenos días" : "Buenas tardes";
 
-        // Asignación segura de la terna para el formato
-        const prof1 = evaluadoresList[0] || "[Pendiente asignar]";
-        const prof2 = evaluadoresList[1] || "[Pendiente asignar]";
-        const prof3 = evaluadoresList[2] || "[Pendiente asignar]";
+        const evaluadores = report.evaluadores_detallados || [];
+        const tutores = report.tutores_detallados || [];
+
+        // Rellenamos hasta asegurar los 3 espacios
+        const safeEvaluadores = [...evaluadores];
+        while (safeEvaluadores.length < 3) safeEvaluadores.push({ nombre: "[Pendiente asignar]", area: "N/A" });
+
+        const safeTutores = [...tutores];
+        while (safeTutores.length < 3) safeTutores.push({ nombre: "[Pendiente asignar]", area: "N/A" });
+
+        let tableRows = '';
+        let plainTerna = '';
+        let plainTutores = '';
+
+        for (let i = 0; i < 3; i++) {
+            tableRows += `
+            <tr>
+                <td style="border: 1px solid #000; padding: 8px;">${safeEvaluadores[i].nombre}</td>
+                <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">${safeEvaluadores[i].area}</td>
+                <td style="border: 1px solid #000; padding: 8px;">${safeTutores[i].nombre}</td>
+                <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">${safeTutores[i].area}</td>
+            </tr>`;
+            
+            plainTerna += `${safeEvaluadores[i].area}: ${safeEvaluadores[i].nombre}\n`;
+            plainTutores += `${safeTutores[i].area}: ${safeTutores[i].nombre}\n`;
+        }
 
         if (activeOption === "especial") {
             const espReport = report as EspecialReport;
             setEmailSubject(`Aprobación de terna de Evaluación Especial - ${espReport.nombre}`);
 
-            // Plantilla extraída del Documento de Word
-            setEmailBody(`Estimada Mgtr. Alejandra,\nBuenas tardes. Deseo que se encuentre bien.\n\nQueremos solicitar amablemente la aprobación de la terna de evaluación de Ingeniería, por favor:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${espReport.nombre}\nCarné: ${espReport.idEstudiante}\nCarrera: Ingeniería en Sistemas\n\n--- TERNA EVALUADORA ---\nÁrea Informática: ${prof1}\nÁrea Sistemas: ${prof2}\nÁrea Gestión: ${prof3}\n\nAgradecidos de antemano por su apoyo, quedamos a la espera de su respuesta.\n\nCordialmente,\nCoordinación Académica`);
+            const htmlContent = `
+                <div style="font-family: Arial, sans-serif; font-size: 14px; color: #000;">
+                    <p>Estimada Mgtr. Alejandra,</p>
+                    <p>${saludo}. Deseo que se encuentre bien.</p>
+                    <p>Queremos solicitar amablemente la aprobación de la terna de evaluación de Ingeniería, por favor:</p>
+                    
+                    <p>
+                        <strong>Fecha de la Evaluación:</strong> ${fechaEval}<br/>
+                        <strong>Estudiante:</strong> ${espReport.nombre}<br/>
+                        <strong>Carné:</strong> ${espReport.est}<br/>
+                        <strong>Carrera:</strong> Ingeniería en Sistemas
+                    </p>
+                    <br/>
+                    
+                    <table style="border-collapse: collapse; width: 100%; max-width: 800px; text-align: left; margin-bottom: 20px;">
+                        <tr>
+                            <td colspan="2" style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #f2f2f2; text-align: center;">Terna evaluadora</td>
+                            <td colspan="2" style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #f2f2f2; text-align: center;">Tutores</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Profesional</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Área</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Profesional</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Área</td>
+                        </tr>
+                        ${tableRows}
+                    </table>
+
+                    <p>Agradecidos de antemano por su apoyo, quedamos a la espera de su respuesta.</p>
+                    <p>Cordialmente,<br/>Coordinación Académica</p>
+                </div>
+            `;
+
+            const plainContent = `Estimada Mgtr. Alejandra,\n${saludo}. Deseo que se encuentre bien.\n\nQueremos solicitar amablemente la aprobación de la terna de evaluación de Ingeniería, por favor:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${report.nombre}\nCarné: ${report.est}\nCarrera: Ingeniería en Sistemas\n\n--- TERNA EVALUADORA ---\n${plainTerna}\n--- TUTORES ---\n${plainTutores}\n\nAgradecidos de antemano por su apoyo, quedamos a la espera de su respuesta.\n\nCordialmente,\nCoordinación Académica`;
+
+            setEmailHtml(htmlContent);
+            setEmailPlain(plainContent);
 
         } else {
             const compReport = report as ComprensivaReport;
@@ -208,31 +264,63 @@ export default function ResultReports() {
 
             setEmailSubject(`Informe de Evaluación Comprensiva - ${compReport.nombre}`);
 
-            // Plantilla adaptada para Comprensiva
-            setEmailBody(`Estimada Mgtr. Alejandra,\nBuenas tardes. Deseo que se encuentre bien.\n\nPor este medio compartimos los resultados correspondientes a la Evaluación Comprensiva de Ingeniería:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${compReport.nombre}\nCarné: ${compReport.idEstudiante}\nGrupos de Estudio: ${grupos}\nResultado Final: ${compReport.calificacion}\n\n--- COMITÉ EVALUADOR ---\nDocente 1: ${prof1}\nDocente 2: ${prof2}\n\nAgradecidos de antemano por su apoyo y gestión.\n\nCordialmente,\nCoordinación Académica`);
+            const htmlContent = `
+                <div style="font-family: Arial, sans-serif; font-size: 14px; color: #000;">
+                    <p>Estimada Mgtr. Alejandra,</p>
+                    <p>${saludo}. Deseo que se encuentre bien.</p>
+                    <p>Por este medio compartimos los resultados correspondientes a la Evaluación Comprensiva de Ingeniería:</p>
+                    
+                    <p>
+                        <strong>Fecha de la Evaluación:</strong> ${fechaEval}<br/>
+                        <strong>Estudiante:</strong> ${compReport.nombre}<br/>
+                        <strong>Carné:</strong> ${compReport.est}<br/>
+                        <strong>Grupos de Estudio:</strong> ${grupos}<br/>
+                        <strong>Resultado Final:</strong> ${compReport.calificacion}
+                    </p>
+                    <br/>
+                    
+                    <table style="border-collapse: collapse; width: 100%; max-width: 800px; text-align: left; margin-bottom: 20px;">
+                        <tr>
+                            <td colspan="2" style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #f2f2f2; text-align: center;">Terna evaluadora</td>
+                            <td colspan="2" style="border: 1px solid #000; padding: 8px; font-weight: bold; background-color: #f2f2f2; text-align: center;">Tutores</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Profesional</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Área</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Profesional</td>
+                            <td style="border: 1px solid #000; padding: 8px; font-weight: bold;">Área</td>
+                        </tr>
+                        ${tableRows}
+                    </table>
+
+                    <p>Agradecidos de antemano por su apoyo y gestión.</p>
+                    <p>Cordialmente,<br/>Coordinación Académica</p>
+                </div>
+            `;
+
+            const plainContent = `Estimada Mgtr. Alejandra,\n${saludo}. Deseo que se encuentre bien.\n\nPor este medio compartimos los resultados correspondientes a la Evaluación Comprensiva de Ingeniería:\n\nFecha de la Evaluación: ${fechaEval}\nEstudiante: ${compReport.nombre}\nCarné: ${compReport.est}\nGrupos de Estudio: ${grupos}\nResultado Final: ${compReport.calificacion}\n\n--- TERNA EVALUADORA ---\n${plainTerna}\n--- TUTORES ---\n${plainTutores}\n\nAgradecidos de antemano por su apoyo y gestión.\n\nCordialmente,\nCoordinación Académica`;
+
+            setEmailHtml(htmlContent);
+            setEmailPlain(plainContent);
         }
 
         setIsModalOpen(true);
     };
 
-    const handleSendEmail = async () => {
-        setIsModalOpen(false);
-        // Toast temporal de "Enviando" para que el usuario sepa que está procesando
-        setToast({ show: true, message: `Enviando correo al servidor...`, type: 'info' });
-
-        const result = await sendReportEmail({
-            subject: emailSubject,
-            body: emailBody,
-            to: "allanperezajanel@gmail.com" // <- Correo de prueba
-        });
-
-        if (result.success) {
-            setToast({ show: true, message: `Correo enviado exitosamente para ${selectedReport?.nombre}`, type: 'success' });
-        } else {
-            // AQUÍ mostramos el error exacto que nos devolvió SendGrid/Django
-            setToast({ show: true, message: `Falló: ${result.errorMessage}`, type: 'error' });
+    const handleCopyTemplate = async () => {
+        try {
+            const clipboardItem = new ClipboardItem({
+                'text/plain': new Blob([emailPlain], { type: 'text/plain' }),
+                'text/html': new Blob([emailHtml], { type: 'text/html' })
+            });
+            await navigator.clipboard.write([clipboardItem]);
+            setToast({ show: true, message: "¡Plantilla copiada! Lista para pegar en el correo.", type: "success" });
+            setIsModalOpen(false);
+        } catch (err) {
+            navigator.clipboard.writeText(emailPlain);
+            setToast({ show: true, message: "Plantilla copiada en formato texto.", type: "info" });
+            setIsModalOpen(false);
         }
-        setTimeout(() => setToast(prev => ({ ...prev, show: false })), 4000);
     };
 
     const openEditModal = (report: BaseReport) => {
@@ -244,10 +332,7 @@ export default function ResultReports() {
     const handleSaveCalificacion = async () => {
         if (!editingReport || !selectedCalificacion) return;
 
-        const result = await updateResultCalificacion(
-            editingReport.id,
-            selectedCalificacion
-        );
+        const result = await updateResultCalificacion(editingReport.id, selectedCalificacion);
 
         if (!result.success) {
             setToast({
@@ -258,11 +343,9 @@ export default function ResultReports() {
             return;
         }
 
-        const updateReports = (reports) =>
+        const updateReports = (reports: any[]) =>
             reports.map((report) =>
-                report.id === editingReport.id
-                    ? { ...report, calificacion: selectedCalificacion }
-                    : report
+                report.id === editingReport.id ? { ...report, calificacion: selectedCalificacion } : report
             );
 
         setEspecialReports((prev) => updateReports(prev));
@@ -368,7 +451,6 @@ export default function ResultReports() {
                                         </td>
                                         <td className="report-date">{formatDateToSpanish(report.fecha)}</td>
                                         <td>
-                                            {/* Ajuste de colores dinámicos basado en la calificación */}
                                             <p className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${report.calificacion === 'Aprobado' ? 'bg-green-100 text-green-700' :
                                                 report.calificacion === 'No Aprobado' ? 'bg-red-100 text-red-700' :
                                                     report.calificacion === 'No se Presento' ? 'bg-yellow-100 text-yellow-700' :
@@ -385,24 +467,15 @@ export default function ResultReports() {
                                         <td>
                                             <div className="flex gap-2">
                                                 {activeOption === "especial" ? (
-                                                    <button
-                                                        className="export-btn"
-                                                        onClick={() => handleApproveSpecial(report.est)}
-                                                    >
+                                                    <button className="export-btn" onClick={() => handleApproveSpecial(report.est)}>
                                                         Editar Evaluación
                                                     </button>
                                                 ) : (
-                                                    <button
-                                                        className="export-btn"
-                                                        onClick={() => handleApproveComprehensive(report.est)}
-                                                    >
+                                                    <button className="export-btn" onClick={() => handleApproveComprehensive(report.est)}>
                                                         Editar Evaluación
                                                     </button>
                                                 )}
-                                                <button
-                                                    className="export-btn"
-                                                    onClick={() => openEditModal(report)}
-                                                >
+                                                <button className="export-btn" onClick={() => openEditModal(report)}>
                                                     Editar Calificacion
                                                 </button>
                                                 {activeOption === "comprensiva" && (
@@ -410,15 +483,12 @@ export default function ResultReports() {
                                                         className={`export-btn ${!hasCalificacion(report.calificacion) ? "opacity-50 cursor-not-allowed" : ""}`}
                                                         onClick={() => openEmailModal(report)}
                                                         disabled={!hasCalificacion(report.calificacion)}
-                                                        title={!hasCalificacion(report.calificacion) ? "Debe asignar una calificación antes de enviar correo" : ""}
+                                                        title={!hasCalificacion(report.calificacion) ? "Debe asignar una calificación antes de generar plantilla" : ""}
                                                     >
                                                         <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-                                                            <g>
-                                                                <path fill="none" d="M0 0h24v24H0z"></path>
-                                                                <path d="M22 20.007a1 1 0 0 1-.992.993H2.992A.993.993 0 0 1 2 20.007V19h18V7.3l-8 7.2-10-9V4a1 1 0 0 1 1-1h18a1 1 0 0 1 1 1v16.007zM4.434 5L12 11.81 19.566 5H4.434zM0 15h8v2H0v-2zm0-5h5v2H0v-2z"></path>
-                                                            </g>
+                                                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path>
                                                         </svg>
-                                                        Enviar correo
+                                                        Generar Plantilla
                                                     </button>
                                                 )}
                                             </div>
@@ -448,39 +518,38 @@ export default function ResultReports() {
                     </div>
                 </div>
 
-                {/* ===== MODAL DE ENVÍO DE CORREO ===== */}
+                {/* ===== MODAL DE PLANTILLA DE CORREO (VISOR HTML) ===== */}
                 {isModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
-                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden flex flex-col">
                             {/* Header */}
                             <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-blue-50">
                                 <div>
-                                    <h3 className="text-lg font-bold text-blue-900">Redactar Correo</h3>
-                                    <p className="text-xs text-blue-600 font-medium mt-1">Previsualización del correo a enviar</p>
+                                    <h3 className="text-lg font-bold text-blue-900">Plantilla de Correo Generada</h3>
+                                    <p className="text-xs text-blue-600 font-medium mt-1">Copia esta información para pegarla en Gmail o Outlook conservando la tabla.</p>
                                 </div>
                                 <button onClick={() => setIsModalOpen(false)} className="p-1 hover:bg-blue-100 rounded-full transition-colors text-blue-800">
                                     <X size={20} />
                                 </button>
                             </div>
 
-                            {/* Body */}
+                            {/* Body: Visor enriquecido */}
                             <div className="p-6 flex flex-col gap-4">
                                 <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Asunto del Correo</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Asunto Sugerido</label>
                                     <input
                                         type="text"
                                         value={emailSubject}
-                                        onChange={(e) => setEmailSubject(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        readOnly
+                                        className="w-full border border-gray-300 bg-gray-50 rounded-lg p-2 text-sm text-gray-800 focus:outline-none"
                                     />
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Cuerpo del Mensaje</label>
-                                    <textarea
-                                        rows={16}
-                                        value={emailBody}
-                                        onChange={(e) => setEmailBody(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg p-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Vista Previa del Mensaje</label>
+                                    <div 
+                                        className="w-full border border-gray-300 rounded-lg p-4 bg-white overflow-y-auto"
+                                        style={{ maxHeight: '400px' }}
+                                        dangerouslySetInnerHTML={{ __html: emailHtml }} 
                                     />
                                 </div>
                             </div>
@@ -491,96 +560,66 @@ export default function ResultReports() {
                                     onClick={() => setIsModalOpen(false)}
                                     className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
                                 >
-                                    Cancelar
+                                    Cerrar
                                 </button>
                                 <button
-                                    onClick={handleSendEmail}
+                                    onClick={handleCopyTemplate}
                                     className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
                                 >
-                                    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
-                                    Enviar Correo
+                                    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"></path></svg>
+                                    Copiar Plantilla
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
 
+                {/* ===== MODAL DE EDICIÓN DE CALIFICACIÓN ===== */}
                 {isEditModalOpen && editingReport && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fadeIn">
                         <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
-
-                            {/* Header */}
                             <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-blue-50">
                                 <div>
                                     <h3 className="text-lg font-bold text-blue-900">Editar Calificación</h3>
-                                    <p className="text-xs text-blue-600 font-medium mt-1">
-                                        Información del estudiante
-                                    </p>
+                                    <p className="text-xs text-blue-600 font-medium mt-1">Información del estudiante</p>
                                 </div>
-
-                                <button
-                                    onClick={() => setIsEditModalOpen(false)}
-                                    className="p-1 hover:bg-blue-100 rounded-full transition-colors text-blue-800"
-                                >
+                                <button onClick={() => setIsEditModalOpen(false)} className="p-1 hover:bg-blue-100 rounded-full transition-colors text-blue-800">
                                     <X size={20} />
                                 </button>
                             </div>
 
                             <div className="p-6 flex flex-col gap-4">
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase">
-                                        Nombre del estudiante
-                                    </label>
-                                    <p className="text-sm font-semibold text-gray-800">
-                                        {editingReport.nombre}
-                                    </p>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Nombre del estudiante</label>
+                                    <p className="text-sm font-semibold text-gray-800">{editingReport.nombre}</p>
                                 </div>
-
                                 <div>
-                                    <label className="text-xs font-bold text-gray-500 uppercase">
-                                        Carné
-                                    </label>
-                                    <p className="text-sm font-semibold text-gray-800">
-                                        {editingReport.est}
-                                    </p>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Carné</label>
+                                    <p className="text-sm font-semibold text-gray-800">{editingReport.est}</p>
                                 </div>
-
                                 <div className="flex flex-col gap-1">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">
-                                        Calificación
-                                    </label>
-
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Calificación</label>
                                     <select
                                         value={selectedCalificacion}
                                         onChange={(e) => setSelectedCalificacion(e.target.value)}
                                         className="w-full border border-gray-300 rounded-lg p-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     >
                                         <option value="">Seleccione una calificación</option>
-
                                         {calificacionOptions.map((option) => (
-                                            <option key={option} value={option}>
-                                                {option}
-                                            </option>
+                                            <option key={option} value={option}>{option}</option>
                                         ))}
                                     </select>
                                 </div>
                             </div>
 
                             <div className="p-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50">
-                                <button
-                                    onClick={() => setIsEditModalOpen(false)}
-                                    className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
-                                >
+                                <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
                                     Cancelar
                                 </button>
-
                                 <button
                                     onClick={handleSaveCalificacion}
                                     disabled={!selectedCalificacion}
-                                    className={`px-6 py-2 text-sm font-bold text-white rounded-lg transition-colors ${selectedCalificacion
-                                        ? "bg-blue-600 hover:bg-blue-700"
-                                        : "bg-gray-400 cursor-not-allowed"
-                                        }`}
+                                    className={`px-6 py-2 text-sm font-bold text-white rounded-lg transition-colors ${selectedCalificacion ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"}`}
                                 >
                                     Guardar
                                 </button>
@@ -589,13 +628,7 @@ export default function ResultReports() {
                     </div>
                 )}
 
-                {/* TOAST DE CONFIRMACIÓN */}
-                <Toast
-                    show={toast.show}
-                    message={toast.message}
-                    type={toast.type}
-                    onClose={() => setToast(prev => ({ ...prev, show: false }))}
-                />
+                <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast(prev => ({ ...prev, show: false }))} />
             </DashboardLayout>
         </>
     );

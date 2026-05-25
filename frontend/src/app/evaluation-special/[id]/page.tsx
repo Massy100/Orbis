@@ -82,11 +82,9 @@ export default function EvaluationSpecialPage() {
 
     const [selectedEvaluatorEspecial, setSelectedEvaluatorEspecial] = useState<Evaluator | null>(null);
 
-    // --- CARGAR DATOS DESDE LOS SERVICIOS ORIGINALES ---
     useEffect(() => {
         if (!estudianteCarnet) return;
 
-        // Cargar estudiante
         evaluationService.getStudentByEst(estudianteCarnet).then((student) => {
             const typedStudent = student as StudentResponse | null;
             if (!typedStudent) {
@@ -100,11 +98,8 @@ export default function EvaluationSpecialPage() {
             });
         });
 
-        // Buscar el curso asignado al estudiante en la tutoría
         evaluationService.getCourseFromTutorial(estudianteCarnet).then((courseName) => {
-            // Guardamos el curso en el estado del evaluador si es que lo hay, sino lo preparamos
             setSelectedEvaluatorEspecial(prev => prev ? { ...prev, curso: courseName } : null);
-            // También lo guardamos en una variable local por si seleccionan al maestro después
             if (typeof window !== "undefined") {
                (window as any).__specialCourseTemp = courseName;
             }
@@ -127,7 +122,7 @@ export default function EvaluationSpecialPage() {
         }
     }, [toast.show]);
 
-    // --- Helpers de Horario ---
+
     const addMinutesToTime = (time: string, minutesToAdd: number) => {
         const [hours, minutes] = time.split(":").map(Number);
         const date = new Date();
@@ -155,7 +150,7 @@ export default function EvaluationSpecialPage() {
         return `${String(normalizedHour).padStart(2, "0")}:${minutes} ${suffix}`;
     };
 
-    // --- Handlers ---
+
     const handleScheduleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
@@ -176,7 +171,6 @@ export default function EvaluationSpecialPage() {
         );
     };
 
-    // --- GUARDAR EVALUACIÓN FINAL ---
     const handleSave = async () => {
         if (!studentId) return;
 
@@ -203,7 +197,6 @@ export default function EvaluationSpecialPage() {
 
             setToast({ show: true, message: "Evaluación guardada exitosamente", type: "success" });
             
-            // Volver a la tabla principal tras 1.5s
             setTimeout(() => router.back(), 1500);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : "Error al guardar la evaluación";
@@ -427,7 +420,6 @@ export default function EvaluationSpecialPage() {
 
                             const teacher = (await teacherService.getTeacherByName(selectedTeacher.name)) as TeacherResponse | null;
                             if (teacher) {
-                                // Recuperamos el curso que buscamos al inicio
                                 const cursoReal = typeof window !== "undefined" ? (window as any).__specialCourseTemp : "Especialización";
                                 
                                 setSelectedEvaluatorEspecial({
