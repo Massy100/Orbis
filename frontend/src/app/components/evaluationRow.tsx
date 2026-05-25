@@ -51,10 +51,10 @@ export const EvaluationRow = ({
           <button 
             type="button"
             className="icon-btn" 
-            data-title={item.tutor.estado === "acordado" ? "De acuerdo" : "Sin acordar"}
+            data-title={item.tutor.estado === "acuerdo" ? "De acuerdo" : "Sin acordar"}
             onClick={() => onToggleTutor(item.id, item.tutor.estado as "acordado" | "no_acordado")}
           >
-            {item.tutor.estado === "acordado" ? <UserCheck color="green" /> : <X color="red" />}
+            {item.tutor.estado === "acuerdo" ? <UserCheck color="green" /> : <X color="red" />}
           </button>
         </div>
       </td>
