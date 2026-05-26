@@ -1,6 +1,6 @@
-// frontend/src/app/services/dashboardService.js
+import {GLOBAL_API_URL} from './global-api-url';
 
-const API_URL = 'http://localhost:8001/api';
+const API_URL = GLOBAL_API_URL;
 
 export const fetchDashboardData = async () => {
   try {

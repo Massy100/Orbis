@@ -1,6 +1,6 @@
-import GLOBAL_API_BASE from '@/src/app/services/global-api-url';
+import {GLOBAL_API_URL} from './global-api-url';
 
-const API_BASE = GLOBAL_API_BASE;
+const API_BASE = GLOBAL_API_URL;
 
 // Function to upload a pensum file
 

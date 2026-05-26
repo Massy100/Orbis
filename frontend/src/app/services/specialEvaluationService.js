@@ -1,4 +1,6 @@
-const API_URL = 'http://localhost:8001/api';
+import {GLOBAL_API_URL} from './global-api-url';
+
+const API_URL = GLOBAL_API_URL;
 
 const safeParse = async (res) => {
   if (!res.ok) return [];
