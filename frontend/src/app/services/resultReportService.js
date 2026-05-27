@@ -4,7 +4,7 @@ const API_URL = GLOBAL_API_URL;
 
 export const fetchResultReports = async () => {
     try {
-        const response = await fetch(`${API_URL}/result-reports/`);
+        const response = await fetch(`${API_URL}result-reports/`);
         if (!response.ok) throw new Error('Error al obtener los reportes');
 
         const data = await response.json();
@@ -18,7 +18,7 @@ export const fetchResultReports = async () => {
 export const updateResultCalificacion = async (evaluationId, state) => {
     try {
         const response = await fetch(
-            `${API_URL}/result-reports/${evaluationId}/calificacion/`,
+            `${API_URL}result-reports/${evaluationId}/calificacion/`,
             {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
@@ -44,7 +44,7 @@ export const updateResultCalificacion = async (evaluationId, state) => {
 
 export const sendReportEmail = async (emailData) => {
     try {
-        const response = await fetch(`${API_URL}/send-email/`, {
+        const response = await fetch(`${API_URL}send-email/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(emailData)

@@ -13,11 +13,11 @@ export const specialEvaluationService = {
   getAllSpecialEvaluations: async () => {
     try {
       const [ctRes, sgsRes, studentsRes, teachersRes, coursesRes] = await Promise.all([
-        fetch(`${API_URL}/course-tutorials/`),
-        fetch(`${API_URL}/studygroup-students/`),
-        fetch(`${API_URL}/students/`),
-        fetch(`${API_URL}/teachers/`),
-        fetch(`${API_URL}/courses/`)
+        fetch(`${API_URL}course-tutorials/`),
+        fetch(`${API_URL}studygroup-students/`),
+        fetch(`${API_URL}students/`),
+        fetch(`${API_URL}teachers/`),
+        fetch(`${API_URL}courses/`)
       ]);
 
       const ctData = await safeParse(ctRes);
@@ -57,13 +57,13 @@ export const specialEvaluationService = {
 
   getAllCourses: async () => {
     try {
-        const res = await fetch(`${API_URL}/courses/`);
+        const res = await fetch(`${API_URL}courses/`);
         return await safeParse(res);
     } catch (error) { return []; }
   },
 
   searchStudentByCarnet: async (carnet) => {
-      const searchRes = await fetch(`${API_URL}/students/?search=${carnet}`);
+      const searchRes = await fetch(`${API_URL}students/?search=${carnet}`);
       const studentArray = await safeParse(searchRes);
       return studentArray.length > 0 ? studentArray[0] : null;
   },
@@ -75,7 +75,7 @@ export const specialEvaluationService = {
       if (foundCourse) {
           courseId = foundCourse.id;
       } else {
-          const cRes = await fetch(`${API_URL}/courses/`, {
+          const cRes = await fetch(`${API_URL}courses/`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ name: form.curso, career: 1, faculty: 1 })
@@ -85,10 +85,10 @@ export const specialEvaluationService = {
       }
 
       if (editingId) {
-        const ctRes = await fetch(`${API_URL}/course-tutorials/${editingId}/`);
+        const ctRes = await fetch(`${API_URL}course-tutorials/${editingId}/`);
         const ct = await ctRes.json();
         
-        await fetch(`${API_URL}/course-tutorials/${editingId}/`, {
+        await fetch(`${API_URL}course-tutorials/${editingId}/`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -97,7 +97,7 @@ export const specialEvaluationService = {
             })
         });
 
-        const sgsRes = await fetch(`${API_URL}/studygroup-students/?studygroup=${ct.studygroup}`);
+        const sgsRes = await fetch(`${API_URL}studygroup-students/?studygroup=${ct.studygroup}`);
         const sgsData = await safeParse(sgsRes);
         if (sgsData.length > 0) {
             await fetch(`${API_URL}/students/${sgsData[0].student}/`, {
@@ -117,7 +117,7 @@ export const specialEvaluationService = {
                 body: JSON.stringify({ name: form.nombre })
             });
         } else {
-            const createRes = await fetch(`${API_URL}/students/`, {
+            const createRes = await fetch(`${API_URL}students/`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ name: form.nombre, est: form.carnet, isactive: true, career: 1, faculty: 1 })
@@ -126,20 +126,20 @@ export const specialEvaluationService = {
             studentId = newStudent.id;
         }
 
-        const sgRes = await fetch(`${API_URL}/studygroups/`, {
+        const sgRes = await fetch(`${API_URL}studygroups/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ group: `Especial-${form.carnet}`, approvedgroup: true, isactive: true })
         });
         const newSG = await sgRes.json();
 
-        await fetch(`${API_URL}/studygroup-students/`, {
+        await fetch(`${API_URL}studygroup-students/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ studygroup: newSG.id, student: studentId, haspayment: false })
         });
 
-        await fetch(`${API_URL}/course-tutorials/`, {
+        await fetch(`${API_URL}course-tutorials/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -156,12 +156,12 @@ export const specialEvaluationService = {
   },
 
   deleteEvaluation: async (id) => {
-      await fetch(`${API_URL}/course-tutorials/${id}/`, { method: 'DELETE' });
+      await fetch(`${API_URL}course-tutorials/${id}/`, { method: 'DELETE' });
   },
 
   togglePayment: async (id, isPaidNow) => {
     try {
-      await fetch(`${API_URL}/course-tutorials/${id}/`, {
+      await fetch(`${API_URL}course-tutorials/${id}/`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ haspayment: isPaidNow === true || isPaidNow === "pagado" }) 
@@ -171,7 +171,7 @@ export const specialEvaluationService = {
 
   toggleTutorStatus: async (id, isAcceptedNow) => {
     try {
-      await fetch(`${API_URL}/course-tutorials/${id}/`, {
+      await fetch(`${API_URL}course-tutorials/${id}/`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ hasaccepted: isAcceptedNow === true || isAcceptedNow === "acordado" })
