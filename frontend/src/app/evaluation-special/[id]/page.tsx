@@ -309,7 +309,6 @@ export default function EvaluationSpecialPage() {
                                     <thead>
                                         <tr>
                                             <th>Nombre</th>
-                                            <th>Curso</th>
                                             <th>Evaluaciones</th>
                                             <th>Confirmado</th>
                                         </tr>
@@ -323,7 +322,6 @@ export default function EvaluationSpecialPage() {
                                                 <td className="evaluations-action-cell">
                                                     <div className="approval-check">
                                                         <input
-                                                            type="checkbox"
                                                             checked={isSelected}
                                                             disabled={evaluadorEspecialSeleccionado.disabled}
                                                             onChange={() => handleSelectEvaluatorEspecial(evaluadorEspecialSeleccionado)}
