@@ -15,6 +15,7 @@ import './groups.css';
 
 interface Estudiante {
     id: number;
+    studentDbId: number | null;
     carne: string;
     nombre: string;
     pagado: boolean;
@@ -93,10 +94,16 @@ export default function GroupsPage() {
     }, [filteredGroups, page, pageSize]);
 
     const canCreate = canCreateGroup(groupName, comprensive, estudiantes);
+    const canUpdate = Boolean(
+        groupName.trim() &&
+        comprensive.filter(Boolean).length === 3 &&
+        estudiantes.length >= 1 &&
+        estudiantes.length <= 6
+    );
 
     const handleAddStudent = () => {
         if (estudiantes.length < 6) {
-            setEstudiantes([...estudiantes, { id: Date.now(), carne: "", nombre: "", pagado: false }]);
+            setEstudiantes([...estudiantes, { id: Date.now(), studentDbId: null, carne: "", nombre: "", pagado: false }]);
         }
     };
 
@@ -154,8 +161,14 @@ export default function GroupsPage() {
         try {
             const studentsWithIds = await Promise.all(
                 estudiantes.map(async (est) => {
-                    const foundStudent =
-                        await studentService.findByCarnet(est.carne);
+                    if (est.studentDbId !== null) {
+                        return {
+                            student: est.studentDbId,
+                            haspayment: est.pagado
+                        };
+                    }
+
+                    const foundStudent = await studentService.findByCarnet(est.carne);
 
                     if (!foundStudent) {
                         throw new Error(
@@ -240,6 +253,7 @@ export default function GroupsPage() {
         const formattedStudents = detail.students.map(
             (student: any) => ({
                 id: student.id,
+                studentDbId: student.id,
                 carne: student.est,
                 nombre: student.name,
                 pagado: student.haspayment
@@ -258,19 +272,8 @@ export default function GroupsPage() {
 
         setEstudiantes(updated);
 
-        if (editingGroup) {
-            updateGroup(
-                editingGroup.id,
-                {
-                    ...buildGroupPayload(),
-                    students: updated.map((e) => ({
-                        name: e.nombre,
-                        est: e.carne,
-                        haspayment: e.pagado
-                    }))
-                }
-            );
-        }
+        // Do NOT call updateGroup here on every click — it can race and corrupt data.
+        // The user saves explicitly via "Actualizar Grupo".
     };
 
     const removeStudent = (id: number) => {
@@ -289,20 +292,7 @@ export default function GroupsPage() {
         );
 
         setEstudiantes(updated);
-
-        if (editingGroup) {
-            updateGroup(
-                editingGroup.id,
-                {
-                    ...buildGroupPayload(),
-                    students: updated.map((e) => ({
-                        name: e.nombre,
-                        est: e.carne,
-                        haspayment: e.pagado
-                    }))
-                }
-            );
-        }
+        // Do NOT auto-save on every keystroke — user saves via "Actualizar Grupo".
     };
 
     const closeModal = () => {
@@ -882,10 +872,10 @@ export default function GroupsPage() {
                                 <footer className="modal-footer-approve">
                                     <button
                                         className="btn-approve-group"
-                                        disabled={!canCreate}
+                                        disabled={!canUpdate}
                                         onClick={handleUpdateGroup}
                                     >
-                                        {canCreate
+                                        {canUpdate
                                             ? "Actualizar Grupo"
                                             : "Pendiente de Validar"}
                                     </button>

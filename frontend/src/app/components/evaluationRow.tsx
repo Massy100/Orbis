@@ -20,7 +20,7 @@ export const EvaluationRow = ({
   onToggleTutor, 
   onApprove 
 }: EvaluationRowProps) => { 
-  const isReady = item.pago === "pagado" && item.tutor.estado === "acuerdo";
+  const isReady = item.pago === "pagado" && item.tutor.estado === "acordado";
 
   return (
     <tr>
@@ -51,10 +51,10 @@ export const EvaluationRow = ({
           <button 
             type="button"
             className="icon-btn" 
-            data-title={item.tutor.estado === "acuerdo" ? "De acuerdo" : "Sin acordar"}
+            data-title={item.tutor.estado === "acordado" ? "De acuerdo" : "Sin acordar"}
             onClick={() => onToggleTutor(item.id, item.tutor.estado)}
           >
-            {item.tutor.estado === "acuerdo" ? <UserCheck color="green" /> : <X color="red" />}
+            {item.tutor.estado === "acordado" ? <UserCheck color="green" /> : <X color="red" />}
           </button>
         </div>
       </td>

@@ -1,4 +1,4 @@
-import {GLOBAL_API_URL} from './global-api-url';
+import GLOBAL_API_URL from './global-api-url';
 
 const API_URL = GLOBAL_API_URL;
 
@@ -100,7 +100,7 @@ export const specialEvaluationService = {
         const sgsRes = await fetch(`${API_URL}studygroup-students/?studygroup=${ct.studygroup}`);
         const sgsData = await safeParse(sgsRes);
         if (sgsData.length > 0) {
-            await fetch(`${API_URL}/students/${sgsData[0].student}/`, {
+            await fetch(`${API_URL}students/${sgsData[0].student}/`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: form.nombre, est: form.carnet })

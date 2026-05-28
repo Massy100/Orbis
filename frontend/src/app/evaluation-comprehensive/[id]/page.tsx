@@ -107,12 +107,12 @@ export default function EvaluationComprehensivePage() {
                 },
                 body: JSON.stringify({
                     studentid: student.id,
-                    date: scheduleData.fecha,
-                    starthour: scheduleData.horaInicio,
-                    endhour: scheduleData.horaFin,
+                    date: scheduleData.fecha || null,
+                    starthour: scheduleData.horaInicio || null,
+                    endhour: scheduleData.horaFin || null,
                     haspayment: scheduleData.pagado,
-                    classroom: scheduleData.salon,
-                    building: scheduleData.lugar,
+                    classroom: scheduleData.salon || null,
+                    building: scheduleData.lugar || null,
                     type: tipoEvaluacionId
                 })
             });
@@ -303,15 +303,7 @@ export default function EvaluationComprehensivePage() {
     const comprensivaAsignados = allSelectedComprensiva.filter(Boolean).length;
 
     const canSaveComprensiva =
-        comprensivaAsignados === 3 &&
-        studentData.nombreCompleto.trim() !== "" &&
-        studentData.carnet.trim() !== "" &&
-        scheduleData.fecha !== "" &&
-        scheduleData.horaInicio !== "" &&
-        scheduleData.horaFin !== "" &&
-        scheduleData.salon.trim() !== "" &&
-        scheduleData.lugar.trim() !== "" &&
-        scheduleData.pagado;
+        studentData.carnet.trim() !== "";
 
     useEffect(() => {
         if (toast.show) {

@@ -1,4 +1,4 @@
-import {GLOBAL_API_URL} from './global-api-url';
+import GLOBAL_API_URL from './global-api-url';
 
 const API_BASE = GLOBAL_API_URL;
 

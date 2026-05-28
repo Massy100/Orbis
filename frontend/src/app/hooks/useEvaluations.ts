@@ -12,7 +12,7 @@ export function useEvaluations(initialData: Evaluation[]) {
 
   const toggleTutor = (id: number) => {
     setData(prev => prev.map(item => 
-      item.id === id ? { ...item, tutor: { ...item.tutor, estado: item.tutor.estado === "acuerdo" ? "no_acuerdo" : "acuerdo" }} : item
+      item.id === id ? { ...item, tutor: { ...item.tutor, estado: item.tutor.estado === "acordado" ? "no_acuerdo" : "acordado" }} : item
     ));
   };
 

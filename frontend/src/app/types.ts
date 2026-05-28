@@ -46,7 +46,7 @@ export interface Evaluation {
   pago: "pendiente" | "pagado";
   tutor: {
     nombre: string;
-    estado: "acuerdo" | "no_acuerdo";
+    estado: "acordado" | "no_acuerdo";
   };
   tutors?: SelectedTeacher[];
 }

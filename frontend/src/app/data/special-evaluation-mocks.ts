@@ -12,7 +12,7 @@ export const mockData: Evaluation[] = [
     nombre: "Abelardo De la Cruz",
     curso: "Cálculo I",
     pago: "pendiente",
-    tutor: { nombre: "Dr. López", estado: "acuerdo" },
+    tutor: { nombre: "Dr. López", estado: "acordado" },
   },
   {
     id: 2,
@@ -28,7 +28,7 @@ export const mockData: Evaluation[] = [
     nombre: "María Fernanda Ríos",
     curso: "Física II",
     pago: "pagado",
-    tutor: { nombre: "Ing. Morales", estado: "acuerdo" },
+    tutor: { nombre: "Ing. Morales", estado: "acordado" },
   },
   {
     id: 4,
@@ -44,7 +44,7 @@ export const mockData: Evaluation[] = [
     nombre: "Ana Lucía Ortiz",
     curso: "Programación Web",
     pago: "pagado",
-    tutor: { nombre: "Msc. García", estado: "acuerdo" },
+    tutor: { nombre: "Msc. García", estado: "acordado" },
   },
   {
     id: 6,
@@ -52,7 +52,7 @@ export const mockData: Evaluation[] = [
     nombre: "Roberto Carlos Sosa",
     curso: "Estadística I",
     pago: "pendiente",
-    tutor: { nombre: "Dra. Quiñónez", estado: "acuerdo" },
+    tutor: { nombre: "Dra. Quiñónez", estado: "acordado" },
   },
   {
     id: 7,
@@ -68,6 +68,6 @@ export const mockData: Evaluation[] = [
     nombre: "Samuel Arriola",
     curso: "Sistemas Operativos",
     pago: "pagado",
-    tutor: { nombre: "Dr. López", estado: "acuerdo" },
+    tutor: { nombre: "Dr. López", estado: "acordado" },
   },
 ];
