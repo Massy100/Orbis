@@ -319,7 +319,7 @@ export default function EvaluationSpecialPage() {
                                             <tr>
                                                 <td>{evaluadorEspecialSeleccionado.nombre}</td>
                                                 <td>{evaluadorEspecialSeleccionado.curso ?? "—"}</td>
-                                                <td>E{evaluadorEspecialSeleccionado.evaluaciones}</td>
+                                                <td>{evaluadorEspecialSeleccionado.evaluaciones}</td>
                                                 <td className="evaluations-action-cell">
                                                     <div className="approval-check">
                                                         <input
