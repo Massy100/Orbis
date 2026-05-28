@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copiar requirements e instalar dependencias Python
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && python manage.py collectstatic --no-input
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar el código
 COPY . .
